@@ -1,14 +1,11 @@
-import { Type } from 'class-transformer';
 import {
   IsArray,
   IsDateString,
   IsNumber,
   IsEnum,
   IsInt,
-  IsNotEmpty,
   IsOptional,
   IsString,
-  ValidateNested,
 } from 'class-validator';
 
 export enum TipoProduccionGanadera {
@@ -37,7 +34,7 @@ export enum CalidadHuevo {
 export class ProduccionGanaderaDto {
   @IsArray()
   @IsEnum(TipoProduccionGanadera, { each: true })
-  @IsNotEmpty()
+  @IsOptional()
   tiposProduccion: TipoProduccionGanadera[];
 
   // Campos para producción de leche

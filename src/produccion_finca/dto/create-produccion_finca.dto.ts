@@ -1,4 +1,10 @@
-import { IsBoolean, IsOptional, IsUUID, ValidateNested } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateProduccionAgricolaDto } from 'src/produccion_agricola/dto/create-produccion_agricola.dto';
 import { CreateProduccionForrajesInsumoDto } from 'src/produccion_forrajes_insumos/dto/create-produccion_forrajes_insumo.dto';
@@ -8,9 +14,13 @@ import { ProduccionGanaderaDto } from 'src/produccion_ganadera/dto/create-produc
 
 export class CreateProduccionFincaDto {
   @IsUUID()
+  @IsNotEmpty({ message: 'La seleccion de finca es obligatorio' })
   fincaId: string;
 
   @IsUUID()
+  @IsNotEmpty({
+    message: 'No se encontro el usuario que realiza esta peticion',
+  })
   userId: string;
 
   @IsOptional()

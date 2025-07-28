@@ -32,8 +32,6 @@ export class ProduccionAgricola {
     tiempo_estimado_cultivo: string;
     meses_produccion: string[];
     cantidad_producida_hectareas: string;
-    area_cultivada_hectareas?: number;
-    metodo_cultivo?: 'Tradicional' | 'Orgánico' | 'Invernadero';
   }>;
 
   @OneToOne(() => ProduccionFinca, (produccion) => produccion.agricola)

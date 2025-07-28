@@ -41,6 +41,7 @@ export class CultivoDto {
     'Frutas',
     'Otros',
   ])
+  @IsOptional()
   tipo: CultivoTipo;
 
   @IsOptional()
@@ -59,14 +60,6 @@ export class CultivoDto {
 
   @IsString()
   cantidad_producida_hectareas: string;
-
-  @IsOptional()
-  @IsNumber()
-  area_cultivada_hectareas?: number;
-
-  @IsOptional()
-  @IsEnum(['Tradicional', 'Orgánico', 'Invernadero'])
-  metodo_cultivo?: MetodoCultivo;
 }
 
 export class CreateProduccionAgricolaDto {

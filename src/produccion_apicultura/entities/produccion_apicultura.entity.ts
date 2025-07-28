@@ -18,15 +18,6 @@ export class ProduccionApicultura {
   @Column({ type: 'enum', enum: ['Oscura', 'Clara', 'Multifloral'] })
   calidad_miel: 'Oscura' | 'Clara' | 'Multifloral';
 
-  @Column({ type: 'date' })
-  fecha_cosecha: Date;
-
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  destino_comercializacion?: string;
-
-  @Column({ type: 'boolean', default: true })
-  activa: boolean;
-
   @OneToOne(() => ProduccionFinca, (produccion) => produccion.apicultura)
   produccionFinca: ProduccionFinca;
 }

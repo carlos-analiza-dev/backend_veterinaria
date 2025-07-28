@@ -1,6 +1,5 @@
 import {
   IsArray,
-  IsEnum,
   IsOptional,
   IsString,
   IsNumber,
@@ -8,26 +7,9 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export type ActividadTipo =
-  | 'Hongos comestibles'
-  | 'Abonos orgánicos'
-  | 'Semillas'
-  | 'Plantas medicinales o aromáticas'
-  | 'Otros';
-
 export class ActividadAlternativaDto {
-  @IsEnum([
-    'Hongos comestibles',
-    'Abonos orgánicos',
-    'Semillas',
-    'Plantas medicinales o aromáticas',
-    'Otros',
-  ])
-  tipo: ActividadTipo;
-
-  @IsOptional()
   @IsString()
-  descripcion?: string;
+  tipo?: string;
 
   @IsOptional()
   @IsString()

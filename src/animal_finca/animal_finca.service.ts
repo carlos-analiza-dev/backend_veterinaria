@@ -252,6 +252,28 @@ export class AnimalFincaService {
         );
       }
 
+      // Primero creamos una consulta básica para el COUNT
+      const countQuery = this.animalRepo
+        .createQueryBuilder('animal')
+        .where('animal.propietario = :propietarioId', { propietarioId });
+
+      if (fincaId) {
+        countQuery.andWhere('animal.finca = :fincaId', { fincaId });
+      }
+
+      if (identificador && identificador.trim() !== '') {
+        countQuery.andWhere('LOWER(animal.identificador) LIKE :identificador', {
+          identificador: `%${identificador.toLowerCase()}%`,
+        });
+      }
+
+      if (especieId) {
+        countQuery.andWhere('animal.especie = :especieId', { especieId });
+      }
+
+      const total = await countQuery.getCount();
+
+      // Luego creamos la consulta completa para obtener los datos
       const query = this.animalRepo
         .createQueryBuilder('animal')
         .leftJoinAndSelect('animal.finca', 'finca')
@@ -277,10 +299,9 @@ export class AnimalFincaService {
         query.andWhere('animal.especie = :especieId', { especieId });
       }
 
-      const total = await query.getCount();
-
       const animales = await query
         .orderBy('animal.fecha_registro', 'DESC')
+        .addOrderBy('profileImages.createdAt', 'DESC')
         .skip(offset)
         .take(limit)
         .getMany();
@@ -291,8 +312,17 @@ export class AnimalFincaService {
         );
       }
 
+      const animalesConImagenesOrdenadas = animales.map((animal) => ({
+        ...animal,
+        profileImages:
+          animal.profileImages?.sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          ) || [],
+      }));
+
       return instanceToPlain({
-        data: animales,
+        data: animalesConImagenesOrdenadas,
         total,
         limit,
         offset,

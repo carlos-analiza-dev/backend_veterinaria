@@ -17,6 +17,7 @@ import { ProduccionGanadera } from '../produccion_ganadera/entities/produccion_g
 import { ProduccionForrajesInsumo } from '../produccion_forrajes_insumos/entities/produccion_forrajes_insumo.entity';
 import { User } from '../auth/entities/auth.entity';
 import { ProduccionApicultura } from 'src/produccion_apicultura/entities/produccion_apicultura.entity';
+import { instanceToPlain } from 'class-transformer';
 
 @Injectable()
 export class ProduccionFincaService {
@@ -87,6 +88,30 @@ export class ProduccionFincaService {
         );
       }
 
+      const hasValidGanadera = ganadera?.tiposProduccion?.length > 0;
+      const hasValidApicultura = apicultura?.numero_colmenas > 0;
+      const hasValidAgricola = agricola?.cultivos?.some(
+        (c) => c.tipo && c.estacionalidad && c.tiempo_estimado_cultivo,
+      );
+      const hasValidForrajes = forrajesInsumo?.insumos?.some(
+        (i) => i.tipo && (i.tipo !== 'Heno' || i.tipo_heno),
+      );
+      const hasValidAlternativa = alternativa?.actividades?.some(
+        (a) => a.tipo && a.cantidad_producida,
+      );
+
+      if (
+        !hasValidGanadera &&
+        !hasValidApicultura &&
+        !hasValidAgricola &&
+        !hasValidForrajes &&
+        !hasValidAlternativa
+      ) {
+        throw new BadRequestException(
+          'Debe proporcionar al menos una sección de producción con datos válidos',
+        );
+      }
+
       const produccion = this.produccion_finca_repo.create({
         finca: { id: fincaId },
         propietario: { id: userId },
@@ -96,79 +121,81 @@ export class ProduccionFincaService {
         produccion_venta: produccion_venta ?? false,
       });
 
-      if (ganadera) {
+      if (hasValidGanadera) {
         produccion.ganadera = await this.produccion_ganadera_repo.save(
           this.produccion_ganadera_repo.create(ganadera),
         );
       }
 
-      if (apicultura) {
+      if (hasValidApicultura) {
         produccion.apicultura = await this.produccion_apicultura_rep.save(
           this.produccion_apicultura_rep.create(apicultura),
         );
       }
 
-      if (agricola?.cultivos) {
-        const cultivos = agricola.cultivos.map((c) => ({
-          tipo: c.tipo,
-          descripcion: c.descripcion,
-          estacionalidad: c.estacionalidad,
-          tiempo_estimado_cultivo: c.tiempo_estimado_cultivo,
-          meses_produccion: c.meses_produccion,
-          cantidad_producida_hectareas: c.cantidad_producida_hectareas,
-          area_cultivada_hectareas: c.area_cultivada_hectareas,
-          metodo_cultivo: c.metodo_cultivo,
-        }));
+      if (hasValidAgricola) {
+        const cultivos = agricola.cultivos
+          .filter(
+            (c) => c.tipo && c.estacionalidad && c.tiempo_estimado_cultivo,
+          )
+          .map((c) => ({
+            tipo: c.tipo,
+            descripcion: c.descripcion,
+            estacionalidad: c.estacionalidad,
+            tiempo_estimado_cultivo: c.tiempo_estimado_cultivo,
+            meses_produccion: c.meses_produccion,
+            cantidad_producida_hectareas: c.cantidad_producida_hectareas,
+          }));
 
-        produccion.agricola = await this.produccion_agricola_repo.save(
-          this.produccion_agricola_repo.create({ cultivos }),
-        );
+        if (cultivos.length > 0) {
+          produccion.agricola = await this.produccion_agricola_repo.save(
+            this.produccion_agricola_repo.create({ cultivos }),
+          );
+        }
       }
 
-      if (forrajesInsumo?.insumos) {
-        const insumos = forrajesInsumo.insumos.map((i) => ({
-          tipo: i.tipo,
-          tipo_heno: i.tipo_heno,
-          estacionalidad_heno: i.estacionalidad_heno,
-          meses_produccion_heno: i.meses_produccion_heno,
-          tiempo_estimado_cultivo: i.tiempo_estimado_cultivo,
-          produccion_manzana: i.produccion_manzana,
-          descripcion_otro: i.descripcion_otro,
-        }));
+      if (hasValidForrajes) {
+        const insumos = forrajesInsumo.insumos
+          .filter((i) => i.tipo && (i.tipo !== 'Heno' || i.tipo_heno))
+          .map((i) => ({
+            tipo: i.tipo,
+            tipo_heno: i.tipo_heno,
+            estacionalidad_heno: i.estacionalidad_heno,
+            meses_produccion_heno: i.meses_produccion_heno,
+            tiempo_estimado_cultivo: i.tiempo_estimado_cultivo,
+            produccion_manzana: i.produccion_manzana,
+            descripcion_otro: i.descripcion_otro,
+          }));
 
-        produccion.forrajesInsumo = await this.produccion_forrajes_rep.save(
-          this.produccion_forrajes_rep.create({ insumos }),
-        );
+        if (insumos.length > 0) {
+          produccion.forrajesInsumo = await this.produccion_forrajes_rep.save(
+            this.produccion_forrajes_rep.create({ insumos }),
+          );
+        }
       }
 
-      if (alternativa?.actividades) {
-        const actividades = alternativa.actividades.map((a) => ({
-          tipo: a.tipo,
-          descripcion: a.descripcion,
-          cantidad_producida: a.cantidad_producida,
-          unidad_medida: a.unidad_medida,
-          ingresos_anuales: a.ingresos_anuales,
-        }));
+      if (hasValidAlternativa) {
+        const actividades = alternativa.actividades
+          .filter((a) => a.tipo && a.cantidad_producida)
+          .map((a) => ({
+            tipo: a.tipo,
 
-        produccion.alternativa = await this.produccion_alternativa_repo.save(
-          this.produccion_alternativa_repo.create({ actividades }),
-        );
+            cantidad_producida: a.cantidad_producida,
+            unidad_medida: a.unidad_medida,
+            ingresos_anuales: a.ingresos_anuales,
+          }));
+
+        if (actividades.length > 0) {
+          produccion.alternativa = await this.produccion_alternativa_repo.save(
+            this.produccion_alternativa_repo.create({ actividades }),
+          );
+        }
       }
 
       await this.produccion_finca_repo.save(produccion);
-
-      return 'Produccion Creada Exitosamente';
+      return 'Producción creada exitosamente';
     } catch (error) {
-      if (
-        error instanceof NotFoundException ||
-        error instanceof ConflictException ||
-        error instanceof BadRequestException
-      ) {
-        throw error;
-      }
-      throw new InternalServerErrorException(
-        'Error al crear la producción: ' + error.message,
-      );
+      throw error;
     }
   }
 
@@ -203,6 +230,30 @@ export class ProduccionFincaService {
       delete produccion.propietario.password;
 
       return produccion;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async GetByUserId(id: string) {
+    try {
+      const propietario_exist = await this.usuario_rep.findOne({
+        where: { id },
+      });
+      if (!propietario_exist)
+        throw new NotFoundException(
+          'No se encontro el propietario de estas producciones',
+        );
+
+      const producciones = await this.produccion_finca_repo.find({
+        where: { propietario: { id } },
+        relations: ['finca', 'propietario'],
+      });
+
+      if (!producciones || producciones.length === 0)
+        throw new NotFoundException('No se encontraron producciones');
+
+      return instanceToPlain(producciones);
     } catch (error) {
       throw error;
     }
@@ -257,8 +308,6 @@ export class ProduccionFincaService {
             tiempo_estimado_cultivo: c.tiempo_estimado_cultivo,
             meses_produccion: c.meses_produccion,
             cantidad_producida_hectareas: c.cantidad_producida_hectareas,
-            area_cultivada_hectareas: c.area_cultivada_hectareas,
-            metodo_cultivo: c.metodo_cultivo,
           }),
         );
 
@@ -302,7 +351,7 @@ export class ProduccionFincaService {
         const actividades =
           updateProduccionFincaDto.alternativa.actividades.map((a) => ({
             tipo: a.tipo,
-            descripcion: a.descripcion,
+
             cantidad_producida: a.cantidad_producida,
             unidad_medida: a.unidad_medida,
             ingresos_anuales: a.ingresos_anuales,

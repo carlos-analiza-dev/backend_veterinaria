@@ -32,6 +32,11 @@ export class ProduccionFincaController {
     return this.produccionFincaService.findOne(id);
   }
 
+  @Get('propietario/:id')
+  GetByUserId(@Param('id') id: string) {
+    return this.produccionFincaService.GetByUserId(id);
+  }
+
   @Patch(':id')
   update(
     @Param('id') id: string,

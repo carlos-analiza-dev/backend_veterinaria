@@ -13,13 +13,7 @@ export class ProduccionAlternativa {
       'Puede contener: Hongos comestibles, Abonos orgánicos, Semillas, Plantas medicinales/aromáticas, Otros',
   })
   actividades: Array<{
-    tipo:
-      | 'Hongos comestibles'
-      | 'Abonos orgánicos'
-      | 'Semillas'
-      | 'Plantas medicinales o aromáticas'
-      | 'Otros';
-    descripcion?: string;
+    tipo: string;
     cantidad_producida?: string;
     unidad_medida?: string;
     ingresos_anuales?: number;
