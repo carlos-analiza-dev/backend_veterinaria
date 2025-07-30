@@ -80,6 +80,10 @@ export class ProduccionGanaderaDto {
   @IsOptional()
   pesoPromedioCerdo?: number;
 
+  @IsString()
+  @IsOptional()
+  edadSacrificioPorcino?: string;
+
   // Campos para carne de ave
   @IsInt()
   @IsOptional()

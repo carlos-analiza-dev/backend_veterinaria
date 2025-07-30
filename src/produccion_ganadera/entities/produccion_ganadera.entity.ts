@@ -76,6 +76,9 @@ export class ProduccionGanadera {
   @Column({ type: 'decimal', nullable: true })
   pesoPromedioCerdo: number;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  edadSacrificioProcino: string;
+
   // Campos para carne de ave
   @Column({ type: 'int', nullable: true })
   mortalidadLoteAves: number;
