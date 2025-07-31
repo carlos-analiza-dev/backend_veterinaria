@@ -252,7 +252,6 @@ export class AnimalFincaService {
         );
       }
 
-      // Primero creamos una consulta básica para el COUNT
       const countQuery = this.animalRepo
         .createQueryBuilder('animal')
         .where('animal.propietario = :propietarioId', { propietarioId });
@@ -273,7 +272,6 @@ export class AnimalFincaService {
 
       const total = await countQuery.getCount();
 
-      // Luego creamos la consulta completa para obtener los datos
       const query = this.animalRepo
         .createQueryBuilder('animal')
         .leftJoinAndSelect('animal.finca', 'finca')
@@ -344,6 +342,7 @@ export class AnimalFincaService {
         .leftJoinAndSelect('animal.especie', 'especie')
         .leftJoinAndSelect('animal.razas', 'razas')
         .leftJoinAndSelect('animal.propietario', 'propietario')
+        .leftJoinAndSelect('animal.profileImages', 'profileImages')
         .where('finca.id = :fincaId', { fincaId })
         .andWhere('especie.id = :especieId', { especieId })
         .andWhere('razas.id = :razaId', { razaId })
@@ -356,7 +355,7 @@ export class AnimalFincaService {
         );
       }
 
-      return animales;
+      return instanceToPlain(animales);
     } catch (error) {
       throw error;
     }

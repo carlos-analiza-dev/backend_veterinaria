@@ -28,7 +28,7 @@ export class ProduccionAgricola {
       | 'Frutas'
       | 'Otros';
     descripcion?: string;
-    estacionalidad: 'Anual' | 'Estacional' | 'Continuo';
+    estacionalidad: string;
     tiempo_estimado_cultivo: string;
     meses_produccion: string[];
     cantidad_producida_hectareas: string;

@@ -22,7 +22,7 @@ export type CultivoTipo =
   | 'Hortalizas'
   | 'Frutas'
   | 'Otros';
-export type Estacionalidad = 'Anual' | 'Estacional' | 'Continuo';
+
 export type MetodoCultivo = 'Tradicional' | 'Orgánico' | 'Invernadero';
 
 export class CultivoDto {
@@ -48,8 +48,9 @@ export class CultivoDto {
   @IsString()
   descripcion?: string;
 
-  @IsEnum(['Anual', 'Estacional', 'Continuo'])
-  estacionalidad: Estacionalidad;
+  @IsOptional()
+  @IsString()
+  estacionalidad: string;
 
   @IsString()
   tiempo_estimado_cultivo: string;

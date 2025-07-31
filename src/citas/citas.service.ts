@@ -242,12 +242,6 @@ export class CitasService {
       ) {
         const horaFinSlot = hora + duracionServicioHoras;
 
-        const seSolapaConAlmuerzo = hora < 13 && horaFinSlot > 12;
-
-        if (seSolapaConAlmuerzo) {
-          continue;
-        }
-
         const horaInicioStr = `${String(hora).padStart(2, '0')}:00`;
         const horaFinStr = `${String(horaFinSlot).padStart(2, '0')}:00`;
 
