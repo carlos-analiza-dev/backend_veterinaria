@@ -8,6 +8,8 @@ import {
   Column,
   Entity,
   JoinColumn,
+  JoinTable,
+  ManyToMany,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
@@ -21,9 +23,19 @@ export class Cita {
   @JoinColumn({ name: 'medicoId' })
   medico: Medico;
 
-  @ManyToOne(() => AnimalFinca)
-  @JoinColumn({ name: 'animalId' })
-  animal: AnimalFinca;
+  @ManyToMany(() => AnimalFinca, { eager: true })
+  @JoinTable({
+    name: 'cita_animales',
+    joinColumn: {
+      name: 'citaId',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'animalId',
+      referencedColumnName: 'id',
+    },
+  })
+  animales: AnimalFinca[];
 
   @ManyToOne(() => FincasGanadero, { eager: true })
   @JoinColumn({ name: 'fincaId' })

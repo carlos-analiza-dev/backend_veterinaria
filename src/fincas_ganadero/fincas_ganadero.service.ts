@@ -41,6 +41,7 @@ export class FincasGanaderoService {
       pais_id,
       latitud,
       longitud,
+      medida_finca,
     } = createFincasGanaderoDto;
 
     try {
@@ -81,6 +82,7 @@ export class FincasGanaderoService {
         municipio,
         latitud,
         longitud,
+        medida_finca,
       });
 
       await this.fincasRepo.save(finca);
@@ -157,6 +159,7 @@ export class FincasGanaderoService {
       pais_id,
       latitud,
       longitud,
+      medida_finca,
     } = updateFincasGanaderoDto;
 
     try {
@@ -217,6 +220,7 @@ export class FincasGanaderoService {
       finca.tipo_explotacion = tipo_explotacion ?? finca.tipo_explotacion;
       finca.ubicacion = ubicacion ?? finca.ubicacion;
       finca.especies_maneja = especies_maneja ?? finca.especies_maneja;
+      finca.medida_finca = medida_finca ?? finca.medida_finca;
       (finca.latitud = latitud ?? finca.latitud),
         (finca.longitud = longitud ?? finca.longitud);
 

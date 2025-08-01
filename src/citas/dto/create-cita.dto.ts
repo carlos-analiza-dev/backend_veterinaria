@@ -1,10 +1,12 @@
 import {
+  IsArray,
   IsDateString,
   IsInt,
   IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Matches,
   Min,
 } from 'class-validator';
@@ -15,9 +17,10 @@ export class CreateCitaDto {
   @IsNotEmpty({ message: 'El campo medico es obligatorio.' })
   medicoId: string;
 
-  @IsString({ message: 'El ID del animal debe ser un UUID válido.' })
-  @IsNotEmpty({ message: 'El campo animal es obligatorio.' })
-  animalId: string;
+  @IsArray({ message: 'animalesId debe ser un arreglo de UUIDs' })
+  @IsUUID('all', { each: true })
+  @IsNotEmpty({ message: 'Debe seleccionar al menos un animal' })
+  animalesId: string[];
 
   @IsString({ message: 'El ID del usuario debe ser un UUID válido.' })
   @IsNotEmpty({

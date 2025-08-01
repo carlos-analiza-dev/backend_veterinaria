@@ -13,6 +13,7 @@ import {
   MoreThan,
   MoreThanOrEqual,
   Not,
+  In,
 } from 'typeorm';
 import { Medico } from 'src/medicos/entities/medico.entity';
 import { HorariosMedico } from 'src/horarios_medicos/entities/horarios_medico.entity';
@@ -52,7 +53,7 @@ export class CitasService {
       fecha,
       horaInicio,
       duracion = 1,
-      animalId,
+      animalesId,
       cantidadAnimales,
       fincaId,
       subServicioId,
@@ -97,11 +98,28 @@ export class CitasService {
       );
     }
 
-    const animal_exist = await this.animal_ganadero.findOne({
-      where: { id: animalId },
-    });
-    if (!animal_exist)
-      throw new NotFoundException('No se encontro el animal seleccionado');
+    if (!Array.isArray(animalesId) || animalesId.length === 0) {
+      throw new BadRequestException('Debe seleccionar al menos un animal');
+    }
+
+    const animales = await this.animal_ganadero.findBy({ id: In(animalesId) });
+
+    if (animales.length !== animalesId.length) {
+      throw new NotFoundException('Uno o más animales no existen');
+    }
+
+    const citasExistentes = await this.citas_repo
+      .createQueryBuilder('cita')
+      .leftJoin('cita.animales', 'animal')
+      .where('cita.fecha = :fecha', { fecha })
+      .andWhere('animal.id IN (:...ids)', { ids: animalesId })
+      .getMany();
+
+    if (citasExistentes.length > 0) {
+      throw new BadRequestException(
+        'Uno o más animales ya tienen una cita agendada para esta fecha.',
+      );
+    }
 
     const finca_exist = await this.finca_ganadero.findOne({
       where: { id: fincaId },
@@ -131,19 +149,6 @@ export class CitasService {
         'El usuario seleccionado no esta disponible en este momento',
       );
 
-    const citaExistente = await this.citas_repo.findOne({
-      where: {
-        animal: { id: animalId },
-        fecha,
-      },
-    });
-
-    if (citaExistente) {
-      throw new BadRequestException(
-        'El animal ya tiene una cita agendada para esta fecha.',
-      );
-    }
-
     if (cantidadAnimales <= 0) {
       throw new BadRequestException(
         'La cantidad de animales debe ser mayor a cero',
@@ -151,7 +156,7 @@ export class CitasService {
     }
 
     const nuevaCita = this.citas_repo.create({
-      animal: animal_exist,
+      animales,
       cantidadAnimales,
       finca: finca_exist,
       medico: medico_exist,
@@ -285,21 +290,53 @@ export class CitasService {
 
       const [citas, total] = await this.citas_repo.findAndCount({
         where: { user: { id } },
-        relations: ['medico', 'animal', 'finca', 'subServicio'],
+        relations: ['medico', 'animales', 'finca', 'subServicio'],
         take: limit,
         skip: offset,
         order: {
           fecha: 'DESC',
         },
       });
+
       if (citas.length === 0)
         throw new NotFoundException(
           'No se encontraron citas disponibles en este momento',
         );
-      const cita_aplanada = instanceToPlain(citas);
+
+      const citasSimplificadas = citas.map((cita) => ({
+        id: cita.id,
+        horaInicio: cita.horaInicio,
+        horaFin: cita.horaFin,
+        fecha: cita.fecha,
+        estado: cita.estado,
+        totalPagar: cita.totalPagar,
+
+        medico: {
+          id: cita.medico.id,
+          nombre: cita.medico.usuario.name,
+          especialidad: cita.medico.especialidad,
+        },
+        animales: cita.animales.map((animal) => ({
+          id: animal.id,
+          identificador: animal.identificador,
+          especie: animal.especie.nombre,
+          razas: animal.razas.map((raza) => raza.nombre),
+        })),
+        finca: {
+          id: cita.finca.id,
+          nombre: cita.finca.nombre_finca,
+          ubicacion: cita.finca.ubicacion,
+        },
+        subServicio: {
+          id: cita.subServicio.id,
+          nombre: cita.subServicio.nombre,
+          precio: cita.subServicio.preciosPorPais[0]?.precio || '0.00',
+        },
+      }));
+
       return {
         total,
-        citas: cita_aplanada,
+        citas: citasSimplificadas,
       };
     } catch (error) {
       throw error;
@@ -310,32 +347,82 @@ export class CitasService {
     const { limit = 10, offset = 0 } = paginationDto;
 
     try {
-      const medico_exist = await this.user_repo.findOne({
-        where: { id },
-      });
-      if (!medico_exist)
-        throw new NotFoundException('No se encontró el medico seleccionado.');
+      const medico_exist = await this.user_repo.findOne({ where: { id } });
+      if (!medico_exist) {
+        throw new NotFoundException('No se encontró el médico seleccionado.');
+      }
 
       const [citas, total] = await this.citas_repo.findAndCount({
         where: {
           medico: { usuario: { id } },
           estado: EstadoCita.PENDIENTE,
         },
-        relations: ['medico', 'animal', 'finca', 'subServicio'],
+        relations: [
+          'medico',
+          'medico.usuario',
+          'animales',
+          'animales.especie',
+          'animales.razas',
+          'animales.propietario',
+          'finca',
+          'subServicio',
+        ],
         take: limit,
         skip: offset,
         order: {
-          fecha: 'DESC',
+          fecha: 'ASC',
+          horaInicio: 'ASC',
         },
       });
-      if (citas.length === 0)
+
+      if (citas.length === 0) {
         throw new NotFoundException(
-          'No se encontraron citas disponibles en este momento',
+          'No se encontraron citas pendientes para este médico',
         );
-      const cita_aplanada = instanceToPlain(citas);
+      }
+
+      const citasFormateadas = citas.map((cita) => ({
+        id: cita.id,
+        fecha: cita.fecha,
+        horaInicio: cita.horaInicio,
+        horaFin: cita.horaFin,
+        duracion: cita.duracion,
+        estado: cita.estado,
+        totalPagar: cita.totalPagar,
+        cantidadAnimales: cita.cantidadAnimales,
+        medico: {
+          id: cita.medico.id,
+          nombre: cita.medico.usuario.name,
+          especialidad: cita.medico.especialidad,
+          telefono: cita.medico.usuario.telefono,
+        },
+        animales: cita.animales.map((animal) => ({
+          id: animal.id,
+          identificador: animal.identificador,
+          especie: animal.especie?.nombre || 'No especificada',
+          razas: animal.razas.map((raza) => raza.nombre),
+          propietario: {
+            name: animal.propietario?.name || 'No especificado',
+            telefono: animal.propietario?.telefono || 'No especificado',
+          },
+        })),
+        finca: {
+          id: cita.finca.id,
+          nombre_finca: cita.finca.nombre_finca,
+          ubicacion: cita.finca.ubicacion,
+          latitud: cita.finca.latitud,
+          longitud: cita.finca.longitud,
+        },
+        subServicio: {
+          id: cita.subServicio.id,
+          nombre: cita.subServicio.nombre,
+          descripcion: cita.subServicio.descripcion,
+        },
+      }));
+
       return {
         total,
-        citas: cita_aplanada,
+        citas: citasFormateadas,
       };
     } catch (error) {
       throw error;
@@ -357,7 +444,7 @@ export class CitasService {
       fecha = cita.fecha,
       horaInicio = cita.horaInicio.split(':').slice(0, 2).join(':'),
       duracion = cita.duracion,
-      animalId,
+      animalesId,
       cantidadAnimales,
       fincaId,
       subServicioId,
@@ -425,12 +512,30 @@ export class CitasService {
       );
     }
 
-    if (animalId) {
-      const animal = await this.animal_ganadero.findOne({
-        where: { id: animalId },
+    if (animalesId && animalesId.length > 0 && Array.isArray(animalesId)) {
+      const animales = await this.animal_ganadero.findBy({
+        id: In(animalesId),
       });
-      if (!animal) throw new NotFoundException('Animal no encontrado');
-      cita.animal = animal;
+      if (animales.length !== animalesId.length) {
+        throw new NotFoundException('Uno o más animales no fueron encontrados');
+      }
+
+      const citasExistentes = await this.citas_repo
+        .createQueryBuilder('cita')
+        .leftJoin('cita.animales', 'animal')
+        .where('cita.fecha = :fecha', { fecha })
+        .andWhere('animal.id IN (:...ids)', { ids: animalesId })
+        .andWhere('cita.id != :id', { id })
+        .getMany();
+
+      if (citasExistentes.length > 0) {
+        throw new BadRequestException(
+          'Uno o más animales ya tienen una cita agendada para esta fecha.',
+        );
+      }
+
+      cita.animales = animales;
+      cita.cantidadAnimales = animales.length;
     }
 
     if (fincaId) {

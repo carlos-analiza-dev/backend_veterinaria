@@ -53,6 +53,10 @@ export class CreateFincasGanaderoDto {
   @Length(0, 50)
   abreviatura?: string;
 
+  @IsString()
+  @Length(0, 50)
+  medida_finca?: string;
+
   @IsUUID()
   departamentoId: string;
 

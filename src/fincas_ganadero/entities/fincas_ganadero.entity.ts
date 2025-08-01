@@ -50,6 +50,9 @@ export class FincasGanadero {
   @Column({ type: 'varchar', length: 255, nullable: true })
   area_ganaderia_hectarea: string;
 
+  @Column({ type: 'varchar', length: 255, default: 'ha' })
+  medida_finca: string;
+
   @Column({ type: 'jsonb', nullable: true })
   tipo_explotacion: { tipo_explotacion: string }[];
 
@@ -75,6 +78,5 @@ export class FincasGanadero {
     cascade: true,
     nullable: true,
   })
-  @JoinColumn()
   produccion: ProduccionFinca;
 }
