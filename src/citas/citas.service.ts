@@ -343,45 +343,52 @@ export class CitasService {
     }
   }
 
-  async findAllByMedico(id: string, paginationDto: PaginationDto) {
+  async findPendienteCitasByUser(userId: string, paginationDto: PaginationDto) {
     const { limit = 10, offset = 0 } = paginationDto;
 
-    try {
-      const medico_exist = await this.user_repo.findOne({ where: { id } });
-      if (!medico_exist) {
-        throw new NotFoundException('No se encontró el médico seleccionado.');
-      }
+    const medicoExists = await this.citas_repo
+      .createQueryBuilder('cita')
+      .innerJoin('cita.medico', 'medico')
+      .innerJoin('medico.usuario', 'usuario')
+      .select('1')
+      .where('usuario.id = :userId', { userId })
+      .limit(1)
+      .getRawOne();
 
-      const [citas, total] = await this.citas_repo.findAndCount({
-        where: {
-          medico: { usuario: { id } },
-          estado: EstadoCita.PENDIENTE,
-        },
-        relations: [
-          'medico',
-          'medico.usuario',
-          'animales',
-          'animales.especie',
-          'animales.razas',
-          'animales.propietario',
-          'finca',
-          'subServicio',
-        ],
-        take: limit,
-        skip: offset,
-        order: {
-          fecha: 'ASC',
-          horaInicio: 'ASC',
-        },
-      });
+    if (!medicoExists) {
+      throw new NotFoundException(
+        'No se encontró un médico asociado a este usuario.',
+      );
+    }
 
-      if (citas.length === 0) {
-        throw new NotFoundException(
-          'No se encontraron citas pendientes para este médico',
-        );
-      }
+    const query = this.citas_repo
+      .createQueryBuilder('cita')
+      .innerJoinAndSelect('cita.medico', 'medico')
+      .innerJoinAndSelect('medico.usuario', 'medicoUsuario')
+      .leftJoinAndSelect('cita.animales', 'animales')
+      .leftJoinAndSelect('animales.especie', 'especie')
+      .leftJoinAndSelect('animales.razas', 'razas')
+      .leftJoinAndSelect('animales.propietario', 'propietario')
+      .leftJoinAndSelect('cita.finca', 'finca')
+      .leftJoinAndSelect('cita.subServicio', 'subServicio')
+      .where('medicoUsuario.id = :userId', { userId })
+      .andWhere('cita.estado = :estado', { estado: EstadoCita.PENDIENTE })
+      .orderBy('cita.fecha', 'ASC')
+      .addOrderBy('cita.horaInicio', 'ASC')
+      .take(limit)
+      .skip(offset);
 
-      const citasFormateadas = citas.map((cita) => ({
+    const [citas, total] = await query.getManyAndCount();
+
+    if (citas.length === 0) {
+      throw new NotFoundException(
+        'No se encontraron citas confirmadas para este usuario médico',
+      );
+    }
+
+    return {
+      total,
+      citas: citas.map((cita) => ({
         id: cita.id,
         fecha: cita.fecha,
         horaInicio: cita.horaInicio,
@@ -396,37 +403,130 @@ export class CitasService {
           especialidad: cita.medico.especialidad,
           telefono: cita.medico.usuario.telefono,
         },
-        animales: cita.animales.map((animal) => ({
-          id: animal.id,
-          identificador: animal.identificador,
-          especie: animal.especie?.nombre || 'No especificada',
-          razas: animal.razas.map((raza) => raza.nombre),
-          propietario: {
-            name: animal.propietario?.name || 'No especificado',
-            telefono: animal.propietario?.telefono || 'No especificado',
-          },
-        })),
-        finca: {
-          id: cita.finca.id,
-          nombre_finca: cita.finca.nombre_finca,
-          ubicacion: cita.finca.ubicacion,
-          latitud: cita.finca.latitud,
-          longitud: cita.finca.longitud,
-        },
-        subServicio: {
-          id: cita.subServicio.id,
-          nombre: cita.subServicio.nombre,
-          descripcion: cita.subServicio.descripcion,
-        },
-      }));
+        animales:
+          cita.animales?.map((animal) => ({
+            id: animal.id,
+            identificador: animal.identificador,
+            especie: animal.especie?.nombre || 'No especificada',
+            razas: animal.razas?.map((raza) => raza.nombre) || [],
+            propietario: animal.propietario
+              ? {
+                  name: animal.propietario.name || 'No especificado',
+                  telefono: animal.propietario.telefono || 'No especificado',
+                }
+              : null,
+          })) || [],
+        finca: cita.finca
+          ? {
+              id: cita.finca.id,
+              nombre_finca: cita.finca.nombre_finca,
+              ubicacion: cita.finca.ubicacion,
+              latitud: cita.finca.latitud,
+              longitud: cita.finca.longitud,
+            }
+          : null,
+        subServicio: cita.subServicio
+          ? {
+              id: cita.subServicio.id,
+              nombre: cita.subServicio.nombre,
+              descripcion: cita.subServicio.descripcion,
+            }
+          : null,
+      })),
+    };
+  }
 
-      return {
-        total,
-        citas: citasFormateadas,
-      };
-    } catch (error) {
-      throw error;
+  async findConfirmedCitasByUser(userId: string, paginationDto: PaginationDto) {
+    const { limit = 10, offset = 0 } = paginationDto;
+
+    const medicoExists = await this.citas_repo
+      .createQueryBuilder('cita')
+      .innerJoin('cita.medico', 'medico')
+      .innerJoin('medico.usuario', 'usuario')
+      .select('1')
+      .where('usuario.id = :userId', { userId })
+      .limit(1)
+      .getRawOne();
+
+    if (!medicoExists) {
+      throw new NotFoundException(
+        'No se encontró un médico asociado a este usuario.',
+      );
     }
+
+    const query = this.citas_repo
+      .createQueryBuilder('cita')
+      .innerJoinAndSelect('cita.medico', 'medico')
+      .innerJoinAndSelect('medico.usuario', 'medicoUsuario')
+      .leftJoinAndSelect('cita.animales', 'animales')
+      .leftJoinAndSelect('animales.especie', 'especie')
+      .leftJoinAndSelect('animales.razas', 'razas')
+      .leftJoinAndSelect('animales.propietario', 'propietario')
+      .leftJoinAndSelect('cita.finca', 'finca')
+      .leftJoinAndSelect('cita.subServicio', 'subServicio')
+      .where('medicoUsuario.id = :userId', { userId })
+      .andWhere('cita.estado = :estado', { estado: EstadoCita.CONFIRMADA })
+      .orderBy('cita.fecha', 'ASC')
+      .addOrderBy('cita.horaInicio', 'ASC')
+      .take(limit)
+      .skip(offset);
+
+    const [citas, total] = await query.getManyAndCount();
+
+    if (citas.length === 0) {
+      throw new NotFoundException(
+        'No se encontraron citas confirmadas para este usuario médico',
+      );
+    }
+
+    return {
+      total,
+      citas: citas.map((cita) => ({
+        id: cita.id,
+        fecha: cita.fecha,
+        horaInicio: cita.horaInicio,
+        horaFin: cita.horaFin,
+        duracion: cita.duracion,
+        estado: cita.estado,
+        totalPagar: cita.totalPagar,
+        cantidadAnimales: cita.cantidadAnimales,
+        medico: {
+          id: cita.medico.id,
+          nombre: cita.medico.usuario.name,
+          especialidad: cita.medico.especialidad,
+          telefono: cita.medico.usuario.telefono,
+        },
+        animales:
+          cita.animales?.map((animal) => ({
+            id: animal.id,
+            identificador: animal.identificador,
+            especie: animal.especie?.nombre || 'No especificada',
+            razas: animal.razas?.map((raza) => raza.nombre) || [],
+            propietario: animal.propietario
+              ? {
+                  name: animal.propietario.name || 'No especificado',
+                  telefono: animal.propietario.telefono || 'No especificado',
+                }
+              : null,
+          })) || [],
+        finca: cita.finca
+          ? {
+              id: cita.finca.id,
+              nombre_finca: cita.finca.nombre_finca,
+              ubicacion: cita.finca.ubicacion,
+              latitud: cita.finca.latitud,
+              longitud: cita.finca.longitud,
+            }
+          : null,
+        subServicio: cita.subServicio
+          ? {
+              id: cita.subServicio.id,
+              nombre: cita.subServicio.nombre,
+              descripcion: cita.subServicio.descripcion,
+            }
+          : null,
+      })),
+    };
   }
 
   async update(id: string, updateCitaDto: UpdateCitaDto) {

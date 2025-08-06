@@ -49,7 +49,15 @@ export class CitasController {
     @Param('id') id: string,
     @Query() paginationDto: PaginationDto,
   ) {
-    return this.citasService.findAllByMedico(id, paginationDto);
+    return this.citasService.findPendienteCitasByUser(id, paginationDto);
+  }
+
+  @Get('medico/confirmada/:id')
+  findAllByMedicoCitaConfirm(
+    @Param('id') id: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.citasService.findConfirmedCitasByUser(id, paginationDto);
   }
 
   /*  @Get(':id')
