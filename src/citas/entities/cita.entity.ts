@@ -64,6 +64,9 @@ export class Cita {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   totalPagar: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  totalFinal: number;
+
   @Column({ type: 'int', default: 1 })
   duracion: number;
 

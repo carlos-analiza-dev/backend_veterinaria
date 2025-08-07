@@ -60,6 +60,14 @@ export class CitasController {
     return this.citasService.findConfirmedCitasByUser(id, paginationDto);
   }
 
+  @Get('medico/completadas/:id')
+  findAllByMedicoCitaCompleted(
+    @Param('id') id: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.citasService.findAllByMedicoCitaCompleted(id, paginationDto);
+  }
+
   /*  @Get(':id')
   findOne(@Param('id') id: string) {
     return this.citasService.findOne(+id);

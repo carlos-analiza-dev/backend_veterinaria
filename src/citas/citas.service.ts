@@ -58,6 +58,7 @@ export class CitasService {
       fincaId,
       subServicioId,
       totalPagar,
+      totalFinal,
       usuarioId,
     } = createCitaDto;
 
@@ -166,6 +167,7 @@ export class CitasService {
       horaFin,
       duracion,
       totalPagar,
+      totalFinal,
       user: usuario_exist,
     });
 
@@ -396,6 +398,7 @@ export class CitasService {
         duracion: cita.duracion,
         estado: cita.estado,
         totalPagar: cita.totalPagar,
+        totalFinal: cita.totalFinal,
         cantidadAnimales: cita.cantidadAnimales,
         medico: {
           id: cita.medico.id,
@@ -489,6 +492,104 @@ export class CitasService {
         duracion: cita.duracion,
         estado: cita.estado,
         totalPagar: cita.totalPagar,
+        totalFinal: cita.totalFinal,
+        cantidadAnimales: cita.cantidadAnimales,
+        medico: {
+          id: cita.medico.id,
+          nombre: cita.medico.usuario.name,
+          especialidad: cita.medico.especialidad,
+          telefono: cita.medico.usuario.telefono,
+        },
+        animales:
+          cita.animales?.map((animal) => ({
+            id: animal.id,
+            identificador: animal.identificador,
+            especie: animal.especie?.nombre || 'No especificada',
+            razas: animal.razas?.map((raza) => raza.nombre) || [],
+            propietario: animal.propietario
+              ? {
+                  name: animal.propietario.name || 'No especificado',
+                  telefono: animal.propietario.telefono || 'No especificado',
+                }
+              : null,
+          })) || [],
+        finca: cita.finca
+          ? {
+              id: cita.finca.id,
+              nombre_finca: cita.finca.nombre_finca,
+              ubicacion: cita.finca.ubicacion,
+              latitud: cita.finca.latitud,
+              longitud: cita.finca.longitud,
+            }
+          : null,
+        subServicio: cita.subServicio
+          ? {
+              id: cita.subServicio.id,
+              nombre: cita.subServicio.nombre,
+              descripcion: cita.subServicio.descripcion,
+            }
+          : null,
+      })),
+    };
+  }
+
+  async findAllByMedicoCitaCompleted(
+    userId: string,
+    paginationDto: PaginationDto,
+  ) {
+    const { limit = 10, offset = 0 } = paginationDto;
+
+    const medicoExists = await this.citas_repo
+      .createQueryBuilder('cita')
+      .innerJoin('cita.medico', 'medico')
+      .innerJoin('medico.usuario', 'usuario')
+      .select('1')
+      .where('usuario.id = :userId', { userId })
+      .limit(1)
+      .getRawOne();
+
+    if (!medicoExists) {
+      throw new NotFoundException(
+        'No se encontró un médico asociado a este usuario.',
+      );
+    }
+
+    const query = this.citas_repo
+      .createQueryBuilder('cita')
+      .innerJoinAndSelect('cita.medico', 'medico')
+      .innerJoinAndSelect('medico.usuario', 'medicoUsuario')
+      .leftJoinAndSelect('cita.animales', 'animales')
+      .leftJoinAndSelect('animales.especie', 'especie')
+      .leftJoinAndSelect('animales.razas', 'razas')
+      .leftJoinAndSelect('animales.propietario', 'propietario')
+      .leftJoinAndSelect('cita.finca', 'finca')
+      .leftJoinAndSelect('cita.subServicio', 'subServicio')
+      .where('medicoUsuario.id = :userId', { userId })
+      .andWhere('cita.estado = :estado', { estado: EstadoCita.COMPLETADA })
+      .orderBy('cita.fecha', 'ASC')
+      .addOrderBy('cita.horaInicio', 'ASC')
+      .take(limit)
+      .skip(offset);
+
+    const [citas, total] = await query.getManyAndCount();
+
+    if (citas.length === 0) {
+      throw new NotFoundException(
+        'No se encontraron citas confirmadas para este usuario médico',
+      );
+    }
+
+    return {
+      total,
+      citas: citas.map((cita) => ({
+        id: cita.id,
+        fecha: cita.fecha,
+        horaInicio: cita.horaInicio,
+        horaFin: cita.horaFin,
+        duracion: cita.duracion,
+        estado: cita.estado,
+        totalPagar: cita.totalPagar,
+        totalFinal: cita.totalFinal,
         cantidadAnimales: cita.cantidadAnimales,
         medico: {
           id: cita.medico.id,
@@ -549,6 +650,7 @@ export class CitasService {
       fincaId,
       subServicioId,
       totalPagar,
+      totalFinal,
       estado,
     } = updateCitaDto;
 
@@ -660,6 +762,7 @@ export class CitasService {
     cita.horaFin = nuevaHoraFin;
     cita.duracion = duracion;
     cita.totalPagar = totalPagar ?? cita.totalPagar;
+    cita.totalFinal = totalFinal ?? cita.totalFinal;
     cita.cantidadAnimales = cantidadAnimales ?? cita.cantidadAnimales;
     cita.estado = estado;
 

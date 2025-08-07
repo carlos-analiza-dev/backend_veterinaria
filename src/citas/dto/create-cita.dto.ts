@@ -64,6 +64,10 @@ export class CreateCitaDto {
   @Min(0, { message: 'El total a pagar debe ser mayor o igual a 0.' })
   totalPagar: number;
 
+  @IsNumber()
+  @Min(0, { message: 'El total final debe ser mayor o igual a 0.' })
+  totalFinal: number;
+
   @IsInt({ message: 'La duración debe ser un número entero (en horas).' })
   @IsOptional()
   @Min(1, { message: 'La duración mínima de una cita debe ser 1 hora.' })

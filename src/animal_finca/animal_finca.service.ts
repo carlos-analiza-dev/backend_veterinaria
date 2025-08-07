@@ -15,6 +15,7 @@ import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
 import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity';
 import { RazaAnimal } from 'src/raza_animal/entities/raza_animal.entity';
+import { UpdateDeathStatusDto } from './dto/update-death-status.dto';
 
 @Injectable()
 export class AnimalFincaService {
@@ -254,7 +255,10 @@ export class AnimalFincaService {
 
       const countQuery = this.animalRepo
         .createQueryBuilder('animal')
-        .where('animal.propietario = :propietarioId', { propietarioId });
+        .where('animal.propietario = :propietarioId', { propietarioId })
+        .andWhere('animal.animal_muerte = :animal_muerte', {
+          animal_muerte: false,
+        });
 
       if (fincaId) {
         countQuery.andWhere('animal.finca = :fincaId', { fincaId });
@@ -281,7 +285,10 @@ export class AnimalFincaService {
         .leftJoinAndSelect('animal.razas_madre', 'razas_madre')
         .leftJoinAndSelect('animal.razas_padre', 'razas_padre')
         .leftJoinAndSelect('animal.profileImages', 'profileImages')
-        .where('animal.propietario = :propietarioId', { propietarioId });
+        .where('animal.propietario = :propietarioId', { propietarioId })
+        .andWhere('animal.animal_muerte = :animal_muerte', {
+          animal_muerte: false,
+        });
 
       if (fincaId) {
         query.andWhere('animal.finca = :fincaId', { fincaId });
@@ -639,6 +646,29 @@ export class AnimalFincaService {
       message: 'Animal actualizado correctamente',
       animal: instanceToPlain(animal),
     };
+  }
+
+  async updateDeathStatus(
+    id: string,
+    updateData: UpdateDeathStatusDto,
+  ): Promise<AnimalFinca> {
+    const { animal_muerte, razon_muerte } = updateData;
+
+    const animal = await this.animalRepo.findOne({ where: { id } });
+    if (!animal) {
+      throw new NotFoundException(`Animal con ID ${id} no encontrado`);
+    }
+
+    if (animal_muerte && !razon_muerte) {
+      throw new BadRequestException(
+        'Debe proporcionar una razón de muerte cuando el animal ha fallecido',
+      );
+    }
+
+    animal.animal_muerte = animal_muerte;
+    animal.razon_muerte = animal_muerte ? razon_muerte : 'N/D';
+
+    return await this.animalRepo.save(animal);
   }
 
   remove(id: number) {
