@@ -26,9 +26,5 @@ export class CreateInsumoDto {
 
   @IsBoolean()
   @IsOptional()
-  esInsumo: boolean;
-
-  @IsBoolean()
-  @IsOptional()
   disponible: boolean;
 }

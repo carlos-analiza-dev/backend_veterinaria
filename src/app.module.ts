@@ -33,6 +33,8 @@ import { ProduccionAlternativaModule } from './produccion_alternativa/produccion
 import { ProduccionApiculturaModule } from './produccion_apicultura/produccion_apicultura.module';
 import { InventarioModule } from './inventario/inventario.module';
 import { InsumosModule } from './insumos/insumos.module';
+import { GeneratePdfModule } from './generate_pdf/generate_pdf.module';
+import { CitaInsumosModule } from './cita_insumos/cita_insumos.module';
 
 @Module({
   imports: [
@@ -94,6 +96,10 @@ import { InsumosModule } from './insumos/insumos.module';
     InventarioModule,
 
     InsumosModule,
+
+    GeneratePdfModule,
+
+    CitaInsumosModule,
   ],
   controllers: [],
   providers: [],

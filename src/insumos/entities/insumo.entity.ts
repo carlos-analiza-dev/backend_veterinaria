@@ -1,8 +1,10 @@
+import { CitaInsumo } from 'src/cita_insumos/entities/cita_insumo.entity';
 import { Inventario } from 'src/inventario/entities/inventario.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -29,15 +31,15 @@ export class Insumo {
   unidadMedida: string;
 
   @Column({ default: true })
-  esInsumo: boolean;
-
-  @Column({ default: true })
   disponible: boolean;
 
   @OneToOne(() => Inventario, (inventario) => inventario.insumo, {
     eager: true,
   })
   inventario: Inventario;
+
+  @OneToMany(() => CitaInsumo, (citaInsumo) => citaInsumo.insumo)
+  citas: CitaInsumo[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

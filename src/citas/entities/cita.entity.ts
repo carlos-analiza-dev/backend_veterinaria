@@ -1,5 +1,6 @@
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { User } from 'src/auth/entities/auth.entity';
+import { CitaInsumo } from 'src/cita_insumos/entities/cita_insumo.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { EstadoCita } from 'src/interfaces/estados_citas';
 import { Medico } from 'src/medicos/entities/medico.entity';
@@ -11,6 +12,7 @@ import {
   JoinTable,
   ManyToMany,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -40,6 +42,9 @@ export class Cita {
   @ManyToOne(() => FincasGanadero, { eager: true })
   @JoinColumn({ name: 'fincaId' })
   finca: FincasGanadero;
+
+  @OneToMany(() => CitaInsumo, (citaInsumo) => citaInsumo.cita, { eager: true })
+  insumosUsados: CitaInsumo[];
 
   @ManyToOne(() => SubServicio)
   @JoinColumn({ name: 'subServicioId' })
