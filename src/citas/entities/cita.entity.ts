@@ -1,6 +1,7 @@
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { CitaInsumo } from 'src/cita_insumos/entities/cita_insumo.entity';
+import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { EstadoCita } from 'src/interfaces/estados_citas';
 import { Medico } from 'src/medicos/entities/medico.entity';
@@ -45,6 +46,11 @@ export class Cita {
 
   @OneToMany(() => CitaInsumo, (citaInsumo) => citaInsumo.cita, { eager: true })
   insumosUsados: CitaInsumo[];
+
+  @OneToMany(() => CitaProducto, (citaProducto) => citaProducto.cita, {
+    eager: true,
+  })
+  productosUsados: CitaProducto[];
 
   @ManyToOne(() => SubServicio)
   @JoinColumn({ name: 'subServicioId' })

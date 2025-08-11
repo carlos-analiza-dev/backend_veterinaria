@@ -17,4 +17,14 @@ export class CreateServiciosPaiDto {
   @IsNumber()
   @Min(0, { message: 'El tiempo debe ser un número positivo.' })
   tiempo?: number;
+
+  @IsNumber()
+  @Min(0, { message: 'La cantidad minima debe ser un número positivo.' })
+  @IsNotEmpty({ message: 'La cantidad minima no debe ser vacio' })
+  cantidadMin: number;
+
+  @IsNumber()
+  @Min(0, { message: 'La cantidad minima debe ser un número positivo.' })
+  @IsOptional()
+  cantidadMax: number;
 }

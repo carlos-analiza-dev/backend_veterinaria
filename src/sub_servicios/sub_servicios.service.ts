@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SubServicio } from './entities/sub_servicio.entity';
 import { Repository } from 'typeorm';
 import { Servicio } from 'src/servicios/entities/servicio.entity';
+import { Pai } from 'src/pais/entities/pai.entity';
 
 @Injectable()
 export class SubServiciosService {
@@ -17,6 +18,8 @@ export class SubServiciosService {
     private readonly sub_servicio_repo: Repository<SubServicio>,
     @InjectRepository(Servicio)
     private readonly servicioRepo: Repository<Servicio>,
+    @InjectRepository(Pai)
+    private readonly paisRepo: Repository<Pai>,
   ) {}
   async create(createSubServicioDto: CreateSubServicioDto) {
     const { nombre, descripcion, servicioId, isActive } = createSubServicioDto;
@@ -60,6 +63,60 @@ export class SubServiciosService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async findAllPreciosCantidadAnimales(
+    servicioId: string,
+    paisId: string,
+    cantidadAnimales?: number,
+  ) {
+    const pais = await this.paisRepo.findOne({
+      where: { id: paisId },
+    });
+    if (!pais) {
+      throw new NotFoundException('No se encontró el país seleccionado');
+    }
+
+    const subServicio = await this.sub_servicio_repo.findOne({
+      where: { id: servicioId },
+      relations: ['preciosPorPais', 'preciosPorPais.pais'],
+    });
+
+    if (!subServicio) {
+      throw new NotFoundException('No se encontró el servicio seleccionado');
+    }
+
+    subServicio.preciosPorPais = subServicio.preciosPorPais.filter(
+      (precio) => precio.pais.id === paisId,
+    );
+
+    if (subServicio.preciosPorPais.length === 0) {
+      throw new BadRequestException(
+        'No se encontraron precios configurados para este servicio en el país seleccionado',
+      );
+    }
+
+    if (cantidadAnimales !== undefined) {
+      subServicio.preciosPorPais = subServicio.preciosPorPais.filter(
+        (precio) => {
+          const min = precio.cantidadMin ?? 0;
+          const max = precio.cantidadMax ?? Infinity;
+          return cantidadAnimales >= min && cantidadAnimales <= max;
+        },
+      );
+
+      if (subServicio.preciosPorPais.length === 0) {
+        throw new BadRequestException(
+          'No se encontraron precios para la cantidad de animales especificada',
+        );
+      }
+    }
+
+    if (cantidadAnimales !== undefined) {
+      return subServicio;
+    }
+
+    return subServicio;
   }
 
   async findOne(id: string) {

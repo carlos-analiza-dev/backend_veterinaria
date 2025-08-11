@@ -24,7 +24,14 @@ export class ServiciosPaisService {
     private readonly subservicioRepo: Repository<SubServicio>,
   ) {}
   async create(createServiciosPaiDto: CreateServiciosPaiDto) {
-    const { sub_servicio_id, paisId, precio, tiempo } = createServiciosPaiDto;
+    const {
+      sub_servicio_id,
+      paisId,
+      precio,
+      tiempo,
+      cantidadMin,
+      cantidadMax,
+    } = createServiciosPaiDto;
 
     try {
       const pais_exist = await this.paisRepo.findOne({ where: { id: paisId } });
@@ -43,25 +50,13 @@ export class ServiciosPaisService {
         );
       }
 
-      const existente = await this.servicio_percios_Repo.findOne({
-        where: {
-          subServicio: { id: sub_servicio_id },
-          pais: { id: paisId },
-        },
-        relations: ['subServicio', 'pais'],
-      });
-
-      if (existente) {
-        throw new BadGatewayException(
-          `Ya existe un precio asignado para el subservicio "${servicio_exist.nombre}" en el país "${pais_exist.nombre}".`,
-        );
-      }
-
       const servicio = this.servicio_percios_Repo.create({
         pais: pais_exist,
         subServicio: servicio_exist,
         precio,
         tiempo,
+        cantidadMin,
+        cantidadMax,
       });
 
       await this.servicio_percios_Repo.save(servicio);
@@ -103,7 +98,8 @@ export class ServiciosPaisService {
       throw new NotFoundException(`No se encontró el servicio con id ${id}`);
     }
 
-    const { paisId, precio, tiempo } = updateServiciosPaiDto;
+    const { paisId, precio, tiempo, cantidadMin, cantidadMax } =
+      updateServiciosPaiDto;
 
     if (paisId) {
       const pais_exist = await this.paisRepo.findOne({ where: { id: paisId } });
@@ -116,6 +112,10 @@ export class ServiciosPaisService {
     if (precio !== undefined) servicio.precio = precio;
 
     if (tiempo !== undefined) servicio.tiempo = tiempo;
+
+    if (cantidadMin !== undefined) servicio.cantidadMin = cantidadMin;
+
+    if (cantidadMax !== undefined) servicio.cantidadMax = cantidadMax;
 
     await this.servicio_percios_Repo.save(servicio);
 

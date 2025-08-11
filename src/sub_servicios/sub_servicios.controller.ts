@@ -25,6 +25,19 @@ export class SubServiciosController {
     return this.subServiciosService.findAll(servicioId);
   }
 
+  @Get('servicio-pais/:servicioId/:paisId/:cantidadAnimales')
+  findAllPreciosCantidadAnimales(
+    @Param('servicioId') servicioId: string,
+    @Param('paisId') paisId: string,
+    @Param('cantidadAnimales') cantidadAnimales: number,
+  ) {
+    return this.subServiciosService.findAllPreciosCantidadAnimales(
+      servicioId,
+      paisId,
+      cantidadAnimales,
+    );
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.subServiciosService.findOne(id);

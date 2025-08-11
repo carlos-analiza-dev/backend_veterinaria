@@ -25,4 +25,10 @@ export class ServiciosPai {
 
   @Column({ type: 'int', nullable: true })
   tiempo?: number;
+
+  @Column({ type: 'int', default: 1 })
+  cantidadMin: number;
+
+  @Column({ type: 'int', nullable: true })
+  cantidadMax: number;
 }
