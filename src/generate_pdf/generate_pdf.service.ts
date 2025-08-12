@@ -17,6 +17,7 @@ export class GeneratePdfService {
 
   async generarFactura(id: string, @Res() res: Response) {
     try {
+      let totalMateriales = 0;
       const cita = await this.citaRepo.findOne({
         where: { id },
         relations: [
@@ -93,15 +94,20 @@ export class GeneratePdfService {
       doc.text(`Duración: ${cita.duracion} hora(as)`);
       doc.moveDown();
 
-      if (cita.insumosUsados && cita.insumosUsados.length > 0) {
-        doc.fontSize(14).text('Insumos Utilizados', { underline: true });
+      if (
+        (cita.insumosUsados && cita.insumosUsados.length > 0) ||
+        (cita.productosUsados && cita.productosUsados.length > 0)
+      ) {
+        doc.fontSize(14).text('Materiales Utilizados', { underline: true });
         doc.moveDown(0.5);
 
         const startY = doc.y;
         let currentY = startY;
 
         doc.font('Helvetica-Bold');
-        doc.text('Descripción', 50, currentY);
+        doc.fontSize(10);
+        doc.text('Tipo', 50, currentY);
+        doc.text('Descripción', 120, currentY);
         doc.text('Cantidad', 250, currentY);
         doc.text('P. Unitario', 350, currentY);
         doc.text('Subtotal', 450, currentY);
@@ -111,37 +117,88 @@ export class GeneratePdfService {
         doc.moveTo(50, currentY).lineTo(550, currentY).stroke();
         currentY += 10;
 
-        let totalInsumos = 0;
-        cita.insumosUsados.forEach((insumo) => {
-          const precioUnitario =
-            typeof insumo.precioUnitario === 'string'
-              ? parseFloat(insumo.precioUnitario)
-              : insumo.precioUnitario;
+        if (cita.insumosUsados && cita.insumosUsados.length > 0) {
+          cita.insumosUsados.forEach((insumo) => {
+            const precioUnitario =
+              typeof insumo.precioUnitario === 'string'
+                ? parseFloat(insumo.precioUnitario)
+                : insumo.precioUnitario;
 
-          const subtotal = insumo.cantidad * precioUnitario;
-          totalInsumos += subtotal;
+            const subtotal = insumo.cantidad * precioUnitario;
+            totalMateriales += subtotal;
 
-          doc.text(insumo.insumo.nombre, 50, currentY);
-          doc.text(insumo.cantidad.toString(), 250, currentY);
-          doc.text(
-            `${cita.user.pais.simbolo_moneda}${precioUnitario.toFixed(2)}`,
-            350,
-            currentY,
-          );
-          doc.text(
-            `${cita.user.pais.simbolo_moneda}${subtotal.toFixed(2)}`,
-            450,
-            currentY,
-          );
-          currentY += 20;
-        });
+            doc.text('Insumo', 50, currentY);
+            doc.text(insumo.insumo.nombre, 120, currentY);
+            doc.text(insumo.cantidad.toString(), 250, currentY, {
+              width: 50,
+              align: 'center',
+            });
+            doc.text(
+              `${cita.user.pais.simbolo_moneda}${precioUnitario.toFixed(2)}`,
+              350,
+              currentY,
+              {
+                width: 50,
+                align: 'center',
+              },
+            );
+            doc.text(
+              `${cita.user.pais.simbolo_moneda}${subtotal.toFixed(2)}`,
+              450,
+              currentY,
+              {
+                width: 50,
+                align: 'center',
+              },
+            );
+            currentY += 20;
+          });
+        }
+
+        if (cita.productosUsados && cita.productosUsados.length > 0) {
+          cita.productosUsados.forEach((producto) => {
+            const precioUnitario =
+              typeof producto.precioUnitario === 'string'
+                ? parseFloat(producto.precioUnitario)
+                : producto.precioUnitario;
+
+            const subtotal = producto.cantidad * precioUnitario;
+            totalMateriales += subtotal;
+
+            doc.text('Producto', 50, currentY);
+            doc.text(producto.producto.nombre, 120, currentY);
+            doc.text(producto.cantidad.toString(), 250, currentY, {
+              width: 50,
+              align: 'center',
+            });
+            doc.text(
+              `${cita.user.pais.simbolo_moneda}${precioUnitario.toFixed(2)}`,
+              350,
+              currentY,
+              {
+                width: 50,
+                align: 'center',
+              },
+            );
+            doc.text(
+              `${cita.user.pais.simbolo_moneda}${subtotal.toFixed(2)}`,
+              450,
+              currentY,
+              {
+                width: 50,
+                align: 'center',
+              },
+            );
+            currentY += 20;
+          });
+        }
 
         doc.moveTo(50, currentY).lineTo(550, currentY).stroke();
         currentY += 10;
         doc.font('Helvetica-Bold');
-        doc.text('Total Insumos:', 350, currentY);
+        doc.text('Total Materiales:', 335, currentY);
         doc.text(
-          `${cita.user.pais.simbolo_moneda}${totalInsumos.toFixed(2)}`,
+          `${cita.user.pais.simbolo_moneda}${totalMateriales.toFixed(2)}`,
           450,
           currentY,
         );
@@ -150,8 +207,8 @@ export class GeneratePdfService {
 
         doc.y = currentY;
       } else {
-        doc.fontSize(14).text('Insumos Utilizados', { underline: true });
-        doc.fontSize(12).text('No se utilizaron insumos en esta cita');
+        doc.fontSize(14).text('Materiales Utilizados', { underline: true });
+        doc.fontSize(12).text('No se utilizaron materiales en esta cita');
         doc.moveDown();
       }
 
@@ -166,21 +223,12 @@ export class GeneratePdfService {
         { align: 'right' },
       );
 
-      if (cita.insumosUsados && cita.insumosUsados.length > 0) {
-        const totalInsumos = cita.insumosUsados.reduce((sum, insumo) => {
-          const precio =
-            typeof insumo.precioUnitario === 'string'
-              ? parseFloat(insumo.precioUnitario)
-              : insumo.precioUnitario;
-          return sum + insumo.cantidad * precio;
-        }, 0);
+      if (totalMateriales > 0) {
         doc.text(
-          `Total insumos: ${
+          `Total materiales: ${
             cita.user.pais.simbolo_moneda
-          }${totalInsumos.toFixed(2)}`,
-          {
-            align: 'right',
-          },
+          }${totalMateriales.toFixed(2)}`,
+          { align: 'right' },
         );
       }
 
