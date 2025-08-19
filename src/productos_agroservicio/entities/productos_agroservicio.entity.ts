@@ -33,14 +33,14 @@ export class ProductosAgroservicio {
   @Column({ default: true })
   disponible: boolean;
 
-  @OneToOne(() => InventarioProducto, (inventario) => inventario.producto, {
+  /* @OneToOne(() => InventarioProducto, (inventario) => inventario.producto, {
     eager: true,
   })
   inventario: InventarioProducto;
 
   @OneToMany(() => CitaProducto, (citaProducto) => citaProducto.producto)
   citas: CitaProducto[];
-
+ */
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

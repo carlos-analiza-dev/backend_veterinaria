@@ -191,17 +191,40 @@ export class MedicosService {
       especialidad,
       isActive,
       numero_colegiado,
+      usuarioId,
       universidad_formacion,
     } = updateMedicoDto;
 
     try {
       const medico = await this.medico_repo.findOne({
         where: { id },
-        relations: ['areas_trabajo'],
+        relations: ['areas_trabajo', 'usuario'],
       });
 
       if (!medico) {
         throw new NotFoundException('No se encontró el médico a actualizar');
+      }
+
+      if (usuarioId) {
+        const nuevoUsuario = await this.user_repo.findOne({
+          where: { id: usuarioId },
+        });
+
+        if (!nuevoUsuario) {
+          throw new NotFoundException('El nuevo usuario no fue encontrado');
+        }
+
+        const medicoExistente = await this.medico_repo.findOne({
+          where: { usuario: { id: usuarioId } },
+        });
+
+        if (medicoExistente && medicoExistente.id !== id) {
+          throw new ConflictException(
+            'El usuario ya está asignado a otro médico',
+          );
+        }
+
+        medico.usuario = nuevoUsuario;
       }
 
       let servicios = medico.areas_trabajo;

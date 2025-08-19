@@ -9,7 +9,9 @@ import { Pai } from 'src/pais/entities/pai.entity';
 
 @Module({
   controllers: [SubServiciosController],
-  imports: [TypeOrmModule.forFeature([SubServicio, Servicio, Pai])],
+  imports: [
+    TypeOrmModule.forFeature([SubServicio, Servicio, Pai, ServiciosPai]),
+  ],
   providers: [SubServiciosService],
 })
 export class SubServiciosModule {}

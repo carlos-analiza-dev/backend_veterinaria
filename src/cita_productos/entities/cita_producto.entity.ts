@@ -1,5 +1,6 @@
 import { Cita } from 'src/citas/entities/cita.entity';
 import { ProductosAgroservicio } from 'src/productos_agroservicio/entities/productos_agroservicio.entity';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import {
   Column,
   Entity,
@@ -17,11 +18,11 @@ export class CitaProducto {
   @JoinColumn({ name: 'citaId' })
   cita: Cita;
 
-  @ManyToOne(() => ProductosAgroservicio, (insumo) => insumo.citas, {
+  @ManyToOne(() => SubServicio, (producto) => producto.citas, {
     eager: true,
   })
   @JoinColumn({ name: 'productoId' })
-  producto: ProductosAgroservicio;
+  producto: SubServicio;
 
   @Column({ type: 'int' })
   cantidad: number;

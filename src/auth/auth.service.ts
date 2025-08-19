@@ -188,13 +188,15 @@ export class AuthService {
     }
   }
 
-  async getUsers(paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0, name, rol } = paginationDto;
+  async getUsers(user: User, paginationDto: PaginationDto) {
+    const { limit = 10, offset = 0, name, rol, pais } = paginationDto;
     try {
       const queryBuilder = this.userRepository
         .createQueryBuilder('user')
         .leftJoinAndSelect('user.role', 'role')
-        .leftJoinAndSelect('user.profileImages', 'profileImages');
+        .leftJoinAndSelect('user.profileImages', 'profileImages')
+        .leftJoinAndSelect('user.pais', 'pais')
+        .where('user.id != :id', { id: user.id });
 
       if (name) {
         queryBuilder.andWhere('user.name ILIKE :name', { name: `%${name}%` });
@@ -202,6 +204,10 @@ export class AuthService {
 
       if (rol) {
         queryBuilder.andWhere('role.name ILIKE :rol', { rol: `%${rol}%` });
+      }
+
+      if (pais) {
+        queryBuilder.andWhere('pais.nombre ILIKE :pais', { pais: `%${pais}%` });
       }
 
       const [usuarios, total] = await queryBuilder
@@ -265,7 +271,7 @@ export class AuthService {
     try {
       const usuario = await this.userRepository.findOne({
         where: { id: userId },
-        relations: ['pais', 'role'],
+        relations: ['pais', 'role', 'departamento', 'municipio'],
       });
 
       if (!usuario) {
@@ -290,11 +296,42 @@ export class AuthService {
         usuario.role = nuevoRol;
       }
 
+      if (updateUsuarioDto.departamento) {
+        const departamento = await this.departamentoRepo.findOne({
+          where: { id: updateUsuarioDto.departamento },
+        });
+        if (!departamento)
+          throw new BadRequestException(
+            'El departamento seleccionado no existe',
+          );
+        usuario.departamento = departamento;
+      }
+
+      if (updateUsuarioDto.municipio) {
+        const municipio = await this.municipioRepo.findOne({
+          where: { id: updateUsuarioDto.municipio },
+          relations: ['departamento'],
+        });
+        if (!municipio)
+          throw new BadRequestException('El municipio seleccionado no existe');
+
+        if (
+          updateUsuarioDto.departamento &&
+          municipio.departamento.id !== updateUsuarioDto.departamento
+        ) {
+          throw new BadRequestException(
+            'El municipio no pertenece al departamento seleccionado',
+          );
+        }
+        usuario.municipio = municipio;
+      }
+
       const camposActualizables = [
         'email',
         'name',
         'identificacion',
         'direccion',
+        'sexo',
         'telefono',
         'isActive',
         'isAuthorized',
@@ -317,6 +354,18 @@ export class AuthService {
         }
       }
 
+      if (
+        updateUsuarioDto.identificacion &&
+        updateUsuarioDto.identificacion !== usuario.identificacion
+      ) {
+        const identificacionExiste = await this.userRepository.findOne({
+          where: { identificacion: updateUsuarioDto.identificacion },
+        });
+        if (identificacionExiste && identificacionExiste.id !== userId) {
+          throw new BadRequestException('La identificación ya está registrada');
+        }
+      }
+
       await this.userRepository.save(usuario);
 
       const usuarioActualizado = instanceToPlain(usuario);
@@ -324,11 +373,20 @@ export class AuthService {
 
       return usuarioActualizado;
     } catch (error) {
-      this.handleDatabaseErrors(error);
+      console.error('Error actualizando usuario:', error);
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      throw new InternalServerErrorException('Error al actualizar usuario');
     }
   }
 
   async checkAuthStatus(user: User) {
+    delete user.password;
     return {
       ...user,
       token: this.getJwtToken({ id: user.id }),

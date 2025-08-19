@@ -1,4 +1,5 @@
 import { ProductosAgroservicio } from 'src/productos_agroservicio/entities/productos_agroservicio.entity';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import {
   Column,
   Entity,
@@ -12,11 +13,11 @@ export class InventarioProducto {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => ProductosAgroservicio, (producto) => producto.inventario, {
+  @OneToOne(() => SubServicio, (producto) => producto.inventario, {
     cascade: true,
   })
   @JoinColumn()
-  producto: ProductosAgroservicio;
+  producto: SubServicio;
 
   @Column({ type: 'int' })
   cantidadDisponible: number;

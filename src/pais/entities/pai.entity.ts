@@ -15,7 +15,7 @@ export class Pai {
   @Column({ type: 'text', unique: true })
   code: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', unique: true })
   code_phone: string;
 
   @Column({ type: 'text' })
@@ -24,7 +24,7 @@ export class Pai {
   @Column({ type: 'text' })
   simbolo_moneda: string;
 
-  @Column({ type: 'text' })
+  @Column({ type: 'text', unique: true })
   nombre_documento: string;
 
   @OneToMany(() => User, (usuario) => usuario.pais)

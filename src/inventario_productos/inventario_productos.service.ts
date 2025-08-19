@@ -9,6 +9,7 @@ import { InventarioProducto } from './entities/inventario_producto.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ProductosAgroservicio } from 'src/productos_agroservicio/entities/productos_agroservicio.entity';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 
 @Injectable()
 export class InventarioProductosService {
@@ -16,8 +17,8 @@ export class InventarioProductosService {
     @InjectRepository(InventarioProducto)
     private readonly inventarioRepository: Repository<InventarioProducto>,
 
-    @InjectRepository(ProductosAgroservicio)
-    private readonly productoRepository: Repository<ProductosAgroservicio>,
+    @InjectRepository(SubServicio)
+    private readonly productoRepository: Repository<SubServicio>,
   ) {}
 
   async create(createInventarioDto: CreateInventarioProductoDto) {

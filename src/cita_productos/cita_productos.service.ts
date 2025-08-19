@@ -8,6 +8,7 @@ import { Cita } from 'src/citas/entities/cita.entity';
 import { ProductosAgroservicio } from 'src/productos_agroservicio/entities/productos_agroservicio.entity';
 import { InventarioProducto } from 'src/inventario_productos/entities/inventario_producto.entity';
 import { CitaProductoResponseDto } from './dto/cita-producto-response.dto';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 
 @Injectable()
 export class CitaProductosService {
@@ -16,8 +17,8 @@ export class CitaProductosService {
     private readonly citaProductoRepository: Repository<CitaProducto>,
     @InjectRepository(Cita)
     private readonly citaRepository: Repository<Cita>,
-    @InjectRepository(ProductosAgroservicio)
-    private readonly productoRepository: Repository<ProductosAgroservicio>,
+    @InjectRepository(SubServicio)
+    private readonly productoRepository: Repository<SubServicio>,
     @InjectRepository(InventarioProducto)
     private readonly inventarioRepository: Repository<InventarioProducto>,
   ) {}

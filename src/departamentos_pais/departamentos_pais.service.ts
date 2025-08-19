@@ -51,6 +51,7 @@ export class DepartamentosPaisService {
         skip: offset,
         take: limit,
         where: { pais: pais_exist },
+        relations: ['pais'],
       });
       if (!departamentos || departamentos.length === 0)
         throw new BadRequestException(
