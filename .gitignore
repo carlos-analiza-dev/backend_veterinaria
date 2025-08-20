@@ -4,6 +4,8 @@
 .env
 postgres/
 /uploads
+env
+script.py
 
 # Logs
 logs
