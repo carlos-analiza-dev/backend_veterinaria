@@ -7,6 +7,7 @@ import {
   IsString,
   IsUUID,
   MaxLength,
+  Min,
   ValidateIf,
 } from 'class-validator';
 import { TipoSubServicio, UnidadVenta } from '../entities/sub_servicio.entity';
@@ -52,23 +53,4 @@ export class CreateSubServicioDto {
     message: 'El campo disponible debe ser un valor booleano (true o false).',
   })
   disponible?: boolean;
-
-  @IsNumber()
-  @IsNotEmpty({ message: 'El precio es obligatorio' })
-  precio: number;
-
-  @ValidateIf((o) => o.tipo === TipoSubServicio.SERVICIO)
-  @IsNumber({}, { message: 'El tiempo debe ser un número.' })
-  tiempo?: number;
-
-  @ValidateIf((o) => o.tipo === TipoSubServicio.SERVICIO)
-  @IsNumber({}, { message: 'La cantidad mínima debe ser un número.' })
-  cantidadMin?: number;
-
-  @ValidateIf((o) => o.tipo === TipoSubServicio.SERVICIO)
-  @IsNumber({}, { message: 'La cantidad máxima debe ser un número.' })
-  cantidadMax?: number;
-
-  @IsUUID()
-  paisId: string;
 }

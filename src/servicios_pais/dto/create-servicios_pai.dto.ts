@@ -5,26 +5,20 @@ export class CreateServiciosPaiDto {
   @IsNotEmpty({ message: 'El ID del servicio es obligatorio.' })
   sub_servicio_id: string;
 
-  @IsUUID()
-  @IsNotEmpty({ message: 'El ID del país es obligatorio.' })
-  paisId: string;
-
   @IsNumber()
-  @Min(0, { message: 'El precio debe ser mayor o igual a 0.' })
+  @Min(1, { message: 'El precio no debe ser menor o igual a cero' })
+  @IsNotEmpty({ message: 'El precio es obligatorio' })
   precio: number;
 
-  @IsOptional()
-  @IsNumber()
-  @Min(0, { message: 'El tiempo debe ser un número positivo.' })
+  @IsNumber({}, { message: 'El tiempo debe ser un número.' })
   tiempo?: number;
 
-  @IsNumber()
-  @Min(0, { message: 'La cantidad minima debe ser un número positivo.' })
-  @IsNotEmpty({ message: 'La cantidad minima no debe ser vacio' })
-  cantidadMin: number;
+  @IsNumber({}, { message: 'La cantidad mínima debe ser un número.' })
+  cantidadMin?: number;
 
-  @IsNumber()
-  @Min(0, { message: 'La cantidad minima debe ser un número positivo.' })
-  @IsOptional()
-  cantidadMax: number;
+  @IsNumber({}, { message: 'La cantidad máxima debe ser un número.' })
+  cantidadMax?: number;
+
+  @IsUUID()
+  paisId: string;
 }

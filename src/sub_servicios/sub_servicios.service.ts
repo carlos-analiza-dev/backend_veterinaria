@@ -1,6 +1,8 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateSubServicioDto } from './dto/create-sub_servicio.dto';
@@ -12,6 +14,7 @@ import { Servicio } from 'src/servicios/entities/servicio.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { ServiciosPai } from 'src/servicios_pais/entities/servicios_pai.entity';
 import { randomBytes } from 'crypto';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Injectable()
 export class SubServiciosService {
@@ -30,35 +33,70 @@ export class SubServiciosService {
       nombre,
       descripcion,
       servicioId,
-      isActive,
-      disponible,
-      tipo,
+      isActive = true,
+      disponible = true,
+      tipo = TipoSubServicio.SERVICIO,
       unidad_venta,
-      paisId,
-      cantidadMax,
-      cantidadMin,
-      precio,
-      tiempo,
     } = createSubServicioDto;
 
     try {
-      let servicio_existe;
+      const nombreExistente = await this.sub_servicio_repo.findOne({
+        where: { nombre },
+      });
+
+      if (nombreExistente) {
+        throw new ConflictException('Ya existe un servicio con este nombre');
+      }
+
+      let servicio_existe = null;
+
       if (tipo === TipoSubServicio.SERVICIO) {
-        servicio_existe = await this.servicioRepo.findOne({
-          where: { id: servicioId },
-        });
-        if (!servicio_existe)
+        if (!servicioId) {
           throw new NotFoundException(
-            'No se encontró el servicio seleccionado',
+            'El ID del servicio es requerido para servicios',
           );
+        }
+
+        servicio_existe = await this.servicioRepo.findOne({
+          where: { id: servicioId, isActive: true },
+        });
+
+        if (!servicio_existe) {
+          throw new NotFoundException(
+            'No se encontró el servicio seleccionado o está inactivo',
+          );
+        }
+      } else if (servicioId) {
+        throw new ConflictException(
+          'Los productos no pueden estar asociados a un servicio',
+        );
       }
 
       const codigoPrefix = tipo === TipoSubServicio.PRODUCTO ? 'PROD' : 'SERV';
-      const codigo = `${codigoPrefix}-${randomBytes(3)
-        .toString('hex')
-        .toUpperCase()}`;
+      let codigo: string;
+      let codigoUnico = false;
+      let intentos = 0;
 
-      const sub_Servicio = this.sub_servicio_repo.create({
+      while (!codigoUnico && intentos < 5) {
+        codigo = `${codigoPrefix}-${randomBytes(3)
+          .toString('hex')
+          .toUpperCase()}`;
+
+        const codigoExistente = await this.sub_servicio_repo.findOne({
+          where: { codigo },
+        });
+
+        if (!codigoExistente) {
+          codigoUnico = true;
+        }
+        intentos++;
+      }
+
+      if (!codigoUnico) {
+        throw new InternalServerErrorException('Error generando código único');
+      }
+
+      const subServicio = this.sub_servicio_repo.create({
         nombre,
         descripcion,
         isActive,
@@ -69,31 +107,52 @@ export class SubServiciosService {
         servicio: servicio_existe,
       });
 
-      const subServicioGuardado = await this.sub_servicio_repo.save(
-        sub_Servicio,
+      await this.sub_servicio_repo.save(subServicio);
+
+      return 'servicio creado exitosamente';
+    } catch (error) {
+      if (
+        error instanceof ConflictException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+
+      console.error('Error creando sub-servicio:', error);
+
+      throw new InternalServerErrorException(
+        'Error interno del servidor al crear el servicio',
       );
+    }
+  }
 
-      const pais = await this.paisRepo.findOne({ where: { id: paisId } });
-      if (!pais) {
-        throw new NotFoundException('No se encontró el país seleccionado');
+  async findAllProductos(paginationDto: PaginationDto) {
+    const { limit = 10, offset = 0 } = paginationDto;
+
+    try {
+      const [servicios, total] = await this.sub_servicio_repo.findAndCount({
+        where: {
+          tipo: TipoSubServicio.PRODUCTO,
+          isActive: true,
+        },
+        relations: ['servicio'],
+        order: {
+          createdAt: 'DESC',
+        },
+        take: limit,
+        skip: offset,
+      });
+
+      if (!servicios || servicios.length === 0) {
+        throw new BadRequestException(
+          'No se encontraron productos disponibles',
+        );
       }
 
-      const precioPorPaisData: any = {
-        subServicio: subServicioGuardado,
-        pais,
-        precio,
+      return {
+        servicios,
+        total,
       };
-
-      if (tipo === TipoSubServicio.SERVICIO) {
-        precioPorPaisData.tiempo = tiempo;
-        precioPorPaisData.cantidadMin = cantidadMin ?? 1;
-        precioPorPaisData.cantidadMax = cantidadMax;
-      }
-
-      const precioPorPais = this.servicio_precio_Repo.create(precioPorPaisData);
-      await this.servicio_precio_Repo.save(precioPorPais);
-
-      return 'Sub-servicio creado exitosamente';
     } catch (error) {
       throw error;
     }
@@ -195,11 +254,20 @@ export class SubServiciosService {
   }
 
   async update(id: string, updateSubServicioDto: UpdateSubServicioDto) {
-    const { nombre, descripcion, isActive, servicioId } = updateSubServicioDto;
+    const {
+      nombre,
+      descripcion,
+      isActive,
+      servicioId,
+      disponible,
+      tipo,
+      unidad_venta,
+    } = updateSubServicioDto;
 
     try {
       const sub_servicio = await this.sub_servicio_repo.findOne({
         where: { id },
+        relations: ['servicio'],
       });
 
       if (!sub_servicio) {
@@ -208,25 +276,82 @@ export class SubServiciosService {
         );
       }
 
-      if (servicioId) {
-        const servicio = await this.servicioRepo.findOne({
-          where: { id: servicioId },
+      if (nombre && nombre !== sub_servicio.nombre) {
+        const nombreExistente = await this.sub_servicio_repo.findOne({
+          where: { nombre },
         });
-        if (!servicio) {
-          throw new NotFoundException('No se encontró el servicio relacionado');
+
+        if (nombreExistente && nombreExistente.id !== id) {
+          throw new ConflictException(
+            'Ya existe otro sub-servicio con este nombre',
+          );
         }
-        sub_servicio.servicio = servicio;
+        sub_servicio.nombre = nombre;
       }
 
-      if (nombre !== undefined) sub_servicio.nombre = nombre;
+      if (tipo !== undefined && tipo !== sub_servicio.tipo) {
+        if (tipo === TipoSubServicio.SERVICIO) {
+          if (!servicioId && !sub_servicio.servicio) {
+            throw new BadRequestException(
+              'El ID del servicio es requerido al cambiar a tipo SERVICIO',
+            );
+          }
+        } else {
+          sub_servicio.servicio = null;
+        }
+        sub_servicio.tipo = tipo;
+      }
+
+      if (servicioId !== undefined) {
+        if (sub_servicio.tipo === TipoSubServicio.SERVICIO) {
+          const servicio = await this.servicioRepo.findOne({
+            where: { id: servicioId, isActive: true },
+          });
+
+          if (!servicio) {
+            throw new NotFoundException(
+              'No se encontró el servicio relacionado o está inactivo',
+            );
+          }
+          sub_servicio.servicio = servicio;
+        } else {
+          throw new BadRequestException(
+            'No se puede asignar un servicio a un producto',
+          );
+        }
+      }
+
+      if (unidad_venta !== undefined) {
+        if (sub_servicio.tipo === TipoSubServicio.PRODUCTO && !unidad_venta) {
+          throw new BadRequestException(
+            'La unidad de venta es requerida para productos',
+          );
+        }
+        sub_servicio.unidad_venta = unidad_venta;
+      }
+
       if (descripcion !== undefined) sub_servicio.descripcion = descripcion;
       if (isActive !== undefined) sub_servicio.isActive = isActive;
+      if (disponible !== undefined) sub_servicio.disponible = disponible;
 
-      await this.sub_servicio_repo.save(sub_servicio);
+      if (isActive === false && disponible === true) {
+        throw new BadRequestException(
+          'No se puede tener un sub-servicio inactivo pero disponible',
+        );
+      }
+
+      const subServicioActualizado = await this.sub_servicio_repo.save(
+        sub_servicio,
+      );
+
+      const subServicioCompleto = await this.sub_servicio_repo.findOne({
+        where: { id },
+        relations: ['servicio'],
+      });
 
       return {
         message: 'Subservicio actualizado correctamente',
-        data: sub_servicio,
+        data: subServicioCompleto,
       };
     } catch (error) {
       throw error;

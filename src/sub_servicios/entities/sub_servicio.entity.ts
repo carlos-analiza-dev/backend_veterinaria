@@ -11,6 +11,8 @@ import {
   JoinColumn,
   ManyToMany,
   OneToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
 
@@ -65,6 +67,12 @@ export class SubServicio {
 
   @Column({ default: true })
   disponible: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updatedAt: Date;
 
   @ManyToOne(() => Servicio, (servicio) => servicio.subServicios, {
     nullable: true,
