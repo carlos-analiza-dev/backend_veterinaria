@@ -1,0 +1,31 @@
+import { Cita } from 'src/citas/entities/cita.entity';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+
+@Entity('cita_productos')
+export class CitaProducto {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @ManyToOne(() => Cita, (cita) => cita.productosUsados)
+  @JoinColumn({ name: 'citaId' })
+  cita: Cita;
+
+  @ManyToOne(() => SubServicio, (producto) => producto.citas, {
+    eager: true,
+  })
+  @JoinColumn({ name: 'productoId' })
+  producto: SubServicio;
+
+  @Column({ type: 'int' })
+  cantidad: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  precioUnitario: number;
+}

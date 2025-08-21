@@ -40,7 +40,7 @@ export class ImagesAminalesService {
     const fileName = `${uuidv4()}${fileExt}`;
     const filePath = path.join(uploadDir, fileName);
 
-    fs.writeFileSync(filePath, file.buffer);
+    fs.writeFileSync(filePath, file.buffer as Uint8Array);
 
     const baseUrl = process.env.APP_URL;
     const fileUrl = `${baseUrl}/uploads/profile_animal/${fileName}`;

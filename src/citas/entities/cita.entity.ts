@@ -1,5 +1,7 @@
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { User } from 'src/auth/entities/auth.entity';
+import { CitaInsumo } from 'src/cita_insumos/entities/cita_insumo.entity';
+import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { EstadoCita } from 'src/interfaces/estados_citas';
 import { Medico } from 'src/medicos/entities/medico.entity';
@@ -11,6 +13,7 @@ import {
   JoinTable,
   ManyToMany,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -41,6 +44,14 @@ export class Cita {
   @JoinColumn({ name: 'fincaId' })
   finca: FincasGanadero;
 
+  @OneToMany(() => CitaInsumo, (citaInsumo) => citaInsumo.cita, { eager: true })
+  insumosUsados: CitaInsumo[];
+
+  @OneToMany(() => CitaProducto, (citaProducto) => citaProducto.cita, {
+    eager: true,
+  })
+  productosUsados: CitaProducto[];
+
   @ManyToOne(() => SubServicio)
   @JoinColumn({ name: 'subServicioId' })
   subServicio: SubServicio;
@@ -63,6 +74,9 @@ export class Cita {
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   totalPagar: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  totalFinal: number;
 
   @Column({ type: 'int', default: 1 })
   duracion: number;

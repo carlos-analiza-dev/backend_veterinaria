@@ -60,6 +60,7 @@ export class MunicipiosDepartamentosPaisService {
         skip: offset,
         take: limit,
         where: { departamento: depto_exist },
+        relations: ['departamento'],
       });
       if (!municipios || municipios.length === 0)
         throw new BadRequestException(
@@ -85,6 +86,7 @@ export class MunicipiosDepartamentosPaisService {
           departamento: depto_exist,
           isActive: true,
         },
+        relations: ['departamento'],
       });
       if (!municipios || municipios.length === 0)
         throw new BadRequestException(

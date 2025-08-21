@@ -12,6 +12,7 @@ import { AnimalFincaService } from './animal_finca.service';
 import { CreateAnimalFincaDto } from './dto/create-animal_finca.dto';
 import { UpdateAnimalFincaDto } from './dto/update-animal_finca.dto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { UpdateDeathStatusDto } from './dto/update-death-status.dto';
 
 @Controller('animal-finca')
 export class AnimalFincaController {
@@ -47,7 +48,20 @@ export class AnimalFincaController {
   findOne(@Param('id') id: string) {
     return this.animalFincaService.findOne(id);
   }
-
+  @Patch(':id/death-status')
+  async updateDeathStatus(
+    @Param('id') id: string,
+    @Body() updateDeathStatusDto: UpdateDeathStatusDto,
+  ) {
+    const updatedAnimal = await this.animalFincaService.updateDeathStatus(
+      id,
+      updateDeathStatusDto,
+    );
+    return {
+      message: 'Estado de muerte actualizado correctamente',
+      data: updatedAnimal,
+    };
+  }
   @Patch(':id')
   update(
     @Param('id') id: string,

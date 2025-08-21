@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreatePaiDto } from './dto/create-pai.dto';
 import { UpdatePaiDto } from './dto/update-pai.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -33,6 +37,27 @@ export class PaisService {
       await this.paisRepo.save(pais);
       return 'Pais Creado Exitosamente';
     } catch (error) {
+      if (error.code === '23505') {
+        const detail = error.detail.toLowerCase();
+
+        if (detail.includes('nombre')) {
+          throw new ConflictException('Ya existe un país con este nombre');
+        } else if (detail.includes('code')) {
+          throw new ConflictException('Ya existe un país con este código');
+        } else if (detail.includes('code_phone')) {
+          throw new ConflictException(
+            'Ya existe un país con este código telefónico',
+          );
+        } else if (detail.includes('nombre_documento')) {
+          throw new ConflictException(
+            'Ya existe un país con este nombre de documento',
+          );
+        } else {
+          throw new ConflictException(
+            'Violación de campo único: ' + error.detail,
+          );
+        }
+      }
       throw error;
     }
   }

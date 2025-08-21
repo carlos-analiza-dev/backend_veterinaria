@@ -1,5 +1,12 @@
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('servicios')
 export class Servicio {
@@ -20,4 +27,10 @@ export class Servicio {
     cascade: true,
   })
   subServicios: SubServicio[];
+
+  @CreateDateColumn()
+  createdAt: Date;
+
+  @UpdateDateColumn()
+  updateAt: Date;
 }

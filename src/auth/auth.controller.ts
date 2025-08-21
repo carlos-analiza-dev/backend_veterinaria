@@ -38,7 +38,6 @@ export class AuthController {
     return this.authService.actualizarContrasena(updatePassword);
   }
 
-  @Get('check-status')
   @Auth()
   checkAuthStatus(@GetUser() user: User) {
     return this.authService.checkAuthStatus(user);
@@ -46,8 +45,8 @@ export class AuthController {
 
   @Get('users')
   @Auth()
-  getUsers(@Query() paginationDto: PaginationDto) {
-    return this.authService.getUsers(paginationDto);
+  getUsers(@GetUser() user: User, @Query() paginationDto: PaginationDto) {
+    return this.authService.getUsers(user, paginationDto);
   }
 
   @Get('veterinarios')
