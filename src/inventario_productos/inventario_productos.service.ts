@@ -8,7 +8,6 @@ import { UpdateInventarioProductoDto } from './dto/update-inventario_producto.dt
 import { InventarioProducto } from './entities/inventario_producto.entity';
 import { Repository } from 'typeorm';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ProductosAgroservicio } from 'src/productos_agroservicio/entities/productos_agroservicio.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 
 @Injectable()

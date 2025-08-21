@@ -1,4 +1,3 @@
-import { ProductosAgroservicio } from 'src/productos_agroservicio/entities/productos_agroservicio.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import {
   Column,

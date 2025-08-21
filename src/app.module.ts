@@ -36,7 +36,6 @@ import { InsumosModule } from './insumos/insumos.module';
 import { GeneratePdfModule } from './generate_pdf/generate_pdf.module';
 import { CitaInsumosModule } from './cita_insumos/cita_insumos.module';
 import { InventarioProductosModule } from './inventario_productos/inventario_productos.module';
-import { ProductosAgroservicioModule } from './productos_agroservicio/productos_agroservicio.module';
 import { CitaProductosModule } from './cita_productos/cita_productos.module';
 
 @Module({
@@ -105,8 +104,6 @@ import { CitaProductosModule } from './cita_productos/cita_productos.module';
     CitaInsumosModule,
 
     InventarioProductosModule,
-
-    ProductosAgroservicioModule,
 
     CitaProductosModule,
   ],

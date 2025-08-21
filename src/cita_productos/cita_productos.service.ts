@@ -5,7 +5,6 @@ import { CitaProducto } from './entities/cita_producto.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cita } from 'src/citas/entities/cita.entity';
-import { ProductosAgroservicio } from 'src/productos_agroservicio/entities/productos_agroservicio.entity';
 import { InventarioProducto } from 'src/inventario_productos/entities/inventario_producto.entity';
 import { CitaProductoResponseDto } from './dto/cita-producto-response.dto';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
