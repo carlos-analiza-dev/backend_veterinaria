@@ -10,6 +10,10 @@ import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { MailService } from 'src/mail/mail.service';
+import { CitaInsumo } from 'src/cita_insumos/entities/cita_insumo.entity';
+import { Insumo } from 'src/insumos/entities/insumo.entity';
+import { Inventario } from 'src/inventario/entities/inventario.entity';
+import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
 
 @Module({
   controllers: [CitasController],
@@ -22,6 +26,10 @@ import { MailService } from 'src/mail/mail.service';
       AnimalFinca,
       SubServicio,
       User,
+      CitaInsumo,
+      Insumo,
+      Inventario,
+      CitaProducto,
     ]),
   ],
   providers: [CitasService, MailService],
