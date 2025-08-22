@@ -12,9 +12,10 @@ import { SubServicio, TipoSubServicio } from './entities/sub_servicio.entity';
 import { Repository } from 'typeorm';
 import { Servicio } from 'src/servicios/entities/servicio.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
-import { ServiciosPai } from 'src/servicios_pais/entities/servicios_pai.entity';
 import { randomBytes } from 'crypto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { Marca } from 'src/marcas/entities/marca.entity';
+import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
 
 @Injectable()
 export class SubServiciosService {
@@ -25,8 +26,10 @@ export class SubServiciosService {
     private readonly servicioRepo: Repository<Servicio>,
     @InjectRepository(Pai)
     private readonly paisRepo: Repository<Pai>,
-    @InjectRepository(ServiciosPai)
-    private readonly servicio_precio_Repo: Repository<ServiciosPai>,
+    @InjectRepository(Marca)
+    private readonly marcaRepo: Repository<Marca>,
+    @InjectRepository(Proveedor)
+    private readonly proveedorRepo: Repository<Proveedor>,
   ) {}
   async create(createSubServicioDto: CreateSubServicioDto) {
     const {
@@ -37,9 +40,13 @@ export class SubServiciosService {
       disponible = true,
       tipo = TipoSubServicio.SERVICIO,
       unidad_venta,
+      marcaId,
+      proveedorId,
     } = createSubServicioDto;
 
     try {
+      this.validateProductRelations(createSubServicioDto);
+
       const nombreExistente = await this.sub_servicio_repo.findOne({
         where: { nombre },
       });
@@ -49,6 +56,8 @@ export class SubServiciosService {
       }
 
       let servicio_existe = null;
+      let marca = null;
+      let proveedor = null;
 
       if (tipo === TipoSubServicio.SERVICIO) {
         if (!servicioId) {
@@ -66,10 +75,36 @@ export class SubServiciosService {
             'No se encontró el servicio seleccionado o está inactivo',
           );
         }
-      } else if (servicioId) {
-        throw new ConflictException(
-          'Los productos no pueden estar asociados a un servicio',
-        );
+      } else if (tipo === TipoSubServicio.PRODUCTO) {
+        if (servicioId) {
+          throw new ConflictException(
+            'Los productos no pueden estar asociados a un servicio',
+          );
+        }
+
+        if (!marcaId) {
+          throw new BadRequestException(
+            'Los productos deben tener una marca asociada',
+          );
+        }
+        marca = await this.marcaRepo.findOne({
+          where: { id: marcaId, is_active: true },
+        });
+        if (!marca) {
+          throw new NotFoundException('Marca no encontrada o inactiva');
+        }
+
+        if (!proveedorId) {
+          throw new BadRequestException(
+            'Los productos deben tener un proveedor asociado',
+          );
+        }
+        proveedor = await this.proveedorRepo.findOne({
+          where: { id: proveedorId, is_active: true },
+        });
+        if (!proveedor) {
+          throw new NotFoundException('Proveedor no encontrado o inactivo');
+        }
       }
 
       const codigoPrefix = tipo === TipoSubServicio.PRODUCTO ? 'PROD' : 'SERV';
@@ -105,6 +140,8 @@ export class SubServiciosService {
         tipo,
         unidad_venta,
         servicio: servicio_existe,
+        marca,
+        proveedor,
       });
 
       await this.sub_servicio_repo.save(subServicio);
@@ -118,11 +155,37 @@ export class SubServiciosService {
         throw error;
       }
 
-      console.error('Error creando sub-servicio:', error);
-
       throw new InternalServerErrorException(
         'Error interno del servidor al crear el servicio',
       );
+    }
+  }
+
+  private validateProductRelations(
+    dto: CreateSubServicioDto | UpdateSubServicioDto,
+  ): void {
+    if (dto.tipo === TipoSubServicio.PRODUCTO) {
+      if (!dto.marcaId) {
+        throw new BadRequestException(
+          'Los productos deben tener una marca asociada',
+        );
+      }
+      if (!dto.proveedorId) {
+        throw new BadRequestException(
+          'Los productos deben tener un proveedor asociado',
+        );
+      }
+    } else if (dto.tipo === TipoSubServicio.SERVICIO) {
+      if (dto.marcaId) {
+        throw new BadRequestException(
+          'Los servicios no pueden tener marca asociada',
+        );
+      }
+      if (dto.proveedorId) {
+        throw new BadRequestException(
+          'Los servicios no pueden tener proveedor asociado',
+        );
+      }
     }
   }
 

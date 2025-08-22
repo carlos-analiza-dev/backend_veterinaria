@@ -1,11 +1,13 @@
 import { User } from 'src/auth/entities/auth.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -58,4 +60,7 @@ export class Proveedor {
 
   @ManyToOne(() => User, { eager: true })
   updated_by: User;
+
+  @OneToMany(() => SubServicio, (producto) => producto.proveedor)
+  productos: SubServicio[];
 }

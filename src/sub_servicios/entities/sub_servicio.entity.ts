@@ -15,6 +15,8 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
+import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
+import { Marca } from 'src/marcas/entities/marca.entity';
 
 export enum UnidadVenta {
   UNIDAD = 'unidad',
@@ -74,6 +76,26 @@ export class SubServicio {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  @ManyToOne(() => Marca, (marca) => marca.productos, {
+    nullable: true,
+    eager: true,
+  })
+  @JoinColumn({ name: 'marca_id' })
+  marca: Marca | null;
+
+  @ManyToOne(() => Proveedor, (proveedor) => proveedor.productos, {
+    nullable: true,
+    eager: true,
+  })
+  @JoinColumn({ name: 'proveedor_id' })
+  proveedor: Proveedor | null;
+
+  @Column({ name: 'marca_id', nullable: true })
+  marcaId: string | null;
+
+  @Column({ name: 'proveedor_id', nullable: true })
+  proveedorId: string | null;
+
   @ManyToOne(() => Servicio, (servicio) => servicio.subServicios, {
     nullable: true,
   })
@@ -96,4 +118,22 @@ export class SubServicio {
 
   @OneToMany(() => CitaProducto, (citaProducto) => citaProducto.producto)
   citas: CitaProducto[];
+
+  validateProductRelations(): void {
+    if (this.tipo === TipoSubServicio.PRODUCTO) {
+      if (!this.marca && !this.marcaId) {
+        throw new Error('Los productos deben tener una marca asociada');
+      }
+      if (!this.proveedor && !this.proveedorId) {
+        throw new Error('Los productos deben tener un proveedor asociado');
+      }
+    } else if (this.tipo === TipoSubServicio.SERVICIO) {
+      if (this.marca || this.marcaId) {
+        throw new Error('Los servicios no pueden tener marca asociada');
+      }
+      if (this.proveedor || this.proveedorId) {
+        throw new Error('Los servicios no pueden tener proveedor asociado');
+      }
+    }
+  }
 }

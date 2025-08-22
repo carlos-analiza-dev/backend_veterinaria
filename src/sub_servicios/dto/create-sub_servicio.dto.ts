@@ -53,4 +53,14 @@ export class CreateSubServicioDto {
     message: 'El campo disponible debe ser un valor booleano (true o false).',
   })
   disponible?: boolean;
+
+  @ValidateIf((o) => o.tipo === TipoSubServicio.PRODUCTO)
+  @IsUUID('4', { message: 'El marcaId debe ser un UUID válido.' })
+  @IsNotEmpty({ message: 'La marca es obligatoria para los productos.' })
+  marcaId?: string;
+
+  @ValidateIf((o) => o.tipo === TipoSubServicio.PRODUCTO)
+  @IsUUID('4', { message: 'El proveedorId debe ser un UUID válido.' })
+  @IsNotEmpty({ message: 'El proveedor es obligatorio para los productos.' })
+  proveedorId?: string;
 }

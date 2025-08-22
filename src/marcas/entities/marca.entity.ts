@@ -3,10 +3,12 @@ import {
   CreateDateColumn,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from 'src/auth/entities/auth.entity';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 
 @Entity('marcas')
 export class Marca {
@@ -27,6 +29,9 @@ export class Marca {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  @OneToMany(() => SubServicio, (producto) => producto.marca)
+  productos: SubServicio[];
 
   // Campos de auditoría
   @ManyToOne(() => User, { eager: true })
