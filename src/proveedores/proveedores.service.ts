@@ -9,10 +9,11 @@ import { Repository } from 'typeorm';
 import { Proveedor } from './entities/proveedor.entity';
 import { CreateProveedorDto } from './dto/create-proveedor.dto';
 import { UpdateProveedorDto } from './dto/update-proveedor.dto';
+import { SearchProveedorDto } from './dto/search-proveedor.dto';
 import { User } from 'src/auth/entities/auth.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
-import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { Pai } from 'src/pais/entities/pai.entity';
 import { instanceToPlain } from 'class-transformer';
 
 @Injectable()
@@ -22,6 +23,8 @@ export class ProveedoresService {
     private readonly proveedorRepo: Repository<Proveedor>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(Pai)
+    private readonly paisRepo: Repository<Pai>,
     @InjectRepository(DepartamentosPai)
     private readonly departamentoRepo: Repository<DepartamentosPai>,
     @InjectRepository(MunicipiosDepartamentosPai)
@@ -37,6 +40,7 @@ export class ProveedoresService {
       telefono,
       correo,
       nombre_contacto,
+      paisId,
       departamentoId,
       municipioId,
     } = createProveedorDto;
@@ -54,6 +58,15 @@ export class ProveedoresService {
         throw new ConflictException(
           `Ya existe un proveedor con el NIT/RTN ${nit_rtn}`,
         );
+      }
+
+      // Verificar país si se proporciona
+      let pais = null;
+      if (paisId) {
+        pais = await this.paisRepo.findOneBy({ id: paisId });
+        if (!pais) {
+          throw new NotFoundException('País no encontrado');
+        }
       }
 
       // Verificar departamento si se proporciona
@@ -95,6 +108,7 @@ export class ProveedoresService {
         telefono,
         correo,
         nombre_contacto,
+        pais,
         departamento,
         municipio,
         created_by: user,
@@ -112,33 +126,35 @@ export class ProveedoresService {
     }
   }
 
-  async findAll(paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0 } = paginationDto;
-
-    // Extraer parámetros adicionales de forma segura
-    const search = (paginationDto as any).search || '';
-    const isActive =
-      (paginationDto as any).isActive !== undefined
-        ? (paginationDto as any).isActive
-        : true;
+  async findAll(searchProveedorDto: SearchProveedorDto) {
+    const { limit = 10, offset = 0, search, isActive } = searchProveedorDto;
 
     try {
       const query = this.proveedorRepo
         .createQueryBuilder('proveedor')
+        .leftJoinAndSelect('proveedor.pais', 'pais')
         .leftJoinAndSelect('proveedor.departamento', 'departamento')
         .leftJoinAndSelect('proveedor.municipio', 'municipio')
         .leftJoinAndSelect('proveedor.created_by', 'created_by')
-        .leftJoinAndSelect('proveedor.updated_by', 'updated_by')
-        .where('proveedor.is_active = :isActive', { isActive });
+        .leftJoinAndSelect('proveedor.updated_by', 'updated_by');
+
+      // Solo aplicar filtro de isActive si se proporciona específicamente
+      if (isActive !== undefined) {
+        query.where('proveedor.is_active = :isActive', { isActive });
+      }
 
       // Búsqueda por nombre legal, NIT/RTN o nombre de contacto
       if (search && search.trim() !== '') {
-        query.andWhere(
-          '(LOWER(proveedor.nombre_legal) LIKE :search OR ' +
-            'LOWER(proveedor.nit_rtn) LIKE :search OR ' +
-            'LOWER(proveedor.nombre_contacto) LIKE :search)',
-          { search: `%${search.toLowerCase()}%` },
-        );
+        const searchCondition =
+          '(LOWER(proveedor.nombre_legal) LIKE LOWER(:search) OR ' +
+          'LOWER(proveedor.nit_rtn) LIKE LOWER(:search) OR ' +
+          'LOWER(proveedor.nombre_contacto) LIKE LOWER(:search))';
+
+        if (isActive !== undefined) {
+          query.andWhere(searchCondition, { search: `%${search}%` });
+        } else {
+          query.where(searchCondition, { search: `%${search}%` });
+        }
       }
 
       const total = await query.getCount();
@@ -149,18 +165,12 @@ export class ProveedoresService {
         .take(limit)
         .getMany();
 
-      if (!proveedores || proveedores.length === 0) {
-        throw new BadRequestException(
-          'No se encontraron proveedores en este momento',
-        );
-      }
-
-      return instanceToPlain({
-        data: proveedores,
+      return {
+        data: instanceToPlain(proveedores),
         total,
         limit,
         offset,
-      });
+      };
     } catch (error) {
       throw error;
     }
@@ -184,7 +194,13 @@ export class ProveedoresService {
     try {
       const proveedor = await this.proveedorRepo.findOne({
         where: { id },
-        relations: ['departamento', 'municipio', 'created_by', 'updated_by'],
+        relations: [
+          'pais',
+          'departamento',
+          'municipio',
+          'created_by',
+          'updated_by',
+        ],
       });
 
       if (!proveedor) {
@@ -210,6 +226,7 @@ export class ProveedoresService {
       telefono,
       correo,
       nombre_contacto,
+      paisId,
       departamentoId,
       municipioId,
       is_active,
@@ -219,7 +236,7 @@ export class ProveedoresService {
       // Verificar que el proveedor existe
       const proveedor = await this.proveedorRepo.findOne({
         where: { id },
-        relations: ['departamento', 'municipio'],
+        relations: ['pais', 'departamento', 'municipio'],
       });
 
       if (!proveedor) {
@@ -239,6 +256,19 @@ export class ProveedoresService {
           throw new ConflictException(
             `Ya existe otro proveedor con el NIT/RTN ${nit_rtn}`,
           );
+        }
+      }
+
+      // Verificar país si se proporciona
+      if (paisId !== undefined) {
+        if (paisId === null) {
+          proveedor.pais = null;
+        } else {
+          const pais = await this.paisRepo.findOneBy({ id: paisId });
+          if (!pais) {
+            throw new NotFoundException('País no encontrado');
+          }
+          proveedor.pais = pais;
         }
       }
 

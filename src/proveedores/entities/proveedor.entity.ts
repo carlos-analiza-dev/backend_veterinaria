@@ -1,6 +1,7 @@
 import { User } from 'src/auth/entities/auth.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
+import { Pai } from 'src/pais/entities/pai.entity';
 import {
   Column,
   CreateDateColumn,
@@ -16,16 +17,16 @@ export class Proveedor {
   id: string;
 
   @Column({ type: 'varchar', length: 20, unique: true })
-  nit_rtn: string; // NIT o RTN según el país
+  nit_rtn: string;
 
   @Column({ type: 'varchar', length: 20, nullable: true })
-  nrc: string; // Número de Registro de Contribuyente
+  nrc: string;
 
   @Column({ type: 'varchar', length: 200 })
-  nombre_legal: string; // Nombre legal de la empresa
+  nombre_legal: string;
 
   @Column({ type: 'text' })
-  complemento_direccion: string; // Dirección específica (calle, avenida, colonia, etc)
+  complemento_direccion: string;
 
   @Column({ type: 'varchar', length: 20 })
   telefono: string;
@@ -46,6 +47,9 @@ export class Proveedor {
   updated_at: Date;
 
   // Relaciones
+  @ManyToOne(() => Pai, { eager: true, nullable: true })
+  pais: Pai;
+
   @ManyToOne(() => DepartamentosPai, { eager: true, nullable: true })
   departamento: DepartamentosPai;
 

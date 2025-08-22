@@ -7,12 +7,11 @@ import {
   Param,
   Delete,
   Query,
-  UseGuards,
 } from '@nestjs/common';
 import { ProveedoresService } from './proveedores.service';
 import { CreateProveedorDto } from './dto/create-proveedor.dto';
 import { UpdateProveedorDto } from './dto/update-proveedor.dto';
-import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { SearchProveedorDto } from './dto/search-proveedor.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
@@ -33,8 +32,8 @@ export class ProveedoresController {
 
   @Get()
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.proveedoresService.findAll(paginationDto);
+  findAll(@Query() searchProveedorDto: SearchProveedorDto) {
+    return this.proveedoresService.findAll(searchProveedorDto);
   }
 
   @Get('activos')
