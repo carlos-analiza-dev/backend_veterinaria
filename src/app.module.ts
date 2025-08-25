@@ -33,6 +33,8 @@ import { ProduccionAlternativaModule } from './produccion_alternativa/produccion
 import { ProduccionApiculturaModule } from './produccion_apicultura/produccion_apicultura.module';
 import { ProveedoresModule } from './proveedores/proveedores.module';
 import { MarcasModule } from './marcas/marcas.module';
+import { CategoriasModule } from './categorias/categorias.module';
+import { SubcategoriasModule } from './subcategorias/subcategorias.module';
 
 @Module({
   imports: [
@@ -94,6 +96,9 @@ import { MarcasModule } from './marcas/marcas.module';
     ProveedoresModule,
 
     MarcasModule,
+
+    CategoriasModule,
+    SubcategoriasModule,
   ],
   controllers: [],
   providers: [],

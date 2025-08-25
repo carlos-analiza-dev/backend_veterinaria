@@ -53,6 +53,10 @@ export class CreateProveedorDto {
   nombre_contacto: string;
 
   @IsOptional()
+  @IsUUID('4', { message: 'El ID del país debe ser un UUID válido' })
+  paisId?: string;
+
+  @IsOptional()
   @IsUUID('4', { message: 'El ID del departamento debe ser un UUID válido' })
   departamentoId?: string;
 
