@@ -8,6 +8,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { User } from 'src/auth/entities/auth.entity';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 
 @Entity('categorias')
 export class Categoria {
@@ -36,7 +37,6 @@ export class Categoria {
   @ManyToOne(() => User, { eager: false })
   updated_by: User;
 
-  // Relación con productos (se usará después)
-  // @OneToMany(() => Producto, (producto) => producto.categoria)
-  // productos: Producto[];
+  @OneToMany(() => SubServicio, (producto) => producto.categoria)
+  productos: SubServicio[];
 }

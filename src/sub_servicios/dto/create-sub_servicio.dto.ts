@@ -63,4 +63,48 @@ export class CreateSubServicioDto {
   @IsUUID('4', { message: 'El proveedorId debe ser un UUID válido.' })
   @IsNotEmpty({ message: 'El proveedor es obligatorio para los productos.' })
   proveedorId?: string;
+
+  @ValidateIf((o) => o.tipo === TipoSubServicio.PRODUCTO)
+  @IsUUID('4', { message: 'La categoria debe ser un UUID válido.' })
+  @IsNotEmpty({ message: 'La categoria es obligatoria para los productos.' })
+  categoriaId?: string;
+
+  @ValidateIf((o) => o.tipo === TipoSubServicio.PRODUCTO)
+  @IsString({ message: 'El código de barra debe ser una cadena de texto.' })
+  @MaxLength(20, {
+    message: 'El código de barra no debe exceder los 20 caracteres.',
+  })
+  @IsNotEmpty({ message: 'El código de barra es obligatorio para productos.' })
+  codigo_barra?: string;
+
+  @ValidateIf((o) => o.tipo === TipoSubServicio.PRODUCTO)
+  @IsString({ message: 'Los atributos deben ser una cadena de texto.' })
+  @MaxLength(250, {
+    message: 'Los atributos no deben exceder los 250 caracteres.',
+  })
+  @IsNotEmpty({ message: 'Los atributos son obligatorios para productos.' })
+  atributos?: string;
+
+  @ValidateIf((o) => o.tipo === TipoSubServicio.PRODUCTO)
+  @IsNumber({}, { message: 'El tax_rate debe ser un número válido.' })
+  @Min(0, { message: 'El tax_rate no puede ser negativo.' })
+  @IsNotEmpty({ message: 'El tax_rate es obligatorio para productos.' })
+  tax_rate?: number;
+
+  @ValidateIf((o) => o.tipo === TipoSubServicio.PRODUCTO)
+  @IsNumber({}, { message: 'El precio debe ser un número válido.' })
+  @Min(0, { message: 'El precio no puede ser negativo.' })
+  @IsNotEmpty({ message: 'El precio es obligatorio para productos.' })
+  precio?: number;
+
+  @ValidateIf((o) => o.tipo === TipoSubServicio.PRODUCTO)
+  @IsNumber({}, { message: 'El costo debe ser un número válido.' })
+  @Min(0, { message: 'El costo no puede ser negativo.' })
+  @IsNotEmpty({ message: 'El costo es obligatorio para productos.' })
+  costo?: number;
+
+  @ValidateIf((o) => o.tipo === TipoSubServicio.PRODUCTO)
+  @IsUUID('4', { message: 'El paisId debe ser un UUID válido.' })
+  @IsNotEmpty({ message: 'El país es obligatorio para productos.' })
+  paisId?: string;
 }

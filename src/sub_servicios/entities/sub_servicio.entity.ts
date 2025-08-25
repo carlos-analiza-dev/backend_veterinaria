@@ -17,6 +17,7 @@ import {
 import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
 import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
 import { Marca } from 'src/marcas/entities/marca.entity';
+import { Categoria } from 'src/categorias/entities/categoria.entity';
 
 export enum UnidadVenta {
   UNIDAD = 'unidad',
@@ -38,11 +39,20 @@ export class SubServicio {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 100, unique: true })
+  @Column({ length: 100 })
   nombre: string;
 
   @Column({ length: 50 })
   codigo: string;
+
+  @Column({ length: 20, nullable: true })
+  codigo_barra?: string;
+
+  @Column({ length: 250, nullable: true })
+  atributos?: string;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
+  tax_rate?: number;
 
   @Column({
     type: 'enum',
@@ -90,11 +100,21 @@ export class SubServicio {
   @JoinColumn({ name: 'proveedor_id' })
   proveedor: Proveedor | null;
 
+  @ManyToOne(() => Categoria, (categoria) => categoria.productos, {
+    nullable: true,
+    eager: true,
+  })
+  @JoinColumn({ name: 'categoria_id' })
+  categoria: Categoria | null;
+
   @Column({ name: 'marca_id', nullable: true })
   marcaId: string | null;
 
   @Column({ name: 'proveedor_id', nullable: true })
   proveedorId: string | null;
+
+  @Column({ name: 'categoria_id', nullable: true })
+  categoriaId: string | null;
 
   @ManyToOne(() => Servicio, (servicio) => servicio.subServicios, {
     nullable: true,
@@ -127,12 +147,29 @@ export class SubServicio {
       if (!this.proveedor && !this.proveedorId) {
         throw new Error('Los productos deben tener un proveedor asociado');
       }
+      if (!this.categoria && !this.categoriaId) {
+        throw new Error('Los productos deben tener una categoría asociada');
+      }
+      if (!this.codigo_barra) {
+        throw new Error('Los productos deben tener un código de barra');
+      }
+      if (!this.atributos) {
+        throw new Error('Los productos deben tener atributos definidos');
+      }
+      if (this.tax_rate == null) {
+        throw new Error(
+          'Los productos deben tener una tasa de impuesto (tax_rate)',
+        );
+      }
     } else if (this.tipo === TipoSubServicio.SERVICIO) {
       if (this.marca || this.marcaId) {
         throw new Error('Los servicios no pueden tener marca asociada');
       }
       if (this.proveedor || this.proveedorId) {
         throw new Error('Los servicios no pueden tener proveedor asociado');
+      }
+      if (this.categoria || this.categoriaId) {
+        throw new Error('Los servicios no pueden tener categoría asociada');
       }
     }
   }

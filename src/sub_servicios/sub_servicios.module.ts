@@ -8,6 +8,8 @@ import { Pai } from 'src/pais/entities/pai.entity';
 import { InventarioProducto } from 'src/inventario_productos/entities/inventario_producto.entity';
 import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
 import { Marca } from 'src/marcas/entities/marca.entity';
+import { Categoria } from 'src/categorias/entities/categoria.entity';
+import { ServiciosPai } from 'src/servicios_pais/entities/servicios_pai.entity';
 
 @Module({
   controllers: [SubServiciosController],
@@ -19,6 +21,8 @@ import { Marca } from 'src/marcas/entities/marca.entity';
       InventarioProducto,
       Proveedor,
       Marca,
+      Categoria,
+      ServiciosPai,
     ]),
   ],
   providers: [SubServiciosService],

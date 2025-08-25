@@ -10,6 +10,11 @@ export class CreateServiciosPaiDto {
   @IsNotEmpty({ message: 'El precio es obligatorio' })
   precio: number;
 
+  @IsNumber()
+  @Min(1, { message: 'El costo no debe ser menor o igual a cero' })
+  @IsOptional()
+  costo?: number;
+
   @IsNumber({}, { message: 'El tiempo debe ser un número.' })
   tiempo?: number;
 

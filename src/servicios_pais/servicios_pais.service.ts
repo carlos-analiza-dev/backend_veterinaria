@@ -29,6 +29,7 @@ export class ServiciosPaisService {
       paisId,
       precio,
       tiempo,
+      costo,
       cantidadMin,
       cantidadMax,
     } = createServiciosPaiDto;
@@ -54,6 +55,7 @@ export class ServiciosPaisService {
         pais: pais_exist,
         subServicio: servicio_exist,
         precio,
+        costo,
         tiempo,
         cantidadMin,
         cantidadMax,
