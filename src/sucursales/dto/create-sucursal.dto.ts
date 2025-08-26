@@ -29,4 +29,8 @@ export class CreateSucursalDto {
   @IsUUID('4', { message: 'El ID del departamento debe ser un UUID válido' })
   @IsNotEmpty({ message: 'El departamento es requerido' })
   departamentoId: string;
+
+  @IsUUID('4', { message: 'El ID del gerente debe ser un UUID válido' })
+  @IsNotEmpty({ message: 'El gerente es requerido' })
+  gerenteId: string;
 }

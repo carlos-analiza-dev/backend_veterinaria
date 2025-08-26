@@ -3,10 +3,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { SucursalesService } from './sucursales.service';
 import { SucursalesController } from './sucursales.controller';
 import { Sucursal } from './entities/sucursal.entity';
+import { User } from '../auth/entities/auth.entity';
 import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Sucursal]), AuthModule],
+  imports: [TypeOrmModule.forFeature([Sucursal, User]), AuthModule],
   controllers: [SucursalesController],
   providers: [SucursalesService],
   exports: [TypeOrmModule, SucursalesService],

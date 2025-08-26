@@ -1,4 +1,3 @@
-// src/sucursales/entities/sucursal.entity.ts
 import {
   Column,
   Entity,
@@ -8,6 +7,7 @@ import {
 } from 'typeorm';
 import { MunicipiosDepartamentosPai } from '../../municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { DepartamentosPai } from '../../departamentos_pais/entities/departamentos_pai.entity';
+import { User } from '../../auth/entities/auth.entity';
 
 export enum TipoSucursal {
   BODEGA = 'bodega',
@@ -49,6 +49,14 @@ export class Sucursal {
 
   @Column({ type: 'uuid', nullable: true })
   departamentoId: string;
+
+  // Relación con Gerente (Usuario)
+  @ManyToOne(() => User, { eager: true })
+  @JoinColumn({ name: 'gerenteId' })
+  gerente: User;
+
+  @Column({ type: 'uuid' })
+  gerenteId: string;
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;

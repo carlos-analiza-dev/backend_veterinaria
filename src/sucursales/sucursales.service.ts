@@ -10,12 +10,15 @@ import { CreateSucursalDto } from './dto/create-sucursal.dto';
 import { UpdateSucursalDto } from './dto/update-sucursal.dto';
 import { Sucursal } from './entities/sucursal.entity';
 import { PaginationDto } from '../common/dto/pagination-common.dto';
+import { User } from '../auth/entities/auth.entity';
 
 @Injectable()
 export class SucursalesService {
   constructor(
     @InjectRepository(Sucursal)
     private readonly sucursalRepository: Repository<Sucursal>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) {}
 
   async create(createSucursalDto: CreateSucursalDto): Promise<Sucursal> {
@@ -31,6 +34,17 @@ export class SucursalesService {
         );
       }
 
+      // Verificar que el gerente existe
+      const gerente = await this.userRepository.findOne({
+        where: { id: createSucursalDto.gerenteId },
+      });
+
+      if (!gerente) {
+        throw new NotFoundException(
+          `Gerente con ID ${createSucursalDto.gerenteId} no encontrado`,
+        );
+      }
+
       const sucursal = this.sucursalRepository.create(createSucursalDto);
       return await this.sucursalRepository.save(sucursal);
     } catch (error) {
@@ -43,7 +57,7 @@ export class SucursalesService {
 
     try {
       const [sucursales, total] = await this.sucursalRepository.findAndCount({
-        relations: ['municipio', 'departamento'],
+        relations: ['municipio', 'departamento', 'gerente'],
         where: { isActive: true },
         take: limit,
         skip: offset,
@@ -65,7 +79,7 @@ export class SucursalesService {
     try {
       const sucursal = await this.sucursalRepository.findOne({
         where: { id },
-        relations: ['municipio', 'departamento'],
+        relations: ['municipio', 'departamento', 'gerente'],
       });
 
       if (!sucursal) {
@@ -87,7 +101,7 @@ export class SucursalesService {
           tipo: tipo as any,
           isActive: true,
         },
-        relations: ['municipio', 'departamento'],
+        relations: ['municipio', 'departamento', 'gerente'],
         take: limit,
         skip: offset,
         order: { createdAt: 'DESC' },
@@ -113,7 +127,7 @@ export class SucursalesService {
           municipioId,
           isActive: true,
         },
-        relations: ['municipio', 'departamento'],
+        relations: ['municipio', 'departamento', 'gerente'],
         take: limit,
         skip: offset,
         order: { createdAt: 'DESC' },
@@ -142,7 +156,7 @@ export class SucursalesService {
           departamentoId,
           isActive: true,
         },
-        relations: ['municipio', 'departamento'],
+        relations: ['municipio', 'departamento', 'gerente'],
         take: limit,
         skip: offset,
         order: { createdAt: 'DESC' },
@@ -178,6 +192,19 @@ export class SucursalesService {
         if (existingSucursal) {
           throw new BadRequestException(
             `Ya existe una sucursal con el nombre: ${updateSucursalDto.nombre}`,
+          );
+        }
+      }
+
+      // Si se está actualizando el gerente, verificar que existe
+      if (updateSucursalDto.gerenteId) {
+        const gerente = await this.userRepository.findOne({
+          where: { id: updateSucursalDto.gerenteId },
+        });
+
+        if (!gerente) {
+          throw new NotFoundException(
+            `Gerente con ID ${updateSucursalDto.gerenteId} no encontrado`,
           );
         }
       }
