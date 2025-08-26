@@ -35,6 +35,7 @@ import { ProveedoresModule } from './proveedores/proveedores.module';
 import { MarcasModule } from './marcas/marcas.module';
 import { CategoriasModule } from './categorias/categorias.module';
 import { SubcategoriasModule } from './subcategorias/subcategorias.module';
+import { SucursalesModule } from './sucursales/sucursales.module';
 
 @Module({
   imports: [
@@ -99,6 +100,8 @@ import { SubcategoriasModule } from './subcategorias/subcategorias.module';
 
     CategoriasModule,
     SubcategoriasModule,
+
+    SucursalesModule,
   ],
   controllers: [],
   providers: [],
