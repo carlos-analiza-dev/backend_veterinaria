@@ -56,6 +56,7 @@ export class SubServiciosService {
       precio,
       costo,
       paisId,
+      codigo,
     } = createSubServicioDto;
 
     try {
@@ -155,29 +156,13 @@ export class SubServiciosService {
         }
       }
 
-      const codigoPrefix = tipo === TipoSubServicio.PRODUCTO ? 'PROD' : 'SERV';
-      let codigo: string;
-      let codigoUnico = false;
-      let intentos = 0;
-
-      while (!codigoUnico && intentos < 5) {
-        codigo = `${codigoPrefix}-${randomBytes(3)
-          .toString('hex')
-          .toUpperCase()}`;
-
-        const codigoExistente = await this.sub_servicio_repo.findOne({
-          where: { codigo },
-        });
-
-        if (!codigoExistente) {
-          codigoUnico = true;
-        }
-        intentos++;
-      }
-
-      if (!codigoUnico) {
-        throw new InternalServerErrorException('Error generando código único');
-      }
+      const servicio_exist_codigo = await this.sub_servicio_repo.findOne({
+        where: { codigo: codigo },
+      });
+      if (servicio_exist_codigo)
+        throw new ConflictException(
+          'Ya existe un servicio/producto con este codigo',
+        );
 
       const subServicio = this.sub_servicio_repo.create({
         nombre,
@@ -354,7 +339,7 @@ export class SubServiciosService {
       });
       if (!sub_servicios || sub_servicios.length === 0) {
         throw new BadRequestException(
-          'No se encontraron sub_servicios disponibles',
+          'No se encontraron servicios disponibles',
         );
       }
       return sub_servicios;
@@ -453,6 +438,7 @@ export class SubServiciosService {
       precio,
       proveedorId,
       tax_rate,
+      codigo,
     } = updateSubServicioDto;
 
     try {
@@ -510,7 +496,7 @@ export class SubServiciosService {
 
       if (isActive === false && disponible === true) {
         throw new BadRequestException(
-          'No se puede tener un sub-servicio inactivo pero disponible',
+          'No se puede tener un servicio/producto inactivo pero disponible',
         );
       }
 

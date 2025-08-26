@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { User } from 'src/auth/entities/auth.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
+import { Insumo } from 'src/insumos/entities/insumo.entity';
 
 @Entity('marcas')
 export class Marca {
@@ -32,6 +33,9 @@ export class Marca {
 
   @OneToMany(() => SubServicio, (producto) => producto.marca)
   productos: SubServicio[];
+
+  @OneToMany(() => Insumo, (insumo) => insumo.marca)
+  insumos: Insumo[];
 
   // Campos de auditoría
   @ManyToOne(() => User, { eager: true })

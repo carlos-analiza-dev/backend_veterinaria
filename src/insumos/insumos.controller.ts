@@ -6,10 +6,15 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { InsumosService } from './insumos.service';
 import { CreateInsumoDto } from './dto/create-insumo.dto';
 import { UpdateInsumoDto } from './dto/update-insumo.dto';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { Auth } from 'src/auth/decorators/auth.decorator';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { User } from 'src/auth/entities/auth.entity';
 
 @Controller('insumos')
 export class InsumosController {
@@ -21,13 +26,19 @@ export class InsumosController {
   }
 
   @Get()
-  findAll() {
-    return this.insumosService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.insumosService.findAll(paginationDto);
   }
 
   @Get('insumos-disponibles')
   findInsumosDisponibles() {
     return this.insumosService.findInsumosDisponibles();
+  }
+
+  @Get('insumos-sin-inventario')
+  @Auth()
+  findInsumosSinInventario(@GetUser() user: User) {
+    return this.insumosService.findInsumosSinInventario(user);
   }
 
   @Get(':id')
@@ -38,10 +49,5 @@ export class InsumosController {
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateInsumoDto: UpdateInsumoDto) {
     return this.insumosService.update(id, updateInsumoDto);
-  }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.insumosService.remove(id);
   }
 }

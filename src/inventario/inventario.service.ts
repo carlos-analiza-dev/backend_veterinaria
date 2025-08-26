@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,6 +11,8 @@ import { CreateInventarioDto } from './dto/create-inventario.dto';
 import { UpdateInventarioDto } from './dto/update-inventario.dto';
 import { Inventario } from './entities/inventario.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { Pai } from 'src/pais/entities/pai.entity';
 
 @Injectable()
 export class InventarioService {
@@ -19,36 +22,74 @@ export class InventarioService {
 
     @InjectRepository(Insumo)
     private readonly insumoRepository: Repository<Insumo>,
+
+    @InjectRepository(Pai)
+    private readonly paisRepository: Repository<Pai>,
   ) {}
 
   async create(createInventarioDto: CreateInventarioDto) {
-    const insumo = await this.insumoRepository.findOneBy({
-      id: createInventarioDto.insumoId,
-    });
-    if (!insumo)
-      throw new NotFoundException(
-        `Insumo con ID ${createInventarioDto.insumoId} no encontrado`,
-      );
+    try {
+      const insumo = await this.insumoRepository.findOneBy({
+        id: createInventarioDto.insumoId,
+      });
+      if (!insumo)
+        throw new NotFoundException(
+          `Insumo con ID ${createInventarioDto.insumoId} no encontrado`,
+        );
 
-    const insumo_exist_inventario = await this.inventarioRepository.findOne({
-      where: { insumo: insumo },
-    });
-    if (insumo_exist_inventario)
-      throw new BadRequestException(
-        'Este insumo ya tiene un inventario establecido',
-      );
+      const insumo_exist_inventario = await this.inventarioRepository.findOne({
+        where: { insumo: insumo },
+      });
+      if (insumo_exist_inventario)
+        throw new BadRequestException(
+          'Este insumo ya tiene un inventario establecido',
+        );
 
-    const inventario = this.inventarioRepository.create({
-      insumo,
-      cantidadDisponible: createInventarioDto.cantidadDisponible,
-      stockMinimo: createInventarioDto.stockMinimo,
-    });
+      const inventario = this.inventarioRepository.create({
+        insumo,
+        cantidadDisponible: createInventarioDto.cantidadDisponible,
+        stockMinimo: createInventarioDto.stockMinimo,
+      });
 
-    return this.inventarioRepository.save(inventario);
+      return this.inventarioRepository.save(inventario);
+    } catch (error) {
+      throw error;
+    }
   }
 
-  async findAll(): Promise<Inventario[]> {
-    return this.inventarioRepository.find({ relations: ['insumo'] });
+  async findAll(paginationDto: PaginationDto) {
+    const { limit = 10, offset = 0, pais = '' } = paginationDto;
+
+    try {
+      const pais_exist = await this.paisRepository.findOne({
+        where: { id: pais },
+      });
+
+      if (!pais_exist) {
+        throw new NotFoundException('No se encontró el país seleccionado');
+      }
+
+      const [inventario, total] = await this.inventarioRepository.findAndCount({
+        relations: ['insumo'],
+        where: {
+          insumo: {
+            pais: { id: pais },
+          },
+        },
+        skip: offset,
+        take: limit,
+      });
+
+      if (!inventario || inventario.length === 0) {
+        throw new NotFoundException(
+          'No se encontró inventario en estos momentos',
+        );
+      }
+
+      return { inventario, total };
+    } catch (error) {
+      throw error;
+    }
   }
 
   async findInsumosDisponibles() {

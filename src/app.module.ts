@@ -35,6 +35,8 @@ import { ProveedoresModule } from './proveedores/proveedores.module';
 import { MarcasModule } from './marcas/marcas.module';
 import { CategoriasModule } from './categorias/categorias.module';
 import { SubcategoriasModule } from './subcategorias/subcategorias.module';
+import { InsumosModule } from './insumos/insumos.module';
+import { InventarioModule } from './inventario/inventario.module';
 
 @Module({
   imports: [
@@ -80,6 +82,7 @@ import { SubcategoriasModule } from './subcategorias/subcategorias.module';
     InsumosUsuarioModule,
 
     AnalisisUsuarioModule,
+    InventarioModule,
 
     ProduccionFincaModule,
 
@@ -88,6 +91,8 @@ import { SubcategoriasModule } from './subcategorias/subcategorias.module';
     ProduccionAgricolaModule,
 
     ProduccionForrajesInsumosModule,
+
+    InsumosModule,
 
     ProduccionAlternativaModule,
 

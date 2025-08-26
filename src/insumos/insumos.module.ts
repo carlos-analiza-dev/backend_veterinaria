@@ -5,10 +5,26 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Insumo } from './entities/insumo.entity';
 import { Inventario } from 'src/inventario/entities/inventario.entity';
 import { CitaInsumo } from 'src/cita_insumos/entities/cita_insumo.entity';
+import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
+import { Marca } from 'src/marcas/entities/marca.entity';
+import { Pai } from 'src/pais/entities/pai.entity';
+import { AuthModule } from 'src/auth/auth.module';
+import { User } from 'src/auth/entities/auth.entity';
 
 @Module({
   controllers: [InsumosController],
-  imports: [TypeOrmModule.forFeature([Insumo, CitaInsumo, Inventario])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Insumo,
+      CitaInsumo,
+      Inventario,
+      Proveedor,
+      Marca,
+      Pai,
+      User,
+    ]),
+    AuthModule,
+  ],
   providers: [InsumosService],
 })
 export class InsumosModule {}

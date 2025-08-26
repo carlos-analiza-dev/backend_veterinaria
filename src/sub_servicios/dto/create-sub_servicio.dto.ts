@@ -55,6 +55,12 @@ export class CreateSubServicioDto {
   disponible?: boolean;
 
   @ValidateIf((o) => o.tipo === TipoSubServicio.PRODUCTO)
+  @IsString({ message: 'El código debe ser una cadena de texto.' })
+  @IsNotEmpty({ message: 'El código es obligatorio.' })
+  @MaxLength(20, { message: 'El código no debe superar los 20 caracteres.' })
+  codigo: string;
+
+  @ValidateIf((o) => o.tipo === TipoSubServicio.PRODUCTO)
   @IsUUID('4', { message: 'El marcaId debe ser un UUID válido.' })
   @IsNotEmpty({ message: 'La marca es obligatoria para los productos.' })
   marcaId?: string;

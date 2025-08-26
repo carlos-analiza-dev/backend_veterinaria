@@ -100,7 +100,7 @@ export class ServiciosPaisService {
       throw new NotFoundException(`No se encontró el servicio con id ${id}`);
     }
 
-    const { paisId, precio, tiempo, cantidadMin, cantidadMax } =
+    const { paisId, precio, tiempo, cantidadMin, cantidadMax, costo } =
       updateServiciosPaiDto;
 
     if (paisId) {
@@ -112,6 +112,8 @@ export class ServiciosPaisService {
     }
 
     if (precio !== undefined) servicio.precio = precio;
+
+    if (costo !== undefined) servicio.costo = costo;
 
     if (tiempo !== undefined) servicio.tiempo = tiempo;
 

@@ -42,7 +42,7 @@ export class SubServicio {
   @Column({ length: 100 })
   nombre: string;
 
-  @Column({ length: 50 })
+  @Column({ length: 50, default: null })
   codigo: string;
 
   @Column({ length: 20, nullable: true })

@@ -1,5 +1,6 @@
 import { User } from 'src/auth/entities/auth.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
+import { Insumo } from 'src/insumos/entities/insumo.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
@@ -67,4 +68,7 @@ export class Proveedor {
 
   @OneToMany(() => SubServicio, (producto) => producto.proveedor)
   productos: SubServicio[];
+
+  @OneToMany(() => Insumo, (insumo) => insumo.proveedor)
+  insumos: Insumo[];
 }
