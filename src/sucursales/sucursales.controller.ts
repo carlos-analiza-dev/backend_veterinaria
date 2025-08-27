@@ -12,6 +12,7 @@ import {
 import { SucursalesService } from './sucursales.service';
 import { CreateSucursalDto } from './dto/create-sucursal.dto';
 import { UpdateSucursalDto } from './dto/update-sucursal.dto';
+import { FilterSucursalDto } from './dto/filter-sucursal.dto';
 import { PaginationDto } from '../common/dto/pagination-common.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ValidRoles } from '../interfaces/valid-roles.interface';
@@ -28,44 +29,29 @@ export class SucursalesController {
 
   @Get()
   @Auth()
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.sucursalesService.findAll(paginationDto);
+  findAll(@Query() filterDto: FilterSucursalDto) {
+    return this.sucursalesService.findAll(filterDto);
+  }
+
+  @Get('active')
+  @Auth()
+  findAllActive(@Query() paginationDto: PaginationDto) {
+    return this.sucursalesService.findAllActive(paginationDto);
+  }
+
+  @Get('pais/:paisId')
+  @Auth()
+  findByPais(
+    @Param('paisId', ParseUUIDPipe) paisId: string,
+    @Query() filterDto: FilterSucursalDto,
+  ) {
+    return this.sucursalesService.findByPais(paisId, filterDto);
   }
 
   @Get('stats')
   @Auth(ValidRoles.Administrador)
-  getStats() {
-    return this.sucursalesService.getStats();
-  }
-
-  @Get('tipo/:tipo')
-  @Auth()
-  findByTipo(
-    @Param('tipo') tipo: string,
-    @Query() paginationDto: PaginationDto,
-  ) {
-    return this.sucursalesService.findByTipo(tipo, paginationDto);
-  }
-
-  @Get('municipio/:municipioId')
-  @Auth()
-  findByMunicipio(
-    @Param('municipioId', ParseUUIDPipe) municipioId: string,
-    @Query() paginationDto: PaginationDto,
-  ) {
-    return this.sucursalesService.findByMunicipio(municipioId, paginationDto);
-  }
-
-  @Get('departamento/:departamentoId')
-  @Auth()
-  findByDepartamento(
-    @Param('departamentoId', ParseUUIDPipe) departamentoId: string,
-    @Query() paginationDto: PaginationDto,
-  ) {
-    return this.sucursalesService.findByDepartamento(
-      departamentoId,
-      paginationDto,
-    );
+  getStats(@Query('paisId') paisId?: string) {
+    return this.sucursalesService.getStats(paisId);
   }
 
   @Get(':id')

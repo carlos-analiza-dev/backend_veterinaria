@@ -8,6 +8,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateSucursalDto } from './dto/create-sucursal.dto';
 import { UpdateSucursalDto } from './dto/update-sucursal.dto';
+import { FilterSucursalDto } from './dto/filter-sucursal.dto';
 import { Sucursal } from './entities/sucursal.entity';
 import { PaginationDto } from '../common/dto/pagination-common.dto';
 import { User } from '../auth/entities/auth.entity';
@@ -52,34 +53,98 @@ export class SucursalesService {
     }
   }
 
-  async findAll(paginationDto?: PaginationDto) {
-    const { limit = 10, offset = 0 } = paginationDto || {};
+  async findAll(filterDto: FilterSucursalDto) {
+    const {
+      limit = 10,
+      offset = 0,
+      tipo,
+      paisId,
+      departamentoId,
+      municipioId,
+      isActive,
+      search,
+    } = filterDto;
 
     try {
-      const [sucursales, total] = await this.sucursalRepository.findAndCount({
-        relations: ['municipio', 'departamento', 'gerente'],
-        where: { isActive: true },
-        take: limit,
-        skip: offset,
-        order: { createdAt: 'DESC' },
-      });
+      const queryBuilder = this.sucursalRepository
+        .createQueryBuilder('sucursal')
+        .leftJoinAndSelect('sucursal.pais', 'pais')
+        .leftJoinAndSelect('sucursal.departamento', 'departamento')
+        .leftJoinAndSelect('sucursal.municipio', 'municipio')
+        .leftJoinAndSelect('sucursal.gerente', 'gerente');
+
+      // Aplicar filtros opcionales
+      if (tipo) {
+        queryBuilder.andWhere('sucursal.tipo = :tipo', { tipo });
+      }
+
+      if (paisId) {
+        queryBuilder.andWhere('sucursal.paisId = :paisId', { paisId });
+      }
+
+      if (departamentoId) {
+        queryBuilder.andWhere('sucursal.departamentoId = :departamentoId', {
+          departamentoId,
+        });
+      }
+
+      if (municipioId) {
+        queryBuilder.andWhere('sucursal.municipioId = :municipioId', {
+          municipioId,
+        });
+      }
+
+      if (isActive !== undefined) {
+        queryBuilder.andWhere('sucursal.isActive = :isActive', { isActive });
+      }
+
+      if (search) {
+        queryBuilder.andWhere('sucursal.nombre ILIKE :search', {
+          search: `%${search}%`,
+        });
+      }
+
+      queryBuilder
+        .take(limit)
+        .skip(offset)
+        .orderBy('sucursal.createdAt', 'DESC');
+
+      const [sucursales, total] = await queryBuilder.getManyAndCount();
 
       return {
         data: sucursales,
         total,
         limit,
         offset,
+        filters: {
+          tipo,
+          paisId,
+          departamentoId,
+          municipioId,
+          isActive,
+          search,
+        },
       };
     } catch (error) {
       this.handleDBExceptions(error);
     }
   }
 
+  // Obtener solo sucursales activas
+  async findAllActive(paginationDto: PaginationDto) {
+    return this.findAll({ ...paginationDto, isActive: true });
+  }
+
+  // Obtener sucursales por país
+  async findByPais(paisId: string, filterDto?: FilterSucursalDto) {
+    return this.findAll({ ...filterDto, paisId });
+  }
+
   async findOne(id: string): Promise<Sucursal> {
     try {
       const sucursal = await this.sucursalRepository.findOne({
         where: { id },
-        relations: ['municipio', 'departamento', 'gerente'],
+        relations: ['pais', 'municipio', 'departamento', 'gerente'],
       });
 
       if (!sucursal) {
@@ -87,87 +152,6 @@ export class SucursalesService {
       }
 
       return sucursal;
-    } catch (error) {
-      this.handleDBExceptions(error);
-    }
-  }
-
-  async findByTipo(tipo: string, paginationDto?: PaginationDto) {
-    const { limit = 10, offset = 0 } = paginationDto || {};
-
-    try {
-      const [sucursales, total] = await this.sucursalRepository.findAndCount({
-        where: {
-          tipo: tipo as any,
-          isActive: true,
-        },
-        relations: ['municipio', 'departamento', 'gerente'],
-        take: limit,
-        skip: offset,
-        order: { createdAt: 'DESC' },
-      });
-
-      return {
-        data: sucursales,
-        total,
-        limit,
-        offset,
-      };
-    } catch (error) {
-      this.handleDBExceptions(error);
-    }
-  }
-
-  async findByMunicipio(municipioId: string, paginationDto?: PaginationDto) {
-    const { limit = 10, offset = 0 } = paginationDto || {};
-
-    try {
-      const [sucursales, total] = await this.sucursalRepository.findAndCount({
-        where: {
-          municipioId,
-          isActive: true,
-        },
-        relations: ['municipio', 'departamento', 'gerente'],
-        take: limit,
-        skip: offset,
-        order: { createdAt: 'DESC' },
-      });
-
-      return {
-        data: sucursales,
-        total,
-        limit,
-        offset,
-      };
-    } catch (error) {
-      this.handleDBExceptions(error);
-    }
-  }
-
-  async findByDepartamento(
-    departamentoId: string,
-    paginationDto?: PaginationDto,
-  ) {
-    const { limit = 10, offset = 0 } = paginationDto || {};
-
-    try {
-      const [sucursales, total] = await this.sucursalRepository.findAndCount({
-        where: {
-          departamentoId,
-          isActive: true,
-        },
-        relations: ['municipio', 'departamento', 'gerente'],
-        take: limit,
-        skip: offset,
-        order: { createdAt: 'DESC' },
-      });
-
-      return {
-        data: sucursales,
-        total,
-        limit,
-        offset,
-      };
     } catch (error) {
       this.handleDBExceptions(error);
     }
@@ -231,37 +215,59 @@ export class SucursalesService {
   }
 
   // Método para obtener estadísticas
-  async getStats() {
+  async getStats(paisId?: string) {
     try {
+      const queryBase = { isActive: true };
+
+      if (paisId) {
+        Object.assign(queryBase, { paisId });
+      }
+
       const [
-        totalSucursales,
+        totalActivas,
+        totalInactivas,
         totalBodegas,
         totalCasasMatriz,
         totalSucursalesNormales,
       ] = await Promise.all([
-        this.sucursalRepository.count({ where: { isActive: true } }),
+        this.sucursalRepository.count({ where: queryBase }),
         this.sucursalRepository.count({
-          where: { tipo: 'bodega' as any, isActive: true },
+          where: { ...queryBase, isActive: false },
         }),
         this.sucursalRepository.count({
-          where: { tipo: 'casa_matriz' as any, isActive: true },
+          where: { ...queryBase, tipo: 'bodega' as any },
         }),
         this.sucursalRepository.count({
-          where: { tipo: 'sucursal' as any, isActive: true },
+          where: { ...queryBase, tipo: 'casa_matriz' as any },
+        }),
+        this.sucursalRepository.count({
+          where: { ...queryBase, tipo: 'sucursal' as any },
         }),
       ]);
 
+      const totalGeneral = await this.sucursalRepository.count(
+        paisId ? { where: { paisId } } : {},
+      );
+
       return {
-        total: totalSucursales,
+        total: totalGeneral,
+        activas: totalActivas,
+        inactivas: totalInactivas,
         porTipo: {
           bodegas: totalBodegas,
           casasMatriz: totalCasasMatriz,
           sucursales: totalSucursalesNormales,
         },
+        filtradoPor: paisId ? { paisId } : null,
       };
     } catch (error) {
       this.handleDBExceptions(error);
     }
+  }
+
+  // Método para obtener sucursales agrupadas por gerente
+  async findByGerente(gerenteId: string, paginationDto?: PaginationDto) {
+    return this.findAll({ ...paginationDto, search: undefined });
   }
 
   private handleDBExceptions(error: any): never {

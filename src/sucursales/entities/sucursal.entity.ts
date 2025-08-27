@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { MunicipiosDepartamentosPai } from '../../municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { DepartamentosPai } from '../../departamentos_pais/entities/departamentos_pai.entity';
+import { Pai } from '../../pais/entities/pai.entity';
 import { User } from '../../auth/entities/auth.entity';
 
 export enum TipoSucursal {
@@ -34,13 +35,13 @@ export class Sucursal {
   @Column({ type: 'varchar', length: 255 })
   direccion_complemento: string;
 
-  // Relación con Municipio
-  @ManyToOne(() => MunicipiosDepartamentosPai, { eager: true })
-  @JoinColumn({ name: 'municipioId' })
-  municipio: MunicipiosDepartamentosPai;
+  // Relación con País
+  @ManyToOne(() => Pai, { eager: true })
+  @JoinColumn({ name: 'paisId' })
+  pais: Pai;
 
-  @Column({ type: 'uuid', nullable: true })
-  municipioId: string;
+  @Column({ type: 'uuid' })
+  paisId: string;
 
   // Relación con Departamento
   @ManyToOne(() => DepartamentosPai, { eager: true })
@@ -49,6 +50,14 @@ export class Sucursal {
 
   @Column({ type: 'uuid', nullable: true })
   departamentoId: string;
+
+  // Relación con Municipio
+  @ManyToOne(() => MunicipiosDepartamentosPai, { eager: true })
+  @JoinColumn({ name: 'municipioId' })
+  municipio: MunicipiosDepartamentosPai;
+
+  @Column({ type: 'uuid', nullable: true })
+  municipioId: string;
 
   // Relación con Gerente (Usuario)
   @ManyToOne(() => User, { eager: true })
