@@ -12,6 +12,9 @@ import { MedicosService } from './medicos.service';
 import { CreateMedicoDto } from './dto/create-medico.dto';
 import { UpdateMedicoDto } from './dto/update-medico.dto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { Auth } from 'src/auth/decorators/auth.decorator';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { User } from 'src/auth/entities/auth.entity';
 
 @Controller('medicos')
 export class MedicosController {
@@ -23,8 +26,9 @@ export class MedicosController {
   }
 
   @Get()
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.medicosService.findAll(paginationDto);
+  @Auth()
+  findAll(@GetUser() user: User, @Query() paginationDto: PaginationDto) {
+    return this.medicosService.findAll(user, paginationDto);
   }
 
   @Get(':id')

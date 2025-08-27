@@ -230,7 +230,9 @@ export class AuthService {
     }
   }
 
-  async getVeterinariosNoAsignados() {
+  async getVeterinariosNoAsignados(user: User) {
+    const paisId = user.pais.id;
+
     try {
       const veterinariosNoAsignados = await this.userRepository
         .createQueryBuilder('user')
@@ -239,12 +241,13 @@ export class AuthService {
         .where('user.isActive = :isActive', { isActive: true })
         .andWhere('role.name = :roleName', { roleName: 'Veterinario' })
         .andWhere('medico.id IS NULL')
+        .andWhere('user.paisId = :paisId', { paisId })
         .orderBy('user.name', 'ASC')
         .getMany();
 
       if (!veterinariosNoAsignados || veterinariosNoAsignados.length === 0) {
         throw new NotFoundException(
-          'No se encontraron veterinarios disponibles para asignar como médicos.',
+          'No se encontraron veterinarios disponibles para asignar como médicos en tu país.',
         );
       }
 
@@ -253,7 +256,6 @@ export class AuthService {
       throw error;
     }
   }
-
   async getUserById(userId: string) {
     try {
       const usuario = await this.userRepository.findOne({

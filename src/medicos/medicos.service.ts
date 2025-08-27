@@ -85,7 +85,8 @@ export class MedicosService {
     }
   }
 
-  async findAll(paginationDto: PaginationDto) {
+  async findAll(user: User, paginationDto: PaginationDto) {
+    const paisId = user.pais.id;
     const { limit = 10, offset = 0, name = '' } = paginationDto;
 
     try {
@@ -95,6 +96,8 @@ export class MedicosService {
         .leftJoinAndSelect('usuario.profileImages', 'profileImages')
         .leftJoinAndSelect('medico.areas_trabajo', 'areas_trabajo')
         .leftJoinAndSelect('medico.horarios', 'horarios')
+        .innerJoin('usuario.pais', 'pais')
+        .where('pais.id = :paisId', { paisId })
         .andWhere('LOWER(usuario.name) LIKE :name', {
           name: `%${name.toLowerCase()}%`,
         })
@@ -105,7 +108,7 @@ export class MedicosService {
 
       if (!medicos || medicos.length === 0) {
         throw new NotFoundException(
-          'No se encontraron médicos disponibles en este momento.',
+          'No se encontraron médicos disponibles en tu país en este momento.',
         );
       }
 

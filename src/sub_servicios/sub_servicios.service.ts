@@ -94,6 +94,14 @@ export class SubServiciosService {
             'Los productos deben tener un costo válido mayor a 0',
           );
         }
+
+        const servicio_exist_codigo = await this.sub_servicio_repo.findOne({
+          where: { codigo: codigo },
+        });
+        if (servicio_exist_codigo)
+          throw new ConflictException(
+            'Ya existe un servicio/producto con este codigo',
+          );
       }
 
       if (tipo === TipoSubServicio.SERVICIO) {
@@ -156,14 +164,6 @@ export class SubServiciosService {
         }
       }
 
-      const servicio_exist_codigo = await this.sub_servicio_repo.findOne({
-        where: { codigo: codigo },
-      });
-      if (servicio_exist_codigo)
-        throw new ConflictException(
-          'Ya existe un servicio/producto con este codigo',
-        );
-
       const subServicio = this.sub_servicio_repo.create({
         nombre,
         descripcion,
@@ -183,11 +183,12 @@ export class SubServiciosService {
         }),
       });
 
-      await this.sub_servicio_repo.save(subServicio);
+      const savedSubServicio = await this.sub_servicio_repo.save(subServicio);
 
+      let servicioPai = null;
       if (tipo === TipoSubServicio.PRODUCTO) {
-        const servicioPai = this.serviciosPaiRepo.create({
-          subServicio,
+        servicioPai = this.serviciosPaiRepo.create({
+          subServicio: savedSubServicio,
           pais,
           precio,
           costo,
@@ -199,7 +200,17 @@ export class SubServiciosService {
         await this.serviciosPaiRepo.save(servicioPai);
       }
 
-      return 'servicio creado exitosamente';
+      return await this.sub_servicio_repo.findOne({
+        where: { id: savedSubServicio.id },
+        relations: [
+          'servicio',
+          'marca',
+          'proveedor',
+          'categoria',
+          'preciosPorPais',
+          'preciosPorPais.pais',
+        ],
+      });
     } catch (error) {
       if (
         error instanceof ConflictException ||
@@ -214,6 +225,7 @@ export class SubServiciosService {
       );
     }
   }
+
   private validateProductRelations(
     dto: CreateSubServicioDto | UpdateSubServicioDto,
   ): void {
@@ -266,33 +278,28 @@ export class SubServiciosService {
     const { limit = 10, offset = 0, pais = '' } = paginationDto;
 
     try {
-      const whereConditions: any = {
-        tipo: TipoSubServicio.PRODUCTO,
-        isActive: true,
-      };
-
-      let relations = ['servicio', 'preciosPorPais', 'preciosPorPais.pais'];
+      const queryBuilder = this.sub_servicio_repo
+        .createQueryBuilder('producto')
+        .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
+        .andWhere('producto.isActive = :isActive', { isActive: true })
+        .leftJoinAndSelect('producto.servicio', 'servicio')
+        .leftJoinAndSelect('producto.preciosPorPais', 'preciosPorPais')
+        .leftJoinAndSelect('preciosPorPais.pais', 'pais')
+        .leftJoinAndSelect('producto.marca', 'marca')
+        .leftJoinAndSelect('producto.proveedor', 'proveedor')
+        .leftJoinAndSelect('producto.categoria', 'categoria')
+        .orderBy('producto.createdAt', 'DESC')
+        .take(limit)
+        .skip(offset);
 
       if (pais && pais.trim() !== '') {
-        relations = [
-          'servicio',
-          'preciosPorPais',
-          'preciosPorPais.pais',
-          'marca',
-          'proveedor',
-          'categoria',
-        ];
+        queryBuilder.andWhere(
+          '(pais.id = :paisId OR pais.nombre = :paisNombre)',
+          { paisId: pais, paisNombre: pais },
+        );
       }
 
-      const [servicios, total] = await this.sub_servicio_repo.findAndCount({
-        where: whereConditions,
-        relations: relations,
-        order: {
-          createdAt: 'DESC',
-        },
-        take: limit,
-        skip: offset,
-      });
+      const [servicios, total] = await queryBuilder.getManyAndCount();
 
       if (!servicios || servicios.length === 0) {
         throw new BadRequestException(
@@ -301,15 +308,8 @@ export class SubServiciosService {
         );
       }
 
-      let productosFiltrados = servicios;
       if (pais && pais.trim() !== '') {
-        productosFiltrados = servicios.filter((servicio) =>
-          servicio.preciosPorPais.some(
-            (precio) => precio.pais.id === pais || precio.pais.nombre === pais,
-          ),
-        );
-
-        productosFiltrados.forEach((producto) => {
+        servicios.forEach((producto) => {
           producto.preciosPorPais = producto.preciosPorPais.filter(
             (precio) => precio.pais.id === pais || precio.pais.nombre === pais,
           );
@@ -317,8 +317,8 @@ export class SubServiciosService {
       }
 
       return {
-        servicios: instanceToPlain(productosFiltrados),
-        total: productosFiltrados.length,
+        servicios: instanceToPlain(servicios),
+        total: servicios.length,
       };
     } catch (error) {
       throw error;
@@ -327,21 +327,25 @@ export class SubServiciosService {
 
   async findAll(servicioId: string) {
     try {
-      const servicio = await this.servicioRepo.findOne({
-        where: { id: servicioId },
-      });
-      if (!servicio)
-        throw new NotFoundException('No se encontro el servicio seleccionado');
-      const sub_servicios = await this.sub_servicio_repo.find({
-        where: {
-          servicio,
-        },
-      });
+      const sub_servicios = await this.sub_servicio_repo
+        .createQueryBuilder('sub_servicio')
+        .where('sub_servicio.servicioId = :servicioId', { servicioId })
+        .leftJoinAndSelect('sub_servicio.servicio', 'servicio')
+        .leftJoinAndSelect('sub_servicio.preciosPorPais', 'preciosPorPais')
+        .leftJoinAndSelect('preciosPorPais.pais', 'pais')
+        .leftJoinAndSelect('sub_servicio.marca', 'marca')
+        .leftJoinAndSelect('sub_servicio.proveedor', 'proveedor')
+        .leftJoinAndSelect('sub_servicio.categoria', 'categoria')
+        .leftJoinAndSelect('sub_servicio.insumos', 'insumos')
+        .orderBy('sub_servicio.createdAt', 'DESC')
+        .getMany();
+
       if (!sub_servicios || sub_servicios.length === 0) {
         throw new BadRequestException(
           'No se encontraron servicios disponibles',
         );
       }
+
       return sub_servicios;
     } catch (error) {
       throw error;

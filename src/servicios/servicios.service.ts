@@ -30,16 +30,31 @@ export class ServiciosService {
 
   async findAll(paginationDto: PaginationDto) {
     const { limit, offset } = paginationDto;
+
     try {
-      const [servicios, total] = await this.servicioRepo.findAndCount({
-        skip: offset,
-        take: limit,
-      });
-      if (!servicios || servicios.length === 0) {
+      const queryBuilder = this.servicioRepo
+        .createQueryBuilder('servicio')
+        .leftJoinAndSelect('servicio.subServicios', 'subServicios')
+        .leftJoinAndSelect('subServicios.preciosPorPais', 'preciosPorPais')
+        .leftJoinAndSelect('preciosPorPais.pais', 'pais')
+        .leftJoinAndSelect('subServicios.marca', 'marca')
+        .leftJoinAndSelect('subServicios.proveedor', 'proveedor')
+        .leftJoinAndSelect('subServicios.categoria', 'categoria')
+        .leftJoinAndSelect('subServicios.insumos', 'insumos')
+        .where('servicio.isActive = :isActive', { isActive: true })
+        .orderBy('servicio.createdAt', 'DESC');
+
+      if (limit !== undefined) queryBuilder.take(limit);
+      if (offset !== undefined) queryBuilder.skip(offset);
+
+      const [servicios, total] = await queryBuilder.getManyAndCount();
+
+      if (servicios.length === 0) {
         throw new NotFoundException(
           'No se encontraron servicios en este momento.',
         );
       }
+
       return { servicios, total };
     } catch (error) {
       throw error;

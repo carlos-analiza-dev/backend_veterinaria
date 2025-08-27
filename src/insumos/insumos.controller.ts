@@ -31,8 +31,9 @@ export class InsumosController {
   }
 
   @Get('insumos-disponibles')
-  findInsumosDisponibles() {
-    return this.insumosService.findInsumosDisponibles();
+  @Auth()
+  findInsumosDisponibles(@GetUser() user: User) {
+    return this.insumosService.findInsumosDisponibles(user);
   }
 
   @Get('insumos-sin-inventario')

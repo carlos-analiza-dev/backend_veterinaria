@@ -3,6 +3,7 @@ import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
 import { ServiciosPai } from 'src/servicios_pais/entities/servicios_pai.entity';
+import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('pais')
@@ -44,6 +45,9 @@ export class Pai {
 
   @OneToMany(() => FincasGanadero, (fincas) => fincas.propietario)
   fincas: FincasGanadero[];
+
+  @OneToMany(() => TaxesPai, (tax) => tax.pais)
+  taxes: TaxesPai[];
 
   @Column({ type: 'bool', default: true })
   isActive: boolean;

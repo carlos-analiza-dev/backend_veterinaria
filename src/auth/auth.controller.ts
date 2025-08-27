@@ -51,8 +51,8 @@ export class AuthController {
 
   @Get('veterinarios')
   @Auth()
-  getVeterinarios() {
-    return this.authService.getVeterinariosNoAsignados();
+  getVeterinarios(@GetUser() user: User) {
+    return this.authService.getVeterinariosNoAsignados(user);
   }
 
   @Get('user/:userId')

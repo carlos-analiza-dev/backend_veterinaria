@@ -18,6 +18,7 @@ import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
 import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
 import { Marca } from 'src/marcas/entities/marca.entity';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
+import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
 
 export enum UnidadVenta {
   UNIDAD = 'unidad',
@@ -107,6 +108,17 @@ export class SubServicio {
   @JoinColumn({ name: 'categoria_id' })
   categoria: Categoria | null;
 
+  @OneToMany(
+    () => ServicioInsumo,
+    (servicioInsumo) => servicioInsumo.servicio,
+    {
+      cascade: true,
+      eager: true,
+      nullable: true,
+    },
+  )
+  insumos: ServicioInsumo[];
+
   @Column({ name: 'marca_id', nullable: true })
   marcaId: string | null;
 
@@ -170,6 +182,9 @@ export class SubServicio {
       }
       if (this.categoria || this.categoriaId) {
         throw new Error('Los servicios no pueden tener categoría asociada');
+      }
+      if (this.codigo || this.codigo) {
+        throw new Error('Los servicios no pueden tener un codigo asociada');
       }
     }
   }

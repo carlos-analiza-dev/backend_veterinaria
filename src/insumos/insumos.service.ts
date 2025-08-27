@@ -112,16 +112,24 @@ export class InsumosService {
     };
   }
 
-  async findInsumosDisponibles() {
+  async findInsumosDisponibles(user: User) {
+    const paisId = user.pais.id;
+
     try {
       const insumos_disponibles = await this.insumoRepository.find({
-        where: { disponible: true },
+        where: {
+          disponible: true,
+          pais: { id: paisId },
+        },
+        relations: ['pais'],
       });
+
       if (!insumos_disponibles || insumos_disponibles.length === 0) {
         throw new NotFoundException(
-          'No se encontraron insumos disponibles en este momento',
+          'No se encontraron insumos disponibles en tu país en este momento',
         );
       }
+
       return { insumos: instanceToPlain(insumos_disponibles) };
     } catch (error) {
       throw error;

@@ -3,6 +3,7 @@ import { Inventario } from 'src/inventario/entities/inventario.entity';
 import { Marca } from 'src/marcas/entities/marca.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
+import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
 import {
   Column,
   CreateDateColumn,
@@ -74,6 +75,9 @@ export class Insumo {
     eager: true,
   })
   inventario: Inventario;
+
+  @OneToMany(() => ServicioInsumo, (servicioInsumo) => servicioInsumo.insumo)
+  servicios: ServicioInsumo[];
 
   @OneToMany(() => CitaInsumo, (citaInsumo) => citaInsumo.insumo)
   citas: CitaInsumo[];
