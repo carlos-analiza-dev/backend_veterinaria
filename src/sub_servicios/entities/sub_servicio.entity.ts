@@ -19,6 +19,7 @@ import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
 import { Marca } from 'src/marcas/entities/marca.entity';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
+import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
 
 export enum UnidadVenta {
   UNIDAD = 'unidad',
@@ -51,9 +52,6 @@ export class SubServicio {
 
   @Column({ length: 250, nullable: true })
   atributos?: string;
-
-  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
-  tax_rate?: number;
 
   @Column({
     type: 'enum',
@@ -119,12 +117,6 @@ export class SubServicio {
   )
   insumos: ServicioInsumo[];
 
-  @Column({ name: 'marca_id', nullable: true })
-  marcaId: string | null;
-
-  @Column({ name: 'proveedor_id', nullable: true })
-  proveedorId: string | null;
-
   @Column({ name: 'categoria_id', nullable: true })
   categoriaId: string | null;
 
@@ -151,12 +143,16 @@ export class SubServicio {
   @OneToMany(() => CitaProducto, (citaProducto) => citaProducto.producto)
   citas: CitaProducto[];
 
+  @ManyToOne(() => TaxesPai, { eager: true, nullable: true })
+  @JoinColumn({ name: 'taxId' })
+  tax: TaxesPai;
+
   validateProductRelations(): void {
     if (this.tipo === TipoSubServicio.PRODUCTO) {
-      if (!this.marca && !this.marcaId) {
+      if (!this.marca && !this.marca) {
         throw new Error('Los productos deben tener una marca asociada');
       }
-      if (!this.proveedor && !this.proveedorId) {
+      if (!this.proveedor && !this.proveedor) {
         throw new Error('Los productos deben tener un proveedor asociado');
       }
       if (!this.categoria && !this.categoriaId) {
@@ -168,16 +164,14 @@ export class SubServicio {
       if (!this.atributos) {
         throw new Error('Los productos deben tener atributos definidos');
       }
-      if (this.tax_rate == null) {
-        throw new Error(
-          'Los productos deben tener una tasa de impuesto (tax_rate)',
-        );
+      if (!this.tax) {
+        throw new Error('Los productos deben tener un impuesto asignado');
       }
     } else if (this.tipo === TipoSubServicio.SERVICIO) {
-      if (this.marca || this.marcaId) {
+      if (this.marca || this.marca) {
         throw new Error('Los servicios no pueden tener marca asociada');
       }
-      if (this.proveedor || this.proveedorId) {
+      if (this.proveedor || this.proveedor) {
         throw new Error('Los servicios no pueden tener proveedor asociado');
       }
       if (this.categoria || this.categoriaId) {

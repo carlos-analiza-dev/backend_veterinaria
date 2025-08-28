@@ -38,6 +38,7 @@ import { SubcategoriasModule } from './subcategorias/subcategorias.module';
 import { SucursalesModule } from './sucursales/sucursales.module';
 import { InventarioModule } from './inventario/inventario.module';
 import { InsumosModule } from './insumos/insumos.module';
+import { TaxesPaisModule } from './taxes_pais/taxes_pais.module';
 
 @Module({
   imports: [
@@ -107,6 +108,8 @@ import { InsumosModule } from './insumos/insumos.module';
     SubcategoriasModule,
 
     SucursalesModule,
+
+    TaxesPaisModule,
   ],
   controllers: [],
   providers: [],

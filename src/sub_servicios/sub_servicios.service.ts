@@ -19,6 +19,7 @@ import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { ServiciosPai } from 'src/servicios_pais/entities/servicios_pai.entity';
 import { instanceToPlain } from 'class-transformer';
+import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
 
 @Injectable()
 export class SubServiciosService {
@@ -37,239 +38,171 @@ export class SubServiciosService {
     private readonly categoriaRepo: Repository<Categoria>,
     @InjectRepository(ServiciosPai)
     private readonly serviciosPaiRepo: Repository<ServiciosPai>,
+    @InjectRepository(TaxesPai)
+    private readonly taxesPaiRepo: Repository<TaxesPai>,
   ) {}
-  async create(createSubServicioDto: CreateSubServicioDto) {
+  async createServicio(createServicioDto: CreateSubServicioDto) {
+    const dto = {
+      ...createServicioDto,
+      tipo: TipoSubServicio.SERVICIO,
+    };
+
     const {
       nombre,
       descripcion,
       servicioId,
       isActive = true,
       disponible = true,
-      tipo = TipoSubServicio.SERVICIO,
+      unidad_venta,
+    } = dto;
+
+    try {
+      const servicio_existe = await this.servicioRepo.findOne({
+        where: { id: servicioId, isActive: true },
+      });
+
+      if (!servicio_existe) {
+        throw new NotFoundException(
+          'No se encontró el servicio seleccionado o está inactivo',
+        );
+      }
+
+      const servicio = this.sub_servicio_repo.create({
+        nombre,
+        descripcion,
+        isActive,
+
+        disponible,
+        tipo: TipoSubServicio.SERVICIO,
+        unidad_venta,
+        servicio: servicio_existe,
+      });
+
+      const savedServicio = await this.sub_servicio_repo.save(servicio);
+
+      return await this.sub_servicio_repo.findOne({
+        where: { id: savedServicio.id },
+        relations: ['servicio'],
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async createProducto(createProductoDto: CreateSubServicioDto) {
+    const dto = {
+      ...createProductoDto,
+      tipo: TipoSubServicio.PRODUCTO,
+    };
+
+    const {
+      nombre,
       unidad_venta,
       marcaId,
       proveedorId,
       categoriaId,
       atributos,
       codigo_barra,
-      tax_rate,
       precio,
       costo,
       paisId,
       codigo,
-    } = createSubServicioDto;
+      taxId,
+    } = dto;
 
     try {
-      this.validateProductRelations(createSubServicioDto);
-
-      let servicio_existe = null;
-      let marca = null;
-      let proveedor = null;
-      let categoria = null;
-      let pais = null;
-
-      if (tipo === TipoSubServicio.PRODUCTO) {
-        if (!paisId) {
-          throw new BadRequestException(
-            'Los productos deben tener un país asociado para el precio',
-          );
-        }
-
-        pais = await this.paisRepo.findOne({
-          where: { id: paisId, isActive: true },
-        });
-
-        if (!pais) {
-          throw new NotFoundException('País no encontrado o inactivo');
-        }
-
-        if (!precio || precio <= 0) {
-          throw new BadRequestException(
-            'Los productos deben tener un precio válido mayor a 0',
-          );
-        }
-
-        if (!costo || costo <= 0) {
-          throw new BadRequestException(
-            'Los productos deben tener un costo válido mayor a 0',
-          );
-        }
-
-        const servicio_exist_codigo = await this.sub_servicio_repo.findOne({
-          where: { codigo: codigo },
-        });
-        if (servicio_exist_codigo)
-          throw new ConflictException(
-            'Ya existe un servicio/producto con este codigo',
-          );
+      if (!paisId) {
+        throw new BadRequestException(
+          'Los productos deben tener un país asociado para el precio',
+        );
       }
 
-      if (tipo === TipoSubServicio.SERVICIO) {
-        if (!servicioId) {
-          throw new NotFoundException(
-            'El ID del servicio es requerido para servicios',
-          );
-        }
+      const pais = await this.paisRepo.findOne({
+        where: { id: paisId, isActive: true },
+      });
 
-        servicio_existe = await this.servicioRepo.findOne({
-          where: { id: servicioId, isActive: true },
-        });
-
-        if (!servicio_existe) {
-          throw new NotFoundException(
-            'No se encontró el servicio seleccionado o está inactivo',
-          );
-        }
-      } else if (tipo === TipoSubServicio.PRODUCTO) {
-        if (servicioId) {
-          throw new ConflictException(
-            'Los productos no pueden estar asociados a un servicio',
-          );
-        }
-
-        if (!marcaId) {
-          throw new BadRequestException(
-            'Los productos deben tener una marca asociada',
-          );
-        }
-        marca = await this.marcaRepo.findOne({
-          where: { id: marcaId, is_active: true },
-        });
-        if (!marca) {
-          throw new NotFoundException('Marca no encontrada o inactiva');
-        }
-
-        if (!proveedorId) {
-          throw new BadRequestException(
-            'Los productos deben tener un proveedor asociado',
-          );
-        }
-        proveedor = await this.proveedorRepo.findOne({
-          where: { id: proveedorId, is_active: true },
-        });
-        if (!proveedor) {
-          throw new NotFoundException('Proveedor no encontrado o inactivo');
-        }
-
-        if (!categoriaId) {
-          throw new BadRequestException(
-            'Los productos deben tener una categoría asociada',
-          );
-        }
-        categoria = await this.categoriaRepo.findOne({
-          where: { id: categoriaId, is_active: true },
-        });
-        if (!categoria) {
-          throw new NotFoundException('Categoría no encontrada o inactiva');
-        }
+      if (!pais) {
+        throw new NotFoundException('País no encontrado o inactivo');
       }
 
-      const subServicio = this.sub_servicio_repo.create({
+      if (!precio || precio <= 0) {
+        throw new BadRequestException(
+          'Los productos deben tener un precio válido mayor a 0',
+        );
+      }
+
+      if (!costo || costo <= 0) {
+        throw new BadRequestException(
+          'Los productos deben tener un costo válido mayor a 0',
+        );
+      }
+
+      const productoExistente = await this.sub_servicio_repo.findOne({
+        where: { codigo },
+      });
+      if (productoExistente) {
+        throw new ConflictException('Ya existe un producto con este código');
+      }
+
+      const taxeExistente = await this.taxesPaiRepo.findOne({
+        where: { id: taxId },
+      });
+      if (!taxeExistente) {
+        throw new ConflictException('El taxe o impuesto no está disponible');
+      }
+
+      const marca = await this.marcaRepo.findOne({
+        where: { id: marcaId, is_active: true },
+      });
+      if (!marca) {
+        throw new NotFoundException('Marca no encontrada o inactiva');
+      }
+
+      const proveedor = await this.proveedorRepo.findOne({
+        where: { id: proveedorId, is_active: true },
+      });
+      if (!proveedor) {
+        throw new NotFoundException('Proveedor no encontrado o inactivo');
+      }
+
+      const categoria = await this.categoriaRepo.findOne({
+        where: { id: categoriaId, is_active: true },
+      });
+      if (!categoria) {
+        throw new NotFoundException('Categoría no encontrada o inactiva');
+      }
+
+      const producto = this.sub_servicio_repo.create({
         nombre,
-        descripcion,
-        isActive,
         codigo,
-        disponible,
-        tipo,
+        tipo: TipoSubServicio.PRODUCTO,
         unidad_venta,
-        servicio: servicio_existe,
         marca,
         proveedor,
         categoria,
-        ...(tipo === TipoSubServicio.PRODUCTO && {
-          codigo_barra,
-          atributos,
-          tax_rate,
-        }),
+        codigo_barra,
+        atributos,
+        tax: taxeExistente,
       });
 
-      const savedSubServicio = await this.sub_servicio_repo.save(subServicio);
+      const savedProducto = await this.sub_servicio_repo.save(producto);
 
-      let servicioPai = null;
-      if (tipo === TipoSubServicio.PRODUCTO) {
-        servicioPai = this.serviciosPaiRepo.create({
-          subServicio: savedSubServicio,
-          pais,
-          precio,
-          costo,
-          tiempo: null,
-          cantidadMin: null,
-          cantidadMax: null,
-        });
-
-        await this.serviciosPaiRepo.save(servicioPai);
-      }
-
-      return await this.sub_servicio_repo.findOne({
-        where: { id: savedSubServicio.id },
-        relations: [
-          'servicio',
-          'marca',
-          'proveedor',
-          'categoria',
-          'preciosPorPais',
-          'preciosPorPais.pais',
-        ],
+      const servicioPai = this.serviciosPaiRepo.create({
+        subServicio: savedProducto,
+        pais,
+        precio,
+        costo,
+        tiempo: null,
+        cantidadMin: null,
+        cantidadMax: null,
       });
+
+      await this.serviciosPaiRepo.save(servicioPai);
+
+      return 'Producto Creado Exitosamente';
     } catch (error) {
-      if (
-        error instanceof ConflictException ||
-        error instanceof NotFoundException ||
-        error instanceof BadRequestException
-      ) {
+      {
         throw error;
-      }
-
-      throw new InternalServerErrorException(
-        'Error interno del servidor al crear el servicio',
-      );
-    }
-  }
-
-  private validateProductRelations(
-    dto: CreateSubServicioDto | UpdateSubServicioDto,
-  ): void {
-    if (dto.tipo === TipoSubServicio.PRODUCTO) {
-      if (!dto.marcaId) {
-        throw new BadRequestException(
-          'Los productos deben tener una marca asociada',
-        );
-      }
-      if (!dto.proveedorId) {
-        throw new BadRequestException(
-          'Los productos deben tener un proveedor asociado',
-        );
-      }
-      if (!dto.categoriaId) {
-        throw new BadRequestException(
-          'Los productos deben tener una categoria asociado',
-        );
-      }
-      if (!dto.codigo_barra) {
-        throw new BadRequestException(
-          'Los productos deben tener un codigo de barra asociado',
-        );
-      }
-      if (!dto.atributos) {
-        throw new BadRequestException(
-          'Los productos deben tener atributos asociado',
-        );
-      }
-      if (!dto.tax_rate) {
-        throw new BadRequestException(
-          'Los productos deben tener taxes asociado',
-        );
-      }
-    } else if (dto.tipo === TipoSubServicio.SERVICIO) {
-      if (dto.marcaId) {
-        throw new BadRequestException(
-          'Los servicios no pueden tener marca asociada',
-        );
-      }
-      if (dto.proveedorId) {
-        throw new BadRequestException(
-          'Los servicios no pueden tener proveedor asociado',
-        );
       }
     }
   }
@@ -288,6 +221,7 @@ export class SubServiciosService {
         .leftJoinAndSelect('producto.marca', 'marca')
         .leftJoinAndSelect('producto.proveedor', 'proveedor')
         .leftJoinAndSelect('producto.categoria', 'categoria')
+        .leftJoinAndSelect('producto.tax', 'tax')
         .orderBy('producto.createdAt', 'DESC')
         .take(limit)
         .skip(offset);
@@ -424,14 +358,92 @@ export class SubServiciosService {
     }
   }
 
-  async update(id: string, updateSubServicioDto: UpdateSubServicioDto) {
+  async updateServicio(id: string, updateServicioDto: UpdateSubServicioDto) {
     const {
       nombre,
       descripcion,
       isActive,
       servicioId,
       disponible,
-      tipo,
+      unidad_venta,
+      codigo,
+    } = updateServicioDto;
+
+    try {
+      const servicio = await this.sub_servicio_repo.findOne({
+        where: { id, tipo: TipoSubServicio.SERVICIO },
+        relations: ['servicio'],
+      });
+
+      if (!servicio) {
+        throw new NotFoundException(
+          'No se encontró el servicio que desea actualizar',
+        );
+      }
+
+      if (
+        updateServicioDto.tipo &&
+        updateServicioDto.tipo !== TipoSubServicio.SERVICIO
+      ) {
+        throw new BadRequestException(
+          'No se puede cambiar un servicio a producto. Cree un nuevo producto en su lugar.',
+        );
+      }
+
+      if (isActive === false && disponible === true) {
+        throw new BadRequestException(
+          'No se puede tener un servicio inactivo pero disponible',
+        );
+      }
+
+      if (nombre !== undefined) servicio.nombre = nombre;
+      if (descripcion !== undefined) servicio.descripcion = descripcion;
+      if (isActive !== undefined) servicio.isActive = isActive;
+      if (disponible !== undefined) servicio.disponible = disponible;
+      if (unidad_venta !== undefined) servicio.unidad_venta = unidad_venta;
+      if (codigo !== undefined) servicio.codigo = codigo;
+
+      if (servicioId) {
+        const servicioPadre = await this.servicioRepo.findOne({
+          where: { id: servicioId, isActive: true },
+        });
+        if (!servicioPadre) {
+          throw new NotFoundException(
+            'Servicio padre no encontrado o inactivo',
+          );
+        }
+        servicio.servicio = servicioPadre;
+      }
+
+      const servicioActualizado = await this.sub_servicio_repo.save(servicio);
+
+      const servicioCompleto = await this.sub_servicio_repo.findOne({
+        where: { id: servicioActualizado.id },
+        relations: ['servicio'],
+      });
+
+      return {
+        message: 'Servicio actualizado correctamente',
+        data: servicioCompleto,
+      };
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Error interno del servidor al actualizar el servicio',
+      );
+    }
+  }
+
+  async updateProducto(id: string, updateProductoDto: UpdateSubServicioDto) {
+    const {
+      nombre,
+      isActive,
+      disponible,
       unidad_venta,
       atributos,
       categoriaId,
@@ -441,140 +453,128 @@ export class SubServiciosService {
       paisId,
       precio,
       proveedorId,
-      tax_rate,
+      taxId,
       codigo,
-    } = updateSubServicioDto;
+    } = updateProductoDto;
 
     try {
-      const sub_servicio = await this.sub_servicio_repo.findOne({
-        where: { id },
-        relations: ['servicio', 'marca', 'proveedor', 'categoria'],
+      const producto = await this.sub_servicio_repo.findOne({
+        where: { id, tipo: TipoSubServicio.PRODUCTO },
       });
 
-      if (!sub_servicio) {
+      if (!producto) {
         throw new NotFoundException(
-          'No se encontró el subservicio que desea actualizar',
+          'No se encontró el producto que desea actualizar',
         );
       }
 
-      if (tipo && tipo !== sub_servicio.tipo) {
-        if (tipo === TipoSubServicio.SERVICIO) {
-          if (!servicioId) {
-            throw new BadRequestException(
-              'El ID del servicio es requerido al cambiar a tipo SERVICIO',
-            );
-          }
-          const servicio = await this.servicioRepo.findOne({
-            where: { id: servicioId, isActive: true },
-          });
-          if (!servicio) {
-            throw new NotFoundException('Servicio no encontrado o inactivo');
-          }
-          sub_servicio.servicio = servicio;
-          sub_servicio.marca = null;
-          sub_servicio.proveedor = null;
-          sub_servicio.categoria = null;
-        } else {
-          sub_servicio.servicio = null;
-        }
-        sub_servicio.tipo = tipo;
+      if (
+        updateProductoDto.tipo &&
+        updateProductoDto.tipo !== TipoSubServicio.PRODUCTO
+      ) {
+        throw new BadRequestException(
+          'No se puede cambiar un producto a servicio. Cree un nuevo servicio en su lugar.',
+        );
       }
-
-      if (servicioId && sub_servicio.tipo === TipoSubServicio.SERVICIO) {
-        const servicio = await this.servicioRepo.findOne({
-          where: { id: servicioId, isActive: true },
-        });
-        if (!servicio) {
-          throw new NotFoundException(
-            'No se encontró el servicio relacionado o está inactivo',
-          );
-        }
-        sub_servicio.servicio = servicio;
-      }
-
-      if (unidad_venta !== undefined) sub_servicio.unidad_venta = unidad_venta;
-      if (nombre !== undefined) sub_servicio.nombre = nombre;
-      if (descripcion !== undefined) sub_servicio.descripcion = descripcion;
-      if (isActive !== undefined) sub_servicio.isActive = isActive;
-      if (disponible !== undefined) sub_servicio.disponible = disponible;
 
       if (isActive === false && disponible === true) {
         throw new BadRequestException(
-          'No se puede tener un servicio/producto inactivo pero disponible',
+          'No se puede tener un producto inactivo pero disponible',
         );
       }
 
-      if (sub_servicio.tipo === TipoSubServicio.PRODUCTO) {
-        if (marcaId) {
-          const marca = await this.marcaRepo.findOne({
-            where: { id: marcaId, is_active: true },
-          });
-          if (!marca)
-            throw new NotFoundException('Marca no encontrada o inactiva');
-          sub_servicio.marca = marca;
-        }
+      if (nombre !== undefined) producto.nombre = nombre;
 
-        if (proveedorId) {
-          const proveedor = await this.proveedorRepo.findOne({
-            where: { id: proveedorId, is_active: true },
-          });
-          if (!proveedor)
-            throw new NotFoundException('Proveedor no encontrado o inactivo');
-          sub_servicio.proveedor = proveedor;
-        }
+      if (isActive !== undefined) producto.isActive = isActive;
+      if (disponible !== undefined) producto.disponible = disponible;
+      if (unidad_venta !== undefined) producto.unidad_venta = unidad_venta;
+      if (codigo !== undefined) producto.codigo = codigo;
+      if (codigo_barra !== undefined) producto.codigo_barra = codigo_barra;
+      if (atributos !== undefined) producto.atributos = atributos;
 
-        if (categoriaId) {
-          const categoria = await this.categoriaRepo.findOne({
-            where: { id: categoriaId, is_active: true },
-          });
-          if (!categoria)
-            throw new NotFoundException('Categoría no encontrada o inactiva');
-          sub_servicio.categoria = categoria;
-        }
-
-        if (codigo_barra !== undefined)
-          sub_servicio.codigo_barra = codigo_barra;
-        if (atributos !== undefined) sub_servicio.atributos = atributos;
-        if (tax_rate !== undefined) sub_servicio.tax_rate = tax_rate;
-
-        if (paisId) {
-          const pais = await this.paisRepo.findOne({ where: { id: paisId } });
-          if (!pais) throw new NotFoundException('País no encontrado');
-
-          let servicioPai = await this.serviciosPaiRepo.findOne({
-            where: {
-              subServicio: { id: sub_servicio.id },
-              pais: { id: paisId },
-            },
-            relations: ['subServicio', 'pais'],
-          });
-
-          if (!servicioPai) {
-            servicioPai = this.serviciosPaiRepo.create({
-              subServicio: sub_servicio,
-              pais,
-              precio,
-              costo,
-            });
-          } else {
-            if (precio !== undefined) servicioPai.precio = precio;
-            if (costo !== undefined) servicioPai.costo = costo;
-          }
-
-          await this.serviciosPaiRepo.save(servicioPai);
-        }
+      if (marcaId) {
+        const marca = await this.marcaRepo.findOne({
+          where: { id: marcaId, is_active: true },
+        });
+        if (!marca)
+          throw new NotFoundException('Marca no encontrada o inactiva');
+        producto.marca = marca;
       }
 
-      const subServicioActualizado = await this.sub_servicio_repo.save(
-        sub_servicio,
-      );
+      if (proveedorId) {
+        const proveedor = await this.proveedorRepo.findOne({
+          where: { id: proveedorId, is_active: true },
+        });
+        if (!proveedor)
+          throw new NotFoundException('Proveedor no encontrado o inactivo');
+        producto.proveedor = proveedor;
+      }
 
-      return {
-        message: 'Subservicio actualizado correctamente',
-        data: instanceToPlain(subServicioActualizado),
-      };
+      if (categoriaId) {
+        const categoria = await this.categoriaRepo.findOne({
+          where: { id: categoriaId, is_active: true },
+        });
+        if (!categoria)
+          throw new NotFoundException('Categoría no encontrada o inactiva');
+        producto.categoria = categoria;
+      }
+
+      if (taxId) {
+        const tax = await this.taxesPaiRepo.findOne({
+          where: { id: taxId },
+        });
+        if (!tax) throw new NotFoundException('Tax o impuesto no encontrado');
+        producto.tax = tax;
+      }
+
+      if (paisId && (precio !== undefined || costo !== undefined)) {
+        const pais = await this.paisRepo.findOne({
+          where: { id: paisId, isActive: true },
+        });
+        if (!pais) throw new NotFoundException('País no encontrado o inactivo');
+
+        let precioPais = await this.serviciosPaiRepo.findOne({
+          where: {
+            subServicio: { id: producto.id },
+            pais: { id: paisId },
+          },
+        });
+
+        if (!precioPais) {
+          precioPais = this.serviciosPaiRepo.create({
+            subServicio: producto,
+            pais,
+            precio: precio || 0,
+            costo: costo || 0,
+            tiempo: null,
+            cantidadMin: null,
+            cantidadMax: null,
+          });
+        } else {
+          if (precio !== undefined) precioPais.precio = precio;
+          if (costo !== undefined) precioPais.costo = costo;
+        }
+
+        await this.serviciosPaiRepo.save(precioPais);
+      }
+
+      const productoActualizado = await this.sub_servicio_repo.save(producto);
+
+      await this.sub_servicio_repo.findOne({
+        where: { id: productoActualizado.id },
+      });
+
+      return 'Producto actualizado correctamente';
     } catch (error) {
-      throw error;
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Error interno del servidor al actualizar el producto',
+      );
     }
   }
 

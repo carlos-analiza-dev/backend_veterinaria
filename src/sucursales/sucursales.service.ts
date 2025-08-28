@@ -12,6 +12,10 @@ import { FilterSucursalDto } from './dto/filter-sucursal.dto';
 import { Sucursal } from './entities/sucursal.entity';
 import { PaginationDto } from '../common/dto/pagination-common.dto';
 import { User } from '../auth/entities/auth.entity';
+import { Pai } from 'src/pais/entities/pai.entity';
+import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
+import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
+import { instanceToPlain } from 'class-transformer';
 
 @Injectable()
 export class SucursalesService {
@@ -20,10 +24,37 @@ export class SucursalesService {
     private readonly sucursalRepository: Repository<Sucursal>,
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    @InjectRepository(Pai)
+    private readonly paisRepository: Repository<Pai>,
+    @InjectRepository(DepartamentosPai)
+    private readonly deptoRepository: Repository<DepartamentosPai>,
+    @InjectRepository(MunicipiosDepartamentosPai)
+    private readonly municipioRepository: Repository<MunicipiosDepartamentosPai>,
   ) {}
 
   async create(createSucursalDto: CreateSucursalDto): Promise<Sucursal> {
+    const { departamentoId, paisId, municipioId } = createSucursalDto;
     try {
+      const pais_exist = await this.paisRepository.findOne({
+        where: { id: paisId },
+      });
+      if (!pais_exist) {
+        throw new NotFoundException('Pais seleccionado no encontrado');
+      }
+
+      const departamento = await this.deptoRepository.findOne({
+        where: { id: departamentoId },
+      });
+      if (!departamento) {
+        throw new NotFoundException('Departamento seleccionado no encontrado');
+      }
+
+      const municipio = await this.municipioRepository.findOne({
+        where: { id: municipioId },
+      });
+      if (!municipio) {
+        throw new NotFoundException('Municipio seleccionado no encontrado');
+      }
       // Verificar si ya existe una sucursal con el mismo nombre
       const existingSucursal = await this.sucursalRepository.findOne({
         where: { nombre: createSucursalDto.nombre },
@@ -46,7 +77,12 @@ export class SucursalesService {
         );
       }
 
-      const sucursal = this.sucursalRepository.create(createSucursalDto);
+      const sucursal = this.sucursalRepository.create({
+        departamentoId,
+        municipioId,
+        paisId,
+        ...createSucursalDto,
+      });
       return await this.sucursalRepository.save(sucursal);
     } catch (error) {
       this.handleDBExceptions(error);
@@ -112,7 +148,7 @@ export class SucursalesService {
       const [sucursales, total] = await queryBuilder.getManyAndCount();
 
       return {
-        data: sucursales,
+        data: instanceToPlain(sucursales),
         total,
         limit,
         offset,
@@ -282,7 +318,6 @@ export class SucursalesService {
       throw new BadRequestException(error.detail);
     }
 
-    console.log(error);
     throw new InternalServerErrorException(
       'Error inesperado, revise los logs del servidor',
     );

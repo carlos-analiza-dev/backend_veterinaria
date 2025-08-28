@@ -34,6 +34,7 @@ export class CreateSubServicioDto {
   @IsOptional()
   unidad_venta?: UnidadVenta;
 
+  @ValidateIf((o) => o.tipo === TipoSubServicio.SERVICIO)
   @IsString({ message: 'La descripción debe ser una cadena de texto.' })
   @IsNotEmpty({ message: 'La descripción no debe estar vacía.' })
   descripcion: string;
@@ -92,10 +93,11 @@ export class CreateSubServicioDto {
   atributos?: string;
 
   @ValidateIf((o) => o.tipo === TipoSubServicio.PRODUCTO)
-  @IsNumber({}, { message: 'El tax_rate debe ser un número válido.' })
-  @Min(0, { message: 'El tax_rate no puede ser negativo.' })
-  @IsNotEmpty({ message: 'El tax_rate es obligatorio para productos.' })
-  tax_rate?: number;
+  @IsUUID('4', { message: 'El taxId debe ser un UUID válido.' })
+  @IsNotEmpty({
+    message: 'Los taxes o impuestos es obligatorio para productos.',
+  })
+  taxId?: string;
 
   @ValidateIf((o) => o.tipo === TipoSubServicio.PRODUCTO)
   @IsNumber({}, { message: 'El precio debe ser un número válido.' })

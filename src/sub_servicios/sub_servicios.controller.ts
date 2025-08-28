@@ -17,9 +17,14 @@ import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 export class SubServiciosController {
   constructor(private readonly subServiciosService: SubServiciosService) {}
 
-  @Post()
-  create(@Body() createSubServicioDto: CreateSubServicioDto) {
-    return this.subServiciosService.create(createSubServicioDto);
+  @Post('servicio')
+  createServicio(@Body() createSubServicioDto: CreateSubServicioDto) {
+    return this.subServiciosService.createServicio(createSubServicioDto);
+  }
+
+  @Post('producto')
+  createProducto(@Body() createSubServicioDto: CreateSubServicioDto) {
+    return this.subServiciosService.createProducto(createSubServicioDto);
   }
 
   @Get('productos')
@@ -50,12 +55,20 @@ export class SubServiciosController {
     return this.subServiciosService.findOne(id);
   }
 
-  @Patch(':id')
-  update(
+  @Patch('servicio/:id')
+  updateServicio(
     @Param('id') id: string,
     @Body() updateSubServicioDto: UpdateSubServicioDto,
   ) {
-    return this.subServiciosService.update(id, updateSubServicioDto);
+    return this.subServiciosService.updateServicio(id, updateSubServicioDto);
+  }
+
+  @Patch('producto/:id')
+  updateProducto(
+    @Param('id') id: string,
+    @Body() updateSubServicioDto: UpdateSubServicioDto,
+  ) {
+    return this.subServiciosService.updateProducto(id, updateSubServicioDto);
   }
 
   @Delete(':id')

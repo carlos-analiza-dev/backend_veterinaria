@@ -10,6 +10,8 @@ import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
 import { Marca } from 'src/marcas/entities/marca.entity';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { ServiciosPai } from 'src/servicios_pais/entities/servicios_pai.entity';
+import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
+import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
 
 @Module({
   controllers: [SubServiciosController],
@@ -23,6 +25,8 @@ import { ServiciosPai } from 'src/servicios_pais/entities/servicios_pai.entity';
       Marca,
       Categoria,
       ServiciosPai,
+      ServicioInsumo,
+      TaxesPai,
     ]),
   ],
   providers: [SubServiciosService],
