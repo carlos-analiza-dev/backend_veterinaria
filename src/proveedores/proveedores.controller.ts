@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ProveedoresService } from './proveedores.service';
 import { CreateProveedorDto } from './dto/create-proveedor.dto';
@@ -40,6 +41,15 @@ export class ProveedoresController {
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
   findAllActive() {
     return this.proveedoresService.findAllActive();
+  }
+
+  @Get('pais/:paisId')
+  @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
+  findByPais(
+    @Param('paisId', ParseUUIDPipe) paisId: string,
+    @Query() searchProveedorDto: SearchProveedorDto,
+  ) {
+    return this.proveedoresService.findByPais(paisId, searchProveedorDto);
   }
 
   @Get(':id')
