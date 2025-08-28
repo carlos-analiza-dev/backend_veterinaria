@@ -35,10 +35,9 @@ import { ProveedoresModule } from './proveedores/proveedores.module';
 import { MarcasModule } from './marcas/marcas.module';
 import { CategoriasModule } from './categorias/categorias.module';
 import { SubcategoriasModule } from './subcategorias/subcategorias.module';
-import { InsumosModule } from './insumos/insumos.module';
+import { SucursalesModule } from './sucursales/sucursales.module';
 import { InventarioModule } from './inventario/inventario.module';
-import { TaxesPaisModule } from './taxes_pais/taxes_pais.module';
-import { ServicioInsumosModule } from './servicio_insumos/servicio_insumos.module';
+import { InsumosModule } from './insumos/insumos.module';
 
 @Module({
   imports: [
@@ -106,8 +105,8 @@ import { ServicioInsumosModule } from './servicio_insumos/servicio_insumos.modul
 
     CategoriasModule,
     SubcategoriasModule,
-    TaxesPaisModule,
-    ServicioInsumosModule,
+
+    SucursalesModule,
   ],
   controllers: [],
   providers: [],
