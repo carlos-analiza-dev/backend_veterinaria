@@ -36,6 +36,7 @@ import { MarcasModule } from './marcas/marcas.module';
 import { CategoriasModule } from './categorias/categorias.module';
 import { SubcategoriasModule } from './subcategorias/subcategorias.module';
 import { SucursalesModule } from './sucursales/sucursales.module';
+import { LotesModule } from './lotes/lotes.module';
 
 @Module({
   imports: [
@@ -102,6 +103,8 @@ import { SucursalesModule } from './sucursales/sucursales.module';
     SubcategoriasModule,
 
     SucursalesModule,
+
+    LotesModule,
   ],
   controllers: [],
   providers: [],
