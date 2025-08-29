@@ -88,7 +88,13 @@ export class InsumosService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0, pais } = paginationDto;
+    const {
+      limit = 10,
+      offset = 0,
+      pais = '',
+      proveedor = '',
+      marca = '',
+    } = paginationDto;
 
     const queryBuilder = this.insumoRepository
       .createQueryBuilder('insumo')
@@ -96,13 +102,33 @@ export class InsumosService {
       .leftJoinAndSelect('insumo.proveedor', 'proveedor')
       .leftJoinAndSelect('insumo.pais', 'pais')
       .leftJoinAndSelect('insumo.inventario', 'inventario')
-      .orderBy('insumo.createdAt', 'DESC')
-      .skip(offset)
-      .take(limit);
+      .orderBy('insumo.createdAt', 'DESC');
 
-    if (pais) {
+    if (pais && pais.trim() !== '') {
       queryBuilder.andWhere('pais.id = :paisId', { paisId: pais });
     }
+
+    if (proveedor && proveedor.trim() !== '') {
+      queryBuilder.andWhere(
+        '(proveedor.id = :proveedorId OR proveedor.nombre_legal ILIKE :proveedorNombre)',
+        {
+          proveedorId: proveedor,
+          proveedorNombre: `%${proveedor}%`,
+        },
+      );
+    }
+
+    if (marca && marca.trim() !== '') {
+      queryBuilder.andWhere(
+        '(marca.id = :marcaId OR marca.nombre ILIKE :marcaNombre)',
+        {
+          marcaId: marca,
+          marcaNombre: `%${marca}%`,
+        },
+      );
+    }
+
+    queryBuilder.skip(offset).take(limit);
 
     const [insumos, total] = await queryBuilder.getManyAndCount();
 
@@ -111,7 +137,6 @@ export class InsumosService {
       total,
     };
   }
-
   async findInsumosDisponibles(user: User) {
     const paisId = user.pais.id;
 

@@ -17,6 +17,22 @@ export class PaginationDto {
 
   @IsOptional()
   @IsString()
+  categoria?: string;
+
+  @IsOptional()
+  @IsString()
+  marca?: string;
+
+  @IsOptional()
+  @IsString()
+  proveedor?: string;
+
+  @IsOptional()
+  @IsString()
+  servicio?: string;
+
+  @IsOptional()
+  @IsString()
   rol?: string;
 
   @IsOptional()

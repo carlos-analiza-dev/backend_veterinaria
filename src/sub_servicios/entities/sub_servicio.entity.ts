@@ -20,6 +20,7 @@ import { Marca } from 'src/marcas/entities/marca.entity';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
 import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
+import { ProductosImage } from 'src/productos_images/entities/productos_image.entity';
 
 export enum UnidadVenta {
   UNIDAD = 'unidad',
@@ -44,13 +45,13 @@ export class SubServicio {
   @Column({ length: 100 })
   nombre: string;
 
-  @Column({ length: 50, default: null })
+  @Column({ length: 50, default: 'N/D' })
   codigo: string;
 
-  @Column({ length: 20, nullable: true })
+  @Column({ length: 20, default: 'N/D' })
   codigo_barra?: string;
 
-  @Column({ length: 250, nullable: true })
+  @Column({ length: 250, default: 'N/D' })
   atributos?: string;
 
   @Column({
@@ -67,7 +68,7 @@ export class SubServicio {
   })
   unidad_venta: UnidadVenta;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text', default: 'N/D' })
   descripcion: string | null;
 
   @Column({ name: 'servicio_id', nullable: true })
@@ -87,21 +88,18 @@ export class SubServicio {
 
   @ManyToOne(() => Marca, (marca) => marca.productos, {
     nullable: true,
-    eager: true,
   })
   @JoinColumn({ name: 'marca_id' })
   marca: Marca | null;
 
   @ManyToOne(() => Proveedor, (proveedor) => proveedor.productos, {
     nullable: true,
-    eager: true,
   })
   @JoinColumn({ name: 'proveedor_id' })
   proveedor: Proveedor | null;
 
   @ManyToOne(() => Categoria, (categoria) => categoria.productos, {
     nullable: true,
-    eager: true,
   })
   @JoinColumn({ name: 'categoria_id' })
   categoria: Categoria | null;
@@ -111,7 +109,7 @@ export class SubServicio {
     (servicioInsumo) => servicioInsumo.servicio,
     {
       cascade: true,
-      eager: true,
+
       nullable: true,
     },
   )
@@ -127,7 +125,6 @@ export class SubServicio {
   servicio: Servicio;
 
   @OneToMany(() => ServiciosPai, (precio) => precio.subServicio, {
-    eager: true,
     cascade: true,
   })
   preciosPorPais: ServiciosPai[];
@@ -143,43 +140,12 @@ export class SubServicio {
   @OneToMany(() => CitaProducto, (citaProducto) => citaProducto.producto)
   citas: CitaProducto[];
 
-  @ManyToOne(() => TaxesPai, { eager: true, nullable: true })
+  @ManyToOne(() => TaxesPai, { nullable: true })
   @JoinColumn({ name: 'taxId' })
   tax: TaxesPai;
 
-  validateProductRelations(): void {
-    if (this.tipo === TipoSubServicio.PRODUCTO) {
-      if (!this.marca && !this.marca) {
-        throw new Error('Los productos deben tener una marca asociada');
-      }
-      if (!this.proveedor && !this.proveedor) {
-        throw new Error('Los productos deben tener un proveedor asociado');
-      }
-      if (!this.categoria && !this.categoriaId) {
-        throw new Error('Los productos deben tener una categoría asociada');
-      }
-      if (!this.codigo_barra) {
-        throw new Error('Los productos deben tener un código de barra');
-      }
-      if (!this.atributos) {
-        throw new Error('Los productos deben tener atributos definidos');
-      }
-      if (!this.tax) {
-        throw new Error('Los productos deben tener un impuesto asignado');
-      }
-    } else if (this.tipo === TipoSubServicio.SERVICIO) {
-      if (this.marca || this.marca) {
-        throw new Error('Los servicios no pueden tener marca asociada');
-      }
-      if (this.proveedor || this.proveedor) {
-        throw new Error('Los servicios no pueden tener proveedor asociado');
-      }
-      if (this.categoria || this.categoriaId) {
-        throw new Error('Los servicios no pueden tener categoría asociada');
-      }
-      if (this.codigo || this.codigo) {
-        throw new Error('Los servicios no pueden tener un codigo asociada');
-      }
-    }
-  }
+  @OneToMany(() => ProductosImage, (producto) => producto.producto, {
+    eager: true,
+  })
+  imagenes: ProductosImage[];
 }

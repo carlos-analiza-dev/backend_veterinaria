@@ -9,22 +9,25 @@ import {
   Query,
 } from '@nestjs/common';
 import { SubServiciosService } from './sub_servicios.service';
-import { CreateSubServicioDto } from './dto/create-sub_servicio.dto';
-import { UpdateSubServicioDto } from './dto/update-sub_servicio.dto';
+
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { CreateServicioDto } from './dto/create-servicio.dto';
+import { CreateProductoDto } from './dto/create-producto.dto';
+import { UpdateServicioDto } from './dto/update-servicio.dto';
+import { UpdateProductoDto } from './dto/update-producto.dto';
 
 @Controller('sub-servicios')
 export class SubServiciosController {
   constructor(private readonly subServiciosService: SubServiciosService) {}
 
   @Post('servicio')
-  createServicio(@Body() createSubServicioDto: CreateSubServicioDto) {
-    return this.subServiciosService.createServicio(createSubServicioDto);
+  createServicio(@Body() createServicioDto: CreateServicioDto) {
+    return this.subServiciosService.createServicio(createServicioDto);
   }
 
   @Post('producto')
-  createProducto(@Body() createSubServicioDto: CreateSubServicioDto) {
-    return this.subServiciosService.createProducto(createSubServicioDto);
+  createProducto(@Body() createProductoDto: CreateProductoDto) {
+    return this.subServiciosService.createProducto(createProductoDto);
   }
 
   @Get('productos')
@@ -58,17 +61,17 @@ export class SubServiciosController {
   @Patch('servicio/:id')
   updateServicio(
     @Param('id') id: string,
-    @Body() updateSubServicioDto: UpdateSubServicioDto,
+    @Body() updateServicioDto: UpdateServicioDto,
   ) {
-    return this.subServiciosService.updateServicio(id, updateSubServicioDto);
+    return this.subServiciosService.updateServicio(id, updateServicioDto);
   }
 
   @Patch('producto/:id')
   updateProducto(
     @Param('id') id: string,
-    @Body() updateSubServicioDto: UpdateSubServicioDto,
+    @Body() updateProductoDto: UpdateProductoDto,
   ) {
-    return this.subServiciosService.updateProducto(id, updateSubServicioDto);
+    return this.subServiciosService.updateProducto(id, updateProductoDto);
   }
 
   @Delete(':id')

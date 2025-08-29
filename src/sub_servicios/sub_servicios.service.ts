@@ -20,6 +20,9 @@ import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { ServiciosPai } from 'src/servicios_pais/entities/servicios_pai.entity';
 import { instanceToPlain } from 'class-transformer';
 import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
+import { CreateServicioDto } from './dto/create-servicio.dto';
+import { CreateProductoDto } from './dto/create-producto.dto';
+import { UpdateServicioDto } from './dto/update-servicio.dto';
 
 @Injectable()
 export class SubServiciosService {
@@ -41,7 +44,7 @@ export class SubServiciosService {
     @InjectRepository(TaxesPai)
     private readonly taxesPaiRepo: Repository<TaxesPai>,
   ) {}
-  async createServicio(createServicioDto: CreateSubServicioDto) {
+  async createServicio(createServicioDto: CreateServicioDto) {
     const dto = {
       ...createServicioDto,
       tipo: TipoSubServicio.SERVICIO,
@@ -75,21 +78,18 @@ export class SubServiciosService {
         disponible,
         tipo: TipoSubServicio.SERVICIO,
         unidad_venta,
-        servicio: servicio_existe,
+        servicio: { id: servicio_existe.id },
       });
 
-      const savedServicio = await this.sub_servicio_repo.save(servicio);
+      await this.sub_servicio_repo.save(servicio);
 
-      return await this.sub_servicio_repo.findOne({
-        where: { id: savedServicio.id },
-        relations: ['servicio'],
-      });
+      return 'Servicio Creado Exitosamente';
     } catch (error) {
       throw error;
     }
   }
 
-  async createProducto(createProductoDto: CreateSubServicioDto) {
+  async createProducto(createProductoDto: CreateProductoDto) {
     const dto = {
       ...createProductoDto,
       tipo: TipoSubServicio.PRODUCTO,
@@ -208,7 +208,14 @@ export class SubServiciosService {
   }
 
   async findAllProductos(paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0, pais = '' } = paginationDto;
+    const {
+      limit = 10,
+      offset = 0,
+      pais = '',
+      categoria = '',
+      marca = '',
+      proveedor = '',
+    } = paginationDto;
 
     try {
       const queryBuilder = this.sub_servicio_repo
@@ -222,37 +229,82 @@ export class SubServiciosService {
         .leftJoinAndSelect('producto.proveedor', 'proveedor')
         .leftJoinAndSelect('producto.categoria', 'categoria')
         .leftJoinAndSelect('producto.tax', 'tax')
-        .orderBy('producto.createdAt', 'DESC')
-        .take(limit)
-        .skip(offset);
+        .leftJoinAndSelect('producto.imagenes', 'imagenes')
+        .orderBy('producto.createdAt', 'DESC');
 
       if (pais && pais.trim() !== '') {
         queryBuilder.andWhere(
-          '(pais.id = :paisId OR pais.nombre = :paisNombre)',
-          { paisId: pais, paisNombre: pais },
+          '(pais.id = :paisId OR pais.nombre ILIKE :paisNombre)',
+          {
+            paisId: pais,
+            paisNombre: `%${pais}%`,
+          },
         );
       }
 
-      const [servicios, total] = await queryBuilder.getManyAndCount();
-
-      if (!servicios || servicios.length === 0) {
-        throw new BadRequestException(
-          'No se encontraron productos disponibles' +
-            (pais ? ` para el país ${pais}` : ''),
+      if (categoria && categoria.trim() !== '') {
+        queryBuilder.andWhere(
+          '(categoria.id = :categoriaId OR categoria.nombre ILIKE :categoriaNombre)',
+          {
+            categoriaId: categoria,
+            categoriaNombre: `%${categoria}%`,
+          },
         );
+      }
+
+      if (marca && marca.trim() !== '') {
+        queryBuilder.andWhere(
+          '(marca.id = :marcaId OR marca.nombre ILIKE :marcaNombre)',
+          {
+            marcaId: marca,
+            marcaNombre: `%${marca}%`,
+          },
+        );
+      }
+
+      if (proveedor && proveedor.trim() !== '') {
+        queryBuilder.andWhere(
+          '(proveedor.id = :proveedor OR proveedor.nombre_legal ILIKE :proveedorNombre)',
+          {
+            proveedor: proveedor,
+            proveedorNombre: `%${proveedor}%`,
+          },
+        );
+      }
+
+      if (limit !== undefined) queryBuilder.take(limit);
+      if (offset !== undefined) queryBuilder.skip(offset);
+
+      const [productos, total] = await queryBuilder.getManyAndCount();
+
+      if (!productos || productos.length === 0) {
+        let errorMessage = 'No se encontraron productos disponibles';
+        const filters = [];
+
+        if (pais) filters.push(`país: ${pais}`);
+        if (categoria) filters.push(`categoría: ${categoria}`);
+        if (marca) filters.push(`marca: ${marca}`);
+        if (proveedor) filters.push(`proveedor: ${proveedor}`);
+
+        if (filters.length > 0) {
+          errorMessage += ` con los filtros: ${filters.join(', ')}`;
+        }
+
+        throw new BadRequestException(errorMessage);
       }
 
       if (pais && pais.trim() !== '') {
-        servicios.forEach((producto) => {
+        productos.forEach((producto) => {
           producto.preciosPorPais = producto.preciosPorPais.filter(
-            (precio) => precio.pais.id === pais || precio.pais.nombre === pais,
+            (precio) =>
+              precio.pais.id === pais || precio.pais.nombre.includes(pais),
           );
         });
       }
 
       return {
-        servicios: instanceToPlain(servicios),
-        total: servicios.length,
+        productos: instanceToPlain(productos),
+        total: total,
       };
     } catch (error) {
       throw error;
@@ -358,7 +410,7 @@ export class SubServiciosService {
     }
   }
 
-  async updateServicio(id: string, updateServicioDto: UpdateSubServicioDto) {
+  async updateServicio(id: string, updateServicioDto: UpdateServicioDto) {
     const {
       nombre,
       descripcion,
@@ -366,13 +418,11 @@ export class SubServiciosService {
       servicioId,
       disponible,
       unidad_venta,
-      codigo,
     } = updateServicioDto;
 
     try {
       const servicio = await this.sub_servicio_repo.findOne({
-        where: { id, tipo: TipoSubServicio.SERVICIO },
-        relations: ['servicio'],
+        where: { id },
       });
 
       if (!servicio) {
@@ -401,7 +451,6 @@ export class SubServiciosService {
       if (isActive !== undefined) servicio.isActive = isActive;
       if (disponible !== undefined) servicio.disponible = disponible;
       if (unidad_venta !== undefined) servicio.unidad_venta = unidad_venta;
-      if (codigo !== undefined) servicio.codigo = codigo;
 
       if (servicioId) {
         const servicioPadre = await this.servicioRepo.findOne({
@@ -419,7 +468,6 @@ export class SubServiciosService {
 
       const servicioCompleto = await this.sub_servicio_repo.findOne({
         where: { id: servicioActualizado.id },
-        relations: ['servicio'],
       });
 
       return {
@@ -558,11 +606,7 @@ export class SubServiciosService {
         await this.serviciosPaiRepo.save(precioPais);
       }
 
-      const productoActualizado = await this.sub_servicio_repo.save(producto);
-
-      await this.sub_servicio_repo.findOne({
-        where: { id: productoActualizado.id },
-      });
+      await this.sub_servicio_repo.save(producto);
 
       return 'Producto actualizado correctamente';
     } catch (error) {

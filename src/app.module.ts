@@ -39,6 +39,7 @@ import { SucursalesModule } from './sucursales/sucursales.module';
 import { InventarioModule } from './inventario/inventario.module';
 import { InsumosModule } from './insumos/insumos.module';
 import { TaxesPaisModule } from './taxes_pais/taxes_pais.module';
+import { ProductosImagesModule } from './productos_images/productos_images.module';
 
 @Module({
   imports: [
@@ -110,6 +111,8 @@ import { TaxesPaisModule } from './taxes_pais/taxes_pais.module';
     SucursalesModule,
 
     TaxesPaisModule,
+
+    ProductosImagesModule,
   ],
   controllers: [],
   providers: [],

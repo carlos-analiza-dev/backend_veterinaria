@@ -29,7 +29,7 @@ export class ServiciosService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { limit, offset } = paginationDto;
+    const { limit, offset, servicio = '' } = paginationDto;
 
     try {
       const queryBuilder = this.servicioRepo
@@ -37,12 +37,19 @@ export class ServiciosService {
         .leftJoinAndSelect('servicio.subServicios', 'subServicios')
         .leftJoinAndSelect('subServicios.preciosPorPais', 'preciosPorPais')
         .leftJoinAndSelect('preciosPorPais.pais', 'pais')
-        .leftJoinAndSelect('subServicios.marca', 'marca')
-        .leftJoinAndSelect('subServicios.proveedor', 'proveedor')
-        .leftJoinAndSelect('subServicios.categoria', 'categoria')
         .leftJoinAndSelect('subServicios.insumos', 'insumos')
         .where('servicio.isActive = :isActive', { isActive: true })
         .orderBy('servicio.createdAt', 'DESC');
+
+      if (servicio && servicio.trim() !== '') {
+        queryBuilder.andWhere(
+          '(servicio.id = :servicioId OR servicio.nombre ILIKE :servicioNombre)',
+          {
+            servicioId: servicio,
+            servicioNombre: `%${servicio}%`,
+          },
+        );
+      }
 
       if (limit !== undefined) queryBuilder.take(limit);
       if (offset !== undefined) queryBuilder.skip(offset);
@@ -50,9 +57,14 @@ export class ServiciosService {
       const [servicios, total] = await queryBuilder.getManyAndCount();
 
       if (servicios.length === 0) {
-        throw new NotFoundException(
-          'No se encontraron servicios en este momento.',
-        );
+        let errorMessage = 'No se encontraron servicios';
+
+        if (servicio && servicio.trim() !== '') {
+          errorMessage += ` con el filtro: ${servicio}`;
+        }
+
+        errorMessage += ' en este momento.';
+        throw new NotFoundException(errorMessage);
       }
 
       return { servicios, total };
