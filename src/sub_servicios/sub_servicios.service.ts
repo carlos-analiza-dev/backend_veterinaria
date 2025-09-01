@@ -23,6 +23,7 @@ import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
 import { CreateServicioDto } from './dto/create-servicio.dto';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateServicioDto } from './dto/update-servicio.dto';
+import { User } from 'src/auth/entities/auth.entity';
 
 @Injectable()
 export class SubServiciosService {
@@ -306,6 +307,39 @@ export class SubServiciosService {
         productos: instanceToPlain(productos),
         total: total,
       };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAllProductosDisponibles(user: User) {
+    const paisId = user.pais.id;
+
+    try {
+      const productosDisponibles = await this.sub_servicio_repo
+        .createQueryBuilder('producto')
+        .leftJoinAndSelect(
+          'producto.preciosPorPais',
+          'precio',
+          'precio.paisId = :paisId',
+          { paisId },
+        )
+        .leftJoinAndSelect('producto.marca', 'marca')
+        .leftJoinAndSelect('producto.proveedor', 'proveedor')
+        .leftJoinAndSelect('producto.categoria', 'categoria')
+        .leftJoinAndSelect('producto.tax', 'tax')
+        .leftJoinAndSelect('producto.inventario', 'inventario')
+        .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
+        .andWhere('producto.disponible = :disponible', { disponible: true })
+        .andWhere('producto.isActive = :isActive', { isActive: true })
+        .andWhere('precio.paisId IS NOT NULL')
+        .getMany();
+
+      if (!productosDisponibles || productosDisponibles.length === 0) {
+        throw new NotFoundException('No se encontraron productos disponibles');
+      }
+
+      return { productos: productosDisponibles };
     } catch (error) {
       throw error;
     }

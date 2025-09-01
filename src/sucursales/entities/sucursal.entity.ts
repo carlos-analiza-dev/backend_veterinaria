@@ -3,6 +3,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { MunicipiosDepartamentosPai } from '../../municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
@@ -60,9 +61,12 @@ export class Sucursal {
   municipioId: string;
 
   // Relación con Gerente (Usuario)
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User, { eager: false })
   @JoinColumn({ name: 'gerenteId' })
   gerente: User;
+
+  @OneToMany(() => User, (user) => user.sucursal)
+  usuarios: User[];
 
   @Column({ type: 'uuid', nullable: true })
   gerenteId: string;

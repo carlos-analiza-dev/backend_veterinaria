@@ -23,6 +23,7 @@ import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/en
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
 import { Role } from 'src/roles/entities/role.entity';
 import { ValidRoles } from 'src/interfaces/valid-roles.interface';
+import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 
 @Injectable()
 export class AuthService {
@@ -35,6 +36,8 @@ export class AuthService {
     private readonly departamentoRepo: Repository<DepartamentosPai>,
     @InjectRepository(Role)
     private readonly rolRepo: Repository<Role>,
+    @InjectRepository(Sucursal)
+    private readonly sucursalRepository: Repository<Sucursal>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
   ) {}
@@ -49,6 +52,7 @@ export class AuthService {
       pais: paisId,
       departamento: departamentoId,
       municipio: municipioId,
+      sucursal: sucursalId,
       role,
       sexo,
     } = createUserDto;
@@ -65,6 +69,13 @@ export class AuthService {
       throw new BadRequestException(
         'No se encontró el departamento seleccionado.',
       );
+    }
+
+    const sucursal_existe = await this.sucursalRepository.findOne({
+      where: { id: sucursalId },
+    });
+    if (!sucursal_existe) {
+      throw new BadRequestException('No se encontró la sucursal seleccionado.');
     }
 
     const municipio_existe = await this.municipioRepo.findOne({
@@ -106,6 +117,7 @@ export class AuthService {
         pais: pais_existe,
         departamento: departamento_existe,
         municipio: municipio_existe,
+        sucursal: sucursal_existe,
         role: rol_exits,
         sexo,
         isActive: true,
@@ -134,6 +146,7 @@ export class AuthService {
         .leftJoinAndSelect('user.departamento', 'departamento')
         .leftJoinAndSelect('departamento.municipios', 'dpt_municipios')
         .leftJoinAndSelect('user.municipio', 'municipio')
+        .leftJoinAndSelect('user.sucursal', 'sucursal')
         .leftJoinAndSelect('user.profileImages', 'profileImages')
         .where('user.email = :email', { email })
         .orderBy('profileImages.createdAt', 'DESC')
@@ -326,6 +339,16 @@ export class AuthService {
           );
         }
         usuario.municipio = municipio;
+      }
+
+      if (updateUsuarioDto.sucursal) {
+        const sucursal = await this.sucursalRepository.findOne({
+          where: { id: updateUsuarioDto.sucursal },
+        });
+        if (!sucursal)
+          throw new BadRequestException('La sucursal seleccionado no existe');
+
+        usuario.sucursal = sucursal;
       }
 
       const camposActualizables = [

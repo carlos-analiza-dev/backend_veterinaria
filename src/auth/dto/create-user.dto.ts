@@ -61,6 +61,10 @@ export class CreateUserDto {
   departamento: string;
 
   @IsString()
+  @IsNotEmpty({ message: 'La sucursal es obligatoria' })
+  sucursal: string;
+
+  @IsString()
   @IsNotEmpty({ message: 'El sexo es obligatorio' })
   sexo: string;
 

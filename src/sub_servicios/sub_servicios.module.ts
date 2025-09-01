@@ -12,6 +12,8 @@ import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { ServiciosPai } from 'src/servicios_pais/entities/servicios_pai.entity';
 import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
 import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
+import { AuthModule } from 'src/auth/auth.module';
+import { User } from 'src/auth/entities/auth.entity';
 
 @Module({
   controllers: [SubServiciosController],
@@ -27,7 +29,9 @@ import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
       ServiciosPai,
       ServicioInsumo,
       TaxesPai,
+      User,
     ]),
+    AuthModule,
   ],
   providers: [SubServiciosService],
 })

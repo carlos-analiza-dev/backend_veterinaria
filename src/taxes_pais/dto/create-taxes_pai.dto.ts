@@ -3,9 +3,9 @@ import {
   IsString,
   MaxLength,
   IsUUID,
-  IsNumber,
   Min,
   Max,
+  IsInt,
 } from 'class-validator';
 
 export class CreateTaxesPaiDto {
@@ -14,13 +14,10 @@ export class CreateTaxesPaiDto {
   @MaxLength(100, { message: 'El nombre no debe exceder los 100 caracteres.' })
   nombre: string;
 
-  @IsNumber(
-    { allowNaN: false, allowInfinity: false },
-    { message: 'El porcentaje debe ser un número válido.' },
-  )
+  @IsInt({ message: 'El porcentaje debe ser un número entero.' })
   @IsNotEmpty({ message: 'El porcentaje es obligatorio.' })
-  @Min(0.01, { message: 'El porcentaje debe ser mayor que 0.' })
-  @Max(0.99, { message: 'El porcentaje debe ser menor que 1.' })
+  @Min(1, { message: 'El porcentaje debe ser al menos 1.' })
+  @Max(99, { message: 'El porcentaje debe ser como máximo 99.' })
   porcentaje: number;
 
   @IsUUID('4', { message: 'El país debe ser un UUID válido.' })

@@ -10,6 +10,10 @@ import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity';
 import { RazaAnimal } from 'src/raza_animal/entities/raza_animal.entity';
+import {
+  Sucursal,
+  TipoSucursal,
+} from 'src/sucursales/entities/sucursal.entity';
 
 @Injectable()
 export class SeedService {
@@ -28,6 +32,9 @@ export class SeedService {
     private readonly especieRepository: Repository<EspecieAnimal>,
     @InjectRepository(RazaAnimal)
     private readonly razaRepository: Repository<RazaAnimal>,
+    @InjectRepository(Sucursal)
+    private readonly sucursalRepository: Repository<Sucursal>,
+
     private readonly configService: ConfigService,
   ) {}
 
@@ -39,6 +46,12 @@ export class SeedService {
     );
     const tegucigalpa = await this.createMunicipioTegucigalpa(franciscoMorazan);
     await this.createAdminUser(honduras, franciscoMorazan, tegucigalpa);
+    const sucursal = await this.createSucursalPrincipal(
+      honduras,
+      franciscoMorazan,
+      tegucigalpa,
+    );
+    await this.updateAdminUserWithSucursal(sucursal);
     await this.createEspeciesAndRazas();
     return { message: 'Semilla ejecutada correctamente' };
   }
@@ -123,6 +136,45 @@ export class SeedService {
     return existingMunicipio;
   }
 
+  private async createSucursalPrincipal(
+    pai: Pai,
+    departamento: DepartamentosPai,
+    municipio: MunicipiosDepartamentosPai,
+  ) {
+    const adminUser = await this.userRepository.findOne({
+      where: {
+        email: this.configService.get('ADMIN_EMAIL') || 'admin@example.com',
+      },
+    });
+
+    if (!adminUser) {
+      throw new Error(
+        'No se encontró el usuario administrador para asignar como gerente',
+      );
+    }
+
+    const existingSucursal = await this.sucursalRepository.findOne({
+      where: { nombre: 'Casa Matriz' },
+    });
+
+    if (!existingSucursal) {
+      const newSucursal = this.sucursalRepository.create({
+        nombre: 'Casa Matriz',
+        tipo: TipoSucursal.CASA_MATRIZ,
+        direccion_complemento: 'Centro de Tegucigalpa, Honduras',
+        pais: pai,
+        departamento: departamento,
+        municipio: municipio,
+        gerente: adminUser,
+        isActive: true,
+      });
+
+      return await this.sucursalRepository.save(newSucursal);
+    }
+
+    return existingSucursal;
+  }
+
   private async createAdminUser(
     pai: Pai,
     departamento: DepartamentosPai,
@@ -165,6 +217,21 @@ export class SeedService {
       await this.userRepository.save(adminUser);
     }
   }
+
+  private async updateAdminUserWithSucursal(sucursal: Sucursal) {
+    const adminEmail =
+      this.configService.get('ADMIN_EMAIL') || 'admin@example.com';
+
+    const adminUser = await this.userRepository.findOne({
+      where: { email: adminEmail },
+    });
+
+    if (adminUser) {
+      adminUser.sucursal = sucursal;
+      await this.userRepository.save(adminUser);
+    }
+  }
+
   private async createEspeciesAndRazas() {
     const especiesData = [
       { nombre: 'Bovino' },

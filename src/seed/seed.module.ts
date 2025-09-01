@@ -10,6 +10,7 @@ import { Pai } from 'src/pais/entities/pai.entity';
 import { ConfigModule } from '@nestjs/config';
 import { RazaAnimal } from 'src/raza_animal/entities/raza_animal.entity';
 import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity';
+import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 
 @Module({
   controllers: [SeedController],
@@ -17,12 +18,13 @@ import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity
     ConfigModule,
     TypeOrmModule.forFeature([
       User,
-      Role,
       DepartamentosPai,
       MunicipiosDepartamentosPai,
       Pai,
       RazaAnimal,
       EspecieAnimal,
+      Sucursal,
+      Role,
     ]),
   ],
   providers: [SeedService],

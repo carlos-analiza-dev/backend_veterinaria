@@ -9,6 +9,7 @@ import { Pai } from 'src/pais/entities/pai.entity';
 import { ProduccionFinca } from 'src/produccion_finca/entities/produccion_finca.entity';
 import { ProfileImage } from 'src/profile_images/entities/profile_image.entity';
 import { Role } from 'src/roles/entities/role.entity';
+import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 import {
   Column,
   Entity,
@@ -89,6 +90,10 @@ export class User {
 
   @OneToMany(() => AnalisisEficiencia, (analisis) => analisis.user)
   analisisEficiencia: AnalisisEficiencia[];
+
+  @ManyToOne(() => Sucursal, (sucursal) => sucursal.usuarios, { eager: true })
+  @JoinColumn({ name: 'sucursalId' })
+  sucursal: Sucursal;
 
   get currentProfileImage(): ProfileImage | null {
     if (!this.profileImages || this.profileImages.length === 0) return null;

@@ -15,6 +15,9 @@ import { CreateServicioDto } from './dto/create-servicio.dto';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateServicioDto } from './dto/update-servicio.dto';
 import { UpdateProductoDto } from './dto/update-producto.dto';
+import { Auth } from 'src/auth/decorators/auth.decorator';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { User } from 'src/auth/entities/auth.entity';
 
 @Controller('sub-servicios')
 export class SubServiciosController {
@@ -33,6 +36,12 @@ export class SubServiciosController {
   @Get('productos')
   findAllProductos(@Query() paginationDto: PaginationDto) {
     return this.subServiciosService.findAllProductos(paginationDto);
+  }
+
+  @Get('productos-disponibles')
+  @Auth()
+  findAllProductosDisponibles(@GetUser() user: User) {
+    return this.subServiciosService.findAllProductosDisponibles(user);
   }
 
   @Get('servicio/:servicioId')
