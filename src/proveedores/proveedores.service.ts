@@ -127,7 +127,7 @@ export class ProveedoresService {
   }
 
   async findAll(searchProveedorDto: SearchProveedorDto) {
-    const { limit = 10, offset = 0, search, isActive } = searchProveedorDto;
+    const { limit = 10, offset = 0, search, isActive, paisId } = searchProveedorDto;
 
     try {
       const query = this.proveedorRepo
@@ -138,23 +138,43 @@ export class ProveedoresService {
         .leftJoinAndSelect('proveedor.created_by', 'created_by')
         .leftJoinAndSelect('proveedor.updated_by', 'updated_by');
 
-      // Solo aplicar filtro de isActive si se proporciona específicamente
+      let whereConditions: string[] = [];
+      const parameters: {
+        paisId?: string;
+        isActive?: boolean;
+        search?: string;
+      } = {};
+
+      // Filtro por país si se proporciona
+      if (paisId) {
+        // Verificar que el país existe
+        const pais = await this.paisRepo.findOneBy({ id: paisId });
+        if (!pais) {
+          throw new NotFoundException('País no encontrado');
+        }
+        whereConditions.push('proveedor.pais.id = :paisId');
+        parameters.paisId = paisId;
+      }
+
+      // Filtro de activos/inactivos si se proporciona específicamente
       if (isActive !== undefined) {
-        query.where('proveedor.is_active = :isActive', { isActive });
+        whereConditions.push('proveedor.is_active = :isActive');
+        parameters.isActive = isActive;
       }
 
       // Búsqueda por nombre legal, NIT/RTN o nombre de contacto
       if (search && search.trim() !== '') {
-        const searchCondition =
+        whereConditions.push(
           '(LOWER(proveedor.nombre_legal) LIKE LOWER(:search) OR ' +
           'LOWER(proveedor.nit_rtn) LIKE LOWER(:search) OR ' +
-          'LOWER(proveedor.nombre_contacto) LIKE LOWER(:search))';
+          'LOWER(proveedor.nombre_contacto) LIKE LOWER(:search))'
+        );
+        parameters.search = `%${search}%`;
+      }
 
-        if (isActive !== undefined) {
-          query.andWhere(searchCondition, { search: `%${search}%` });
-        } else {
-          query.where(searchCondition, { search: `%${search}%` });
-        }
+      // Aplicar condiciones WHERE
+      if (whereConditions.length > 0) {
+        query.where(whereConditions.join(' AND '), parameters);
       }
 
       const total = await query.getCount();
@@ -388,6 +408,60 @@ export class ProveedoresService {
 
       return {
         message: 'Proveedor restaurado correctamente',
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findByPais(paisId: string, searchProveedorDto: SearchProveedorDto) {
+    const { limit = 10, offset = 0, search, isActive } = searchProveedorDto;
+
+    try {
+      // Verificar que el país existe
+      const pais = await this.paisRepo.findOneBy({ id: paisId });
+      if (!pais) {
+        throw new NotFoundException('País no encontrado');
+      }
+
+      const query = this.proveedorRepo
+        .createQueryBuilder('proveedor')
+        .leftJoinAndSelect('proveedor.pais', 'pais')
+        .leftJoinAndSelect('proveedor.departamento', 'departamento')
+        .leftJoinAndSelect('proveedor.municipio', 'municipio')
+        .leftJoinAndSelect('proveedor.created_by', 'created_by')
+        .leftJoinAndSelect('proveedor.updated_by', 'updated_by')
+        .where('proveedor.pais.id = :paisId', { paisId });
+
+      // Filtro de activos/inactivos si se proporciona
+      if (isActive !== undefined) {
+        query.andWhere('proveedor.is_active = :isActive', { isActive });
+      }
+
+      // Búsqueda por nombre legal, NIT/RTN o nombre de contacto
+      if (search && search.trim() !== '') {
+        query.andWhere(
+          '(LOWER(proveedor.nombre_legal) LIKE LOWER(:search) OR ' +
+            'LOWER(proveedor.nit_rtn) LIKE LOWER(:search) OR ' +
+            'LOWER(proveedor.nombre_contacto) LIKE LOWER(:search))',
+          { search: `%${search}%` },
+        );
+      }
+
+      const total = await query.getCount();
+
+      const proveedores = await query
+        .orderBy('proveedor.created_at', 'DESC')
+        .skip(offset)
+        .take(limit)
+        .getMany();
+
+      return {
+        data: instanceToPlain(proveedores),
+        total,
+        limit,
+        offset,
+        pais: instanceToPlain(pais),
       };
     } catch (error) {
       throw error;

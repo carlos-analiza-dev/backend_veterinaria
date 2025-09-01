@@ -2,7 +2,7 @@ import { IsBoolean, IsOptional, IsString, IsUUID } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
-export class SearchProveedorDto extends PaginationDto {
+export class SearchSubcategoriaDto extends PaginationDto {
   @IsOptional()
   @IsString()
   search?: string;
@@ -16,7 +16,7 @@ export class SearchProveedorDto extends PaginationDto {
   })
   isActive?: boolean;
 
-  @IsUUID('4', { message: 'El paisId debe ser un UUID válido' })
+  @IsUUID('4', { message: 'El ID de la categoría debe ser un UUID válido' })
   @IsOptional()
-  paisId?: string;
+  categoriaId?: string;
 }

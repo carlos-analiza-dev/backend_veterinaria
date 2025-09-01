@@ -12,6 +12,7 @@ import {
 import { CategoriasService } from './categorias.service';
 import { CreateCategoriaDto } from './dto/create-categoria.dto';
 import { UpdateCategoriaDto } from './dto/update-categoria.dto';
+import { SearchCategoriaDto } from './dto/search-categoria.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
@@ -32,8 +33,8 @@ export class CategoriasController {
 
   @Get()
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findAll() {
-    return this.categoriasService.findAll();
+  findAll(@Query() searchCategoriaDto: SearchCategoriaDto) {
+    return this.categoriasService.findAll(searchCategoriaDto);
   }
 
   @Get(':id')

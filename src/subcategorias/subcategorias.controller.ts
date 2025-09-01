@@ -11,6 +11,7 @@ import {
 import { SubcategoriasService } from './subcategorias.service';
 import { CreateSubcategoriaDto } from './dto/create-subcategoria.dto';
 import { UpdateSubcategoriaDto } from './dto/update-subcategoria.dto';
+import { SearchSubcategoriaDto } from './dto/search-subcategoria.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
@@ -31,8 +32,8 @@ export class SubcategoriasController {
 
   @Get()
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findAll(@Query('categoriaId') categoriaId?: string) {
-    return this.subcategoriasService.findAll(categoriaId);
+  findAll(@Query() searchSubcategoriaDto: SearchSubcategoriaDto) {
+    return this.subcategoriasService.findAll(searchSubcategoriaDto);
   }
 
   @Get('categoria/:categoriaId')

@@ -40,7 +40,7 @@ export class Sucursal {
   @JoinColumn({ name: 'paisId' })
   pais: Pai;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   paisId: string;
 
   // Relación con Departamento
@@ -64,7 +64,7 @@ export class Sucursal {
   @JoinColumn({ name: 'gerenteId' })
   gerente: User;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   gerenteId: string;
 
   @Column({ type: 'boolean', default: true })

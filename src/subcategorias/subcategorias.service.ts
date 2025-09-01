@@ -9,6 +9,7 @@ import { Repository } from 'typeorm';
 import { Subcategoria } from './entities/subcategoria.entity';
 import { CreateSubcategoriaDto } from './dto/create-subcategoria.dto';
 import { UpdateSubcategoriaDto } from './dto/update-subcategoria.dto';
+import { SearchSubcategoriaDto } from './dto/search-subcategoria.dto';
 import { User } from 'src/auth/entities/auth.entity';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { instanceToPlain } from 'class-transformer';
@@ -93,22 +94,70 @@ export class SubcategoriasService {
     }
   }
 
-  async findAll(categoriaId?: string) {
+  async findAll(searchSubcategoriaDto: SearchSubcategoriaDto) {
+    const { limit = 10, offset = 0, search, isActive, categoriaId } = searchSubcategoriaDto;
+
     try {
       const query = this.subcategoria_repo
         .createQueryBuilder('subcategoria')
         .leftJoinAndSelect('subcategoria.categoria', 'categoria')
-        .where('subcategoria.is_active = :isActive', { isActive: true })
-        .orderBy('subcategoria.nombre', 'ASC');
+        .leftJoinAndSelect('subcategoria.created_by', 'created_by')
+        .leftJoinAndSelect('subcategoria.updated_by', 'updated_by');
 
-      if (categoriaId) {
-        query.andWhere('subcategoria.categoriaId = :categoriaId', {
-          categoriaId,
-        });
+      let whereConditions: string[] = [];
+      const parameters: {
+        isActive?: boolean;
+        categoriaId?: string;
+        search?: string;
+      } = {};
+
+      // Filtro por estado activo/inactivo si se proporciona específicamente
+      if (isActive !== undefined) {
+        whereConditions.push('subcategoria.is_active = :isActive');
+        parameters.isActive = isActive;
       }
 
-      const subcategorias = await query.getMany();
-      return instanceToPlain(subcategorias);
+      // Filtro por categoría si se proporciona
+      if (categoriaId) {
+        // Verificar que la categoría existe
+        const categoria = await this.categoria_repo.findOneBy({ id: categoriaId });
+        if (!categoria) {
+          throw new NotFoundException('Categoría no encontrada');
+        }
+        whereConditions.push('subcategoria.categoria.id = :categoriaId');
+        parameters.categoriaId = categoriaId;
+      }
+
+      // Búsqueda por nombre, descripción o código
+      if (search && search.trim() !== '') {
+        whereConditions.push(
+          '(LOWER(subcategoria.nombre) LIKE LOWER(:search) OR ' +
+          'LOWER(subcategoria.descripcion) LIKE LOWER(:search) OR ' +
+          'LOWER(subcategoria.codigo) LIKE LOWER(:search) OR ' +
+          'LOWER(categoria.nombre) LIKE LOWER(:search))'
+        );
+        parameters.search = `%${search}%`;
+      }
+
+      // Aplicar condiciones WHERE
+      if (whereConditions.length > 0) {
+        query.where(whereConditions.join(' AND '), parameters);
+      }
+
+      const total = await query.getCount();
+
+      const subcategorias = await query
+        .orderBy('subcategoria.nombre', 'ASC')
+        .skip(offset)
+        .take(limit)
+        .getMany();
+
+      return {
+        data: instanceToPlain(subcategorias),
+        total,
+        limit,
+        offset,
+      };
     } catch (error) {
       throw error;
     }

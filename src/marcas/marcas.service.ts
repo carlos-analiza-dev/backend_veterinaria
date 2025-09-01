@@ -10,7 +10,7 @@ import { Marca } from './entities/marca.entity';
 import { CreateMarcaDto } from './dto/create-marca.dto';
 import { UpdateMarcaDto } from './dto/update-marca.dto';
 import { User } from 'src/auth/entities/auth.entity';
-import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { SearchMarcaDto } from './dto/search-marca.dto';
 import { instanceToPlain } from 'class-transformer';
 
 @Injectable()
@@ -61,30 +61,39 @@ export class MarcasService {
     }
   }
 
-  async findAll(paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0 } = paginationDto;
-
-    // Extraer parámetros adicionales
-    const search = (paginationDto as any).search || '';
-    const isActive =
-      (paginationDto as any).isActive !== undefined
-        ? (paginationDto as any).isActive
-        : true;
+  async findAll(searchMarcaDto: SearchMarcaDto) {
+    const { limit = 10, offset = 0, search, isActive } = searchMarcaDto;
 
     try {
       const query = this.marcaRepo
         .createQueryBuilder('marca')
         .leftJoinAndSelect('marca.created_by', 'created_by')
-        .leftJoinAndSelect('marca.updated_by', 'updated_by')
-        .where('marca.is_active = :isActive', { isActive });
+        .leftJoinAndSelect('marca.updated_by', 'updated_by');
+
+      let whereConditions: string[] = [];
+      const parameters: {
+        isActive?: boolean;
+        search?: string;
+      } = {};
+
+      // Filtro por estado activo/inactivo si se proporciona específicamente
+      if (isActive !== undefined) {
+        whereConditions.push('marca.is_active = :isActive');
+        parameters.isActive = isActive;
+      }
 
       // Búsqueda por nombre o país
       if (search && search.trim() !== '') {
-        query.andWhere(
-          '(LOWER(marca.nombre) LIKE :search OR ' +
-            'LOWER(marca.pais_origen) LIKE :search)',
-          { search: `%${search.toLowerCase()}%` },
+        whereConditions.push(
+          '(LOWER(marca.nombre) LIKE LOWER(:search) OR ' +
+          'LOWER(marca.pais_origen) LIKE LOWER(:search))'
         );
+        parameters.search = `%${search}%`;
+      }
+
+      // Aplicar condiciones WHERE
+      if (whereConditions.length > 0) {
+        query.where(whereConditions.join(' AND '), parameters);
       }
 
       const total = await query.getCount();
@@ -95,18 +104,12 @@ export class MarcasService {
         .take(limit)
         .getMany();
 
-      if (!marcas || marcas.length === 0) {
-        throw new BadRequestException(
-          'No se encontraron marcas en este momento',
-        );
-      }
-
-      return instanceToPlain({
-        data: marcas,
+      return {
+        data: instanceToPlain(marcas),
         total,
         limit,
         offset,
-      });
+      };
     } catch (error) {
       throw error;
     }

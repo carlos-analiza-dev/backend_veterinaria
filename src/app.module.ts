@@ -40,6 +40,7 @@ import { InventarioModule } from './inventario/inventario.module';
 import { InsumosModule } from './insumos/insumos.module';
 import { TaxesPaisModule } from './taxes_pais/taxes_pais.module';
 import { ProductosImagesModule } from './productos_images/productos_images.module';
+import { LotesModule } from './lotes/lotes.module';
 
 @Module({
   imports: [
@@ -113,6 +114,7 @@ import { ProductosImagesModule } from './productos_images/productos_images.modul
     TaxesPaisModule,
 
     ProductosImagesModule,
+    LotesModule,
   ],
   controllers: [],
   providers: [],

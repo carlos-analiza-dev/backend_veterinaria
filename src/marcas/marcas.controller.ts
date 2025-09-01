@@ -11,7 +11,7 @@ import {
 import { MarcasService } from './marcas.service';
 import { CreateMarcaDto } from './dto/create-marca.dto';
 import { UpdateMarcaDto } from './dto/update-marca.dto';
-import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { SearchMarcaDto } from './dto/search-marca.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
@@ -29,8 +29,8 @@ export class MarcasController {
 
   @Get()
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.marcasService.findAll(paginationDto);
+  findAll(@Query() searchMarcaDto: SearchMarcaDto) {
+    return this.marcasService.findAll(searchMarcaDto);
   }
 
   @Get('activas')
