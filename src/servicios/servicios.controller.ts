@@ -12,6 +12,9 @@ import { ServiciosService } from './servicios.service';
 import { CreateServicioDto } from './dto/create-servicio.dto';
 import { UpdateServicioDto } from './dto/update-servicio.dto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { Auth } from 'src/auth/decorators/auth.decorator';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { User } from 'src/auth/entities/auth.entity';
 
 @Controller('servicios')
 export class ServiciosController {
@@ -23,8 +26,9 @@ export class ServiciosController {
   }
 
   @Get()
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.serviciosService.findAll(paginationDto);
+  @Auth()
+  findAll(@GetUser() user: User, @Query() paginationDto: PaginationDto) {
+    return this.serviciosService.findAll(user, paginationDto);
   }
 
   @Get('/activos')

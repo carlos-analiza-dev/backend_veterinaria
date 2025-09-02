@@ -21,7 +21,7 @@ export class ServicioInsumo {
   @Column({ name: 'insumo_id' })
   insumoId: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 1 })
+  @Column({ type: 'int', default: 1 })
   cantidad: number;
 
   @ManyToOne(() => SubServicio, (servicio) => servicio.insumos, {
@@ -31,7 +31,7 @@ export class ServicioInsumo {
   servicio: SubServicio;
 
   @ManyToOne(() => Insumo, (insumo) => insumo.servicios, {
-    eager: true,
+    eager: false,
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'insumo_id' })

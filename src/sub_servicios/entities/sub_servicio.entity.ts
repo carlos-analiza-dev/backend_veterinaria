@@ -145,7 +145,7 @@ export class SubServicio {
   tax: TaxesPai;
 
   @OneToMany(() => ProductosImage, (producto) => producto.producto, {
-    eager: true,
+    eager: false,
   })
   imagenes: ProductosImage[];
 }

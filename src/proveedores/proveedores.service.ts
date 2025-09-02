@@ -127,7 +127,13 @@ export class ProveedoresService {
   }
 
   async findAll(searchProveedorDto: SearchProveedorDto) {
-    const { limit = 10, offset = 0, search, isActive, paisId } = searchProveedorDto;
+    const {
+      limit = 10,
+      offset = 0,
+      search,
+      isActive,
+      paisId,
+    } = searchProveedorDto;
 
     try {
       const query = this.proveedorRepo
@@ -166,8 +172,8 @@ export class ProveedoresService {
       if (search && search.trim() !== '') {
         whereConditions.push(
           '(LOWER(proveedor.nombre_legal) LIKE LOWER(:search) OR ' +
-          'LOWER(proveedor.nit_rtn) LIKE LOWER(:search) OR ' +
-          'LOWER(proveedor.nombre_contacto) LIKE LOWER(:search))'
+            'LOWER(proveedor.nit_rtn) LIKE LOWER(:search) OR ' +
+            'LOWER(proveedor.nombre_contacto) LIKE LOWER(:search))',
         );
         parameters.search = `%${search}%`;
       }
@@ -196,10 +202,11 @@ export class ProveedoresService {
     }
   }
 
-  async findAllActive() {
+  async findAllActive(user: User) {
+    const pais = user.pais;
     try {
       const proveedores = await this.proveedorRepo.find({
-        where: { is_active: true },
+        where: { is_active: true, pais: pais },
         select: ['id', 'nombre_legal', 'nit_rtn'],
         order: { nombre_legal: 'ASC' },
       });

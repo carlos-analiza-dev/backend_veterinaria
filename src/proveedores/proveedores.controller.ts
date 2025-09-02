@@ -39,8 +39,8 @@ export class ProveedoresController {
 
   @Get('activos')
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findAllActive() {
-    return this.proveedoresService.findAllActive();
+  findAllActive(@GetUser() user: User) {
+    return this.proveedoresService.findAllActive(user);
   }
 
   @Get('pais/:paisId')

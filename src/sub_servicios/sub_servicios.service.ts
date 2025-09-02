@@ -5,14 +5,12 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateSubServicioDto } from './dto/create-sub_servicio.dto';
 import { UpdateSubServicioDto } from './dto/update-sub_servicio.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SubServicio, TipoSubServicio } from './entities/sub_servicio.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { Servicio } from 'src/servicios/entities/servicio.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
-import { randomBytes } from 'crypto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { Marca } from 'src/marcas/entities/marca.entity';
 import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
@@ -24,6 +22,8 @@ import { CreateServicioDto } from './dto/create-servicio.dto';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateServicioDto } from './dto/update-servicio.dto';
 import { User } from 'src/auth/entities/auth.entity';
+import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
+import { Insumo } from 'src/insumos/entities/insumo.entity';
 
 @Injectable()
 export class SubServiciosService {
@@ -44,13 +44,12 @@ export class SubServiciosService {
     private readonly serviciosPaiRepo: Repository<ServiciosPai>,
     @InjectRepository(TaxesPai)
     private readonly taxesPaiRepo: Repository<TaxesPai>,
+    @InjectRepository(ServicioInsumo)
+    private readonly servicioInsumoRepo: Repository<ServicioInsumo>,
+    @InjectRepository(Insumo)
+    private readonly insumoRepo: Repository<Insumo>,
   ) {}
   async createServicio(createServicioDto: CreateServicioDto) {
-    const dto = {
-      ...createServicioDto,
-      tipo: TipoSubServicio.SERVICIO,
-    };
-
     const {
       nombre,
       descripcion,
@@ -58,7 +57,8 @@ export class SubServiciosService {
       isActive = true,
       disponible = true,
       unidad_venta,
-    } = dto;
+      insumos = [],
+    } = createServicioDto;
 
     try {
       const servicio_existe = await this.servicioRepo.findOne({
@@ -71,20 +71,53 @@ export class SubServiciosService {
         );
       }
 
+      if (insumos.length <= 0) {
+        throw new BadRequestException(
+          'Se debe ingresar al menos un insumo al servicio',
+        );
+      }
+
+      if (insumos.length > 0) {
+        const insumoIds = insumos.map((insumo) => insumo.insumoId);
+        const insumosExistentes = await this.insumoRepo.find({
+          where: { id: In(insumoIds) },
+        });
+
+        if (insumosExistentes.length !== insumos.length) {
+          throw new NotFoundException(
+            'Uno o más insumos no existen o están inactivos',
+          );
+        }
+      }
+
       const servicio = this.sub_servicio_repo.create({
         nombre,
         descripcion,
         isActive,
-
         disponible,
         tipo: TipoSubServicio.SERVICIO,
         unidad_venta,
         servicio: { id: servicio_existe.id },
       });
 
-      await this.sub_servicio_repo.save(servicio);
+      const servicioCreado = await this.sub_servicio_repo.save(servicio);
 
-      return 'Servicio Creado Exitosamente';
+      if (insumos.length > 0) {
+        const servicioInsumos = insumos.map((insumoDto) =>
+          this.servicioInsumoRepo.create({
+            servicioId: servicioCreado.id,
+            insumoId: insumoDto.insumoId,
+            cantidad: insumoDto.cantidad,
+          }),
+        );
+
+        await this.servicioInsumoRepo.save(servicioInsumos);
+      }
+
+      return {
+        message: 'Servicio Creado Exitosamente',
+        servicioId: servicioCreado.id,
+      };
     } catch (error) {
       throw error;
     }
@@ -452,11 +485,13 @@ export class SubServiciosService {
       servicioId,
       disponible,
       unidad_venta,
+      insumos = [],
     } = updateServicioDto;
 
     try {
       const servicio = await this.sub_servicio_repo.findOne({
         where: { id },
+        relations: ['insumos'],
       });
 
       if (!servicio) {
@@ -500,8 +535,34 @@ export class SubServiciosService {
 
       const servicioActualizado = await this.sub_servicio_repo.save(servicio);
 
+      if (insumos.length > 0) {
+        const insumoIds = insumos.map((i) => i.insumoId);
+        const insumosExistentes = await this.insumoRepo.find({
+          where: { id: In(insumoIds) },
+        });
+
+        if (insumosExistentes.length !== insumos.length) {
+          throw new NotFoundException(
+            'Uno o más insumos no existen o están inactivos',
+          );
+        }
+
+        await this.servicioInsumoRepo.delete({ servicioId: servicio.id });
+
+        const nuevosInsumos = insumos.map((insumoDto) =>
+          this.servicioInsumoRepo.create({
+            servicioId: servicio.id,
+            insumoId: insumoDto.insumoId,
+            cantidad: insumoDto.cantidad,
+          }),
+        );
+
+        await this.servicioInsumoRepo.save(nuevosInsumos);
+      }
+
       const servicioCompleto = await this.sub_servicio_repo.findOne({
         where: { id: servicioActualizado.id },
+        relations: ['insumos', 'insumos.insumo'],
       });
 
       return {

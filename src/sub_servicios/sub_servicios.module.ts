@@ -14,6 +14,7 @@ import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.en
 import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { User } from 'src/auth/entities/auth.entity';
+import { Insumo } from 'src/insumos/entities/insumo.entity';
 
 @Module({
   controllers: [SubServiciosController],
@@ -30,6 +31,7 @@ import { User } from 'src/auth/entities/auth.entity';
       ServicioInsumo,
       TaxesPai,
       User,
+      Insumo,
     ]),
     AuthModule,
   ],

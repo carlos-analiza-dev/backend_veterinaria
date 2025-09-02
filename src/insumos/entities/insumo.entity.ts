@@ -52,27 +52,27 @@ export class Insumo {
 
   @ManyToOne(() => Marca, (marca) => marca.insumos, {
     nullable: true,
-    eager: true,
+    eager: false,
   })
   @JoinColumn({ name: 'marca_id' })
   marca: Marca | null;
 
   @ManyToOne(() => Proveedor, (proveedor) => proveedor.insumos, {
     nullable: true,
-    eager: true,
+    eager: false,
   })
   @JoinColumn({ name: 'proveedor_id' })
   proveedor: Proveedor | null;
 
   @ManyToOne(() => Pai, (pais) => pais.insumos, {
     nullable: true,
-    eager: true,
+    eager: false,
   })
   @JoinColumn({ name: 'pais_id' })
   pais: Pai | null;
 
   @OneToOne(() => Inventario, (inventario) => inventario.insumo, {
-    eager: true,
+    eager: false,
   })
   inventario: Inventario;
 

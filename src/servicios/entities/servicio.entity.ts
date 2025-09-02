@@ -1,8 +1,11 @@
+import { Pai } from 'src/pais/entities/pai.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -27,6 +30,13 @@ export class Servicio {
     cascade: true,
   })
   subServicios: SubServicio[];
+
+  @ManyToOne(() => Pai, (pais) => pais.servicios, {
+    eager: true,
+    nullable: true,
+  })
+  @JoinColumn({ name: 'pais_id' })
+  pais: Pai;
 
   @CreateDateColumn()
   createdAt: Date;

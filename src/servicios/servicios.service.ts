@@ -9,26 +9,36 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Servicio } from './entities/servicio.entity';
 import { Repository } from 'typeorm';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { Pai } from 'src/pais/entities/pai.entity';
+import { User } from 'src/auth/entities/auth.entity';
 
 @Injectable()
 export class ServiciosService {
   constructor(
     @InjectRepository(Servicio)
     private readonly servicioRepo: Repository<Servicio>,
+    @InjectRepository(Pai)
+    private readonly paisRepo: Repository<Pai>,
   ) {}
   async create(createServicioDto: CreateServicioDto) {
-    const { nombre, descripcion } = createServicioDto;
+    const { nombre, descripcion, paisId } = createServicioDto;
+
+    const pais_existe = await this.paisRepo.findOne({ where: { id: paisId } });
+    if (!pais_existe)
+      throw new NotFoundException('El pais seleccionado no existe');
 
     const servicio_nuevo = this.servicioRepo.create({
       descripcion,
       nombre,
+      pais: pais_existe,
     });
 
     await this.servicioRepo.save(servicio_nuevo);
     return 'Servicio Creado exitosamente';
   }
 
-  async findAll(paginationDto: PaginationDto) {
+  async findAll(user: User, paginationDto: PaginationDto) {
+    const paisId = user.pais.id;
     const { limit, offset, servicio = '' } = paginationDto;
 
     try {
@@ -37,9 +47,9 @@ export class ServiciosService {
         .leftJoinAndSelect('servicio.subServicios', 'subServicios')
         .leftJoinAndSelect('subServicios.preciosPorPais', 'preciosPorPais')
         .leftJoinAndSelect('preciosPorPais.pais', 'pais')
-        .leftJoinAndSelect('subServicios.insumos', 'insumos')
-        .where('servicio.isActive = :isActive', { isActive: true })
-        .orderBy('servicio.createdAt', 'DESC');
+        .leftJoinAndSelect('subServicios.insumos', 'servicioInsumos')
+        .leftJoinAndSelect('servicioInsumos.insumo', 'insumo')
+        .where('servicio.pais_id = :paisId', { paisId });
 
       if (servicio && servicio.trim() !== '') {
         queryBuilder.andWhere(

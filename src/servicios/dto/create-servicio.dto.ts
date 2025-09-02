@@ -3,6 +3,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsUUID,
   Length,
   Matches,
 } from 'class-validator';
@@ -32,4 +33,8 @@ export class CreateServicioDto {
     message: 'El campo isActive debe ser un valor booleano (true o false)',
   })
   isActive?: boolean;
+
+  @IsUUID('4', { message: 'El id del país debe ser un UUID válido' })
+  @IsNotEmpty({ message: 'El país es obligatorio' })
+  paisId: string;
 }
