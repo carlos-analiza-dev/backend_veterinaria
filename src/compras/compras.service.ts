@@ -205,11 +205,17 @@ export class ComprasService {
       whereCondition.id_sucursal = sucursalId;
     }
 
-    const lotes = await this.loteRepository.find({
-      where: whereCondition,
-      select: ['id', 'id_compra', 'id_sucursal', 'id_producto', 'cantidad', 'costo'],
-      order: { id: 'ASC' }, // Para mostrar por orden de llegada
-    });
+    const lotes = await this.loteRepository
+      .createQueryBuilder('lote')
+      .where('lote.id_producto = :productoId', { productoId })
+      .andWhere('lote.cantidad > 0')
+      .andWhere('lote.id_producto IS NOT NULL')
+      .andWhere('lote.id_sucursal IS NOT NULL')
+      .andWhere('lote.id_compra IS NOT NULL')
+      .andWhere(sucursalId ? 'lote.id_sucursal = :sucursalId' : '1=1', sucursalId ? { sucursalId } : {})
+      .select(['lote.id', 'lote.id_compra', 'lote.id_sucursal', 'lote.id_producto', 'lote.cantidad', 'lote.costo'])
+      .orderBy('lote.id', 'ASC')
+      .getMany();
 
     const totalExistencia = lotes.reduce((total, lote) => {
       return total + Number(lote.cantidad);

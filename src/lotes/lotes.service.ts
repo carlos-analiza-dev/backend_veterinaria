@@ -18,10 +18,14 @@ export class LotesService {
   }
 
   async findAll() {
-    return await this.loteRepo.find({
-      select: ['id', 'id_compra', 'id_sucursal', 'id_producto', 'cantidad', 'costo'],
-      order: { id: 'DESC' },
-    });
+    return await this.loteRepo
+      .createQueryBuilder('lote')
+      .where('lote.id_producto IS NOT NULL')
+      .andWhere('lote.id_sucursal IS NOT NULL')
+      .andWhere('lote.id_compra IS NOT NULL')
+      .select(['lote.id', 'lote.id_compra', 'lote.id_sucursal', 'lote.id_producto', 'lote.cantidad', 'lote.costo'])
+      .orderBy('lote.id', 'DESC')
+      .getMany();
   }
 
   async findByProducto(id_producto: string) {
@@ -71,11 +75,17 @@ export class LotesService {
       whereCondition.id_sucursal = id_sucursal;
     }
 
-    const lotes = await this.loteRepo.find({
-      where: whereCondition,
-      select: ['id', 'id_compra', 'id_sucursal', 'id_producto', 'cantidad', 'costo'],
-      order: { id: 'ASC' }, // FIFO
-    });
+    const lotes = await this.loteRepo
+      .createQueryBuilder('lote')
+      .where('lote.id_producto = :id_producto', { id_producto })
+      .andWhere('lote.cantidad > 0')
+      .andWhere('lote.id_producto IS NOT NULL')
+      .andWhere('lote.id_sucursal IS NOT NULL')
+      .andWhere('lote.id_compra IS NOT NULL')
+      .andWhere(id_sucursal ? 'lote.id_sucursal = :id_sucursal' : '1=1', id_sucursal ? { id_sucursal } : {})
+      .select(['lote.id', 'lote.id_compra', 'lote.id_sucursal', 'lote.id_producto', 'lote.cantidad', 'lote.costo'])
+      .orderBy('lote.id', 'ASC')
+      .getMany();
 
     const totalExistencia = lotes.reduce((total, lote) => {
       return total + Number(lote.cantidad);

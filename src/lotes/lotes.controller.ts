@@ -11,6 +11,7 @@ import {
 import { LotesService } from './lotes.service';
 import { CreateLoteDto } from './dto/create-lote.dto';
 import { UpdateLoteDto } from './dto/update-lote.dto';
+import { ReducirInventarioDto } from './dto/reducir-inventario.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { ValidRoles } from 'src/interfaces/valid-roles.interface';
 
@@ -54,13 +55,11 @@ export class LotesController {
 
   @Post('reducir-inventario')
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  reducirInventario(
-    @Body() body: { id_producto: string; id_sucursal: string; cantidad: number },
-  ) {
+  reducirInventario(@Body() reducirInventarioDto: ReducirInventarioDto) {
     return this.lotesService.reducirInventario(
-      body.id_producto,
-      body.id_sucursal,
-      body.cantidad,
+      reducirInventarioDto.id_producto,
+      reducirInventarioDto.id_sucursal,
+      reducirInventarioDto.cantidad,
     );
   }
 
