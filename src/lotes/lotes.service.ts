@@ -19,7 +19,7 @@ export class LotesService {
 
   async findAll() {
     return await this.loteRepo.find({
-      relations: ['compra', 'sucursal', 'producto'],
+      select: ['id', 'id_compra', 'id_sucursal', 'id_producto', 'cantidad', 'costo'],
       order: { id: 'DESC' },
     });
   }
@@ -27,7 +27,7 @@ export class LotesService {
   async findByProducto(id_producto: string) {
     return await this.loteRepo.find({
       where: { id_producto },
-      relations: ['compra', 'sucursal', 'producto'],
+      select: ['id', 'id_compra', 'id_sucursal', 'id_producto', 'cantidad', 'costo'],
       order: { id: 'ASC' }, // FIFO - más antiguos primero
     });
   }
@@ -35,7 +35,7 @@ export class LotesService {
   async findBySucursal(id_sucursal: string) {
     return await this.loteRepo.find({
       where: { id_sucursal },
-      relations: ['compra', 'sucursal', 'producto'],
+      select: ['id', 'id_compra', 'id_sucursal', 'id_producto', 'cantidad', 'costo'],
       order: { id: 'DESC' },
     });
   }
@@ -43,7 +43,7 @@ export class LotesService {
   async findOne(id: string) {
     const lote = await this.loteRepo.findOne({
       where: { id },
-      relations: ['compra', 'sucursal', 'producto'],
+      select: ['id', 'id_compra', 'id_sucursal', 'id_producto', 'cantidad', 'costo'],
     });
 
     if (!lote) {
@@ -73,7 +73,7 @@ export class LotesService {
 
     const lotes = await this.loteRepo.find({
       where: whereCondition,
-      relations: ['compra', 'sucursal', 'producto'],
+      select: ['id', 'id_compra', 'id_sucursal', 'id_producto', 'cantidad', 'costo'],
       order: { id: 'ASC' }, // FIFO
     });
 
@@ -82,12 +82,12 @@ export class LotesService {
     }, 0);
 
     return {
-      producto: lotes[0]?.producto || null,
-      sucursal: id_sucursal ? lotes[0]?.sucursal || null : null,
+      id_producto: id_producto,
+      id_sucursal: id_sucursal || null,
       totalExistencia,
       lotes: lotes.map(lote => ({
         id: lote.id,
-        compra: lote.id_compra,
+        id_compra: lote.id_compra,
         cantidad: lote.cantidad,
         costo: lote.costo,
       })),

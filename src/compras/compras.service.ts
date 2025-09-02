@@ -172,15 +172,7 @@ export class ComprasService {
   async findOne(id: string) {
     const compra = await this.compraRepository.findOne({
       where: { id },
-      relations: [
-        'detalles', 
-        'detalles.producto', 
-        'lotes', 
-        'lotes.producto',
-        'proveedor',
-        'sucursal',
-        'created_by',
-      ],
+      relations: ['detalles', 'lotes', 'proveedor', 'sucursal'],
     });
 
     if (!compra) {
@@ -208,33 +200,30 @@ export class ComprasService {
 
   // Consultar existencias totales de un producto (lo que mencionó tu jefe)
   async getExistenciasProducto(productoId: string, sucursalId?: string) {
-    const whereCondition: any = { productoId };
+    const whereCondition: any = { id_producto: productoId };
     if (sucursalId) {
-      whereCondition.sucursalId = sucursalId;
+      whereCondition.id_sucursal = sucursalId;
     }
 
     const lotes = await this.loteRepository.find({
       where: whereCondition,
-      relations: ['producto', 'sucursal', 'compra'],
-      order: { created_at: 'ASC' }, // Para mostrar por orden de llegada
+      select: ['id', 'id_compra', 'id_sucursal', 'id_producto', 'cantidad', 'costo'],
+      order: { id: 'ASC' }, // Para mostrar por orden de llegada
     });
 
     const totalExistencia = lotes.reduce((total, lote) => {
-      return total + Number(lote.cantidad_disponible);
+      return total + Number(lote.cantidad);
     }, 0);
 
     return {
-      producto: lotes[0]?.producto || null,
-      sucursal: sucursalId ? lotes[0]?.sucursal || null : null,
+      id_producto: productoId,
+      id_sucursal: sucursalId || null,
       totalExistencia,
       lotes: lotes.map(lote => ({
         id: lote.id,
-        compra: lote.compra.id,
-        fechaCompra: lote.compra.fecha,
-        cantidadOriginal: lote.cantidad,
-        cantidadDisponible: lote.cantidad_disponible,
-        costoUnitario: lote.costo,
-        fechaVencimiento: lote.fecha_vencimiento,
+        id_compra: lote.id_compra,
+        cantidad: lote.cantidad,
+        costo: lote.costo,
       })),
     };
   }
@@ -243,10 +232,10 @@ export class ComprasService {
   async reducirInventario(productoId: string, sucursalId: string, cantidadSolicitada: number) {
     const lotes = await this.loteRepository.find({
       where: { 
-        productoId, 
-        sucursalId,
+        id_producto: productoId, 
+        id_sucursal: sucursalId,
       },
-      order: { created_at: 'ASC' }, // FIFO - primero el más antiguo
+      order: { id: 'ASC' }, // FIFO - primero el más antiguo
     });
 
     let cantidadPendiente = cantidadSolicitada;
@@ -254,18 +243,18 @@ export class ComprasService {
 
     for (const lote of lotes) {
       if (cantidadPendiente <= 0) break;
-      if (lote.cantidad_disponible <= 0) continue;
+      if (lote.cantidad <= 0) continue;
 
-      const cantidadARebajar = Math.min(cantidadPendiente, lote.cantidad_disponible);
+      const cantidadARebajar = Math.min(cantidadPendiente, lote.cantidad);
       
-      lote.cantidad_disponible -= cantidadARebajar;
+      lote.cantidad -= cantidadARebajar;
       cantidadPendiente -= cantidadARebajar;
 
       await this.loteRepository.save(lote);
       lotesAfectados.push({
         loteId: lote.id,
         cantidadRebajada: cantidadARebajar,
-        cantidadRestante: lote.cantidad_disponible,
+        cantidadRestante: lote.cantidad,
       });
     }
 

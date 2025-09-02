@@ -16,19 +16,19 @@ export class Lote {
   @ManyToOne(() => Compra)
   compra: Compra;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   id_compra: string;
 
   @ManyToOne(() => Sucursal)
   sucursal: Sucursal;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   id_sucursal: string;
 
   @ManyToOne(() => Insumo)
   producto: Insumo;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   id_producto: string;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
