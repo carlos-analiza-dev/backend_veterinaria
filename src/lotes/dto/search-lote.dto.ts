@@ -1,7 +1,6 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsEnum, IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsBoolean, IsOptional, IsString, IsUUID } from 'class-validator';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
-import { EstadoLote } from '../entities/lote.entity';
 
 export class SearchLoteDto extends PaginationDto {
   @IsOptional()
@@ -17,10 +16,8 @@ export class SearchLoteDto extends PaginationDto {
   proveedorId?: string;
 
   @IsOptional()
-  @IsEnum(EstadoLote, {
-    message: `El estatus debe ser uno de los valores: ${Object.values(EstadoLote).join(', ')}`,
-  })
-  estatus?: EstadoLote;
+  @IsString()
+  estatus?: string;
 
   @IsOptional()
   @IsBoolean()

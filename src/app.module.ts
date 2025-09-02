@@ -41,6 +41,8 @@ import { InsumosModule } from './insumos/insumos.module';
 import { TaxesPaisModule } from './taxes_pais/taxes_pais.module';
 import { ProductosImagesModule } from './productos_images/productos_images.module';
 import { LotesModule } from './lotes/lotes.module';
+import { ComprasModule } from './compras/compras.module';
+import { InsumosModule } from './insumos/insumos.module';
 
 @Module({
   imports: [
@@ -115,6 +117,10 @@ import { LotesModule } from './lotes/lotes.module';
 
     ProductosImagesModule,
     LotesModule,
+
+    ComprasModule,
+
+    InsumosModule,
   ],
   controllers: [],
   providers: [],

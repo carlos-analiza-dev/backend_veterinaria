@@ -6,59 +6,61 @@ import {
   Patch,
   Param,
   Delete,
-  Query,
   ParseUUIDPipe,
 } from '@nestjs/common';
 import { LotesService } from './lotes.service';
 import { CreateLoteDto } from './dto/create-lote.dto';
 import { UpdateLoteDto } from './dto/update-lote.dto';
-import { SearchLoteDto } from './dto/search-lote.dto';
+import { ReducirInventarioDto } from './dto/reducir-inventario.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
-import { GetUser } from 'src/auth/decorators/get-user.decorator';
-import { User } from 'src/auth/entities/auth.entity';
 import { ValidRoles } from 'src/interfaces/valid-roles.interface';
 
 @Controller('lotes')
+@Auth()
 export class LotesController {
   constructor(private readonly lotesService: LotesService) {}
 
   @Post()
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  create(@Body() createLoteDto: CreateLoteDto, @GetUser() user: User) {
-    return this.lotesService.create(createLoteDto, user.id);
+  create(@Body() createLoteDto: CreateLoteDto) {
+    return this.lotesService.create(createLoteDto);
   }
 
   @Get()
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findAll(@Query() searchLoteDto: SearchLoteDto) {
-    return this.lotesService.findAll(searchLoteDto);
+  findAll() {
+    return this.lotesService.findAll();
   }
 
-  @Get('producto/:productoId')
+  @Get('producto/:id_producto')
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findByProducto(
-    @Param('productoId', ParseUUIDPipe) productoId: string,
-    @Query() searchLoteDto: SearchLoteDto,
+  findByProducto(@Param('id_producto', ParseUUIDPipe) id_producto: string) {
+    return this.lotesService.findByProducto(id_producto);
+  }
+
+  @Get('sucursal/:id_sucursal')
+  @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
+  findBySucursal(@Param('id_sucursal', ParseUUIDPipe) id_sucursal: string) {
+    return this.lotesService.findBySucursal(id_sucursal);
+  }
+
+  @Get('existencias/:id_producto')
+  @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
+  getExistenciasByProducto(
+    @Param('id_producto', ParseUUIDPipe) id_producto: string,
+    @Body() body?: { id_sucursal?: string },
   ) {
-    const searchWithProduct = { ...searchLoteDto, productoId };
-    return this.lotesService.findAll(searchWithProduct);
+    return this.lotesService.getExistenciasByProducto(id_producto, body?.id_sucursal);
   }
 
-  @Get('proveedor/:proveedorId')
+  @Post('reducir-inventario')
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findByProveedor(
-    @Param('proveedorId', ParseUUIDPipe) proveedorId: string,
-    @Query() searchLoteDto: SearchLoteDto,
-  ) {
-    const searchWithProveedor = { ...searchLoteDto, proveedorId };
-    return this.lotesService.findAll(searchWithProveedor);
-  }
-
-  @Get('vencimientos-proximos')
-  @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findVencimientosProximos(@Query() searchLoteDto: SearchLoteDto) {
-    const searchWithVencimientos = { ...searchLoteDto, vencidosProximos: true };
-    return this.lotesService.findAll(searchWithVencimientos);
+  reducirInventario(@Body() reducirInventarioDto: ReducirInventarioDto) {
+    return this.lotesService.reducirInventario(
+      reducirInventarioDto.id_producto,
+      reducirInventarioDto.id_sucursal,
+      reducirInventarioDto.cantidad,
+    );
   }
 
   @Get(':id')
@@ -72,39 +74,13 @@ export class LotesController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateLoteDto: UpdateLoteDto,
-    @GetUser() user: User,
   ) {
-    return this.lotesService.update(id, updateLoteDto, user.id);
-  }
-
-  @Patch(':id/ajustar-cantidad')
-  @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  adjustQuantity(
-    @Param('id', ParseUUIDPipe) id: string,
-    @Body()
-    adjustDto: {
-      cantidad: number;
-      operacion: 'sumar' | 'restar';
-    },
-    @GetUser() user: User,
-  ) {
-    return this.lotesService.adjustQuantity(
-      id,
-      adjustDto.cantidad,
-      user.id,
-      adjustDto.operacion,
-    );
+    return this.lotesService.update(id, updateLoteDto);
   }
 
   @Delete(':id')
   @Auth(ValidRoles.Administrador)
-  remove(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
-    return this.lotesService.remove(id, user.id);
-  }
-
-  @Patch('restore/:id')
-  @Auth(ValidRoles.Administrador)
-  restore(@Param('id', ParseUUIDPipe) id: string, @GetUser() user: User) {
-    return this.lotesService.restore(id, user.id);
+  remove(@Param('id', ParseUUIDPipe) id: string) {
+    return this.lotesService.remove(id);
   }
 }
