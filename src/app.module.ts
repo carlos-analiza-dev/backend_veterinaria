@@ -37,6 +37,8 @@ import { CategoriasModule } from './categorias/categorias.module';
 import { SubcategoriasModule } from './subcategorias/subcategorias.module';
 import { SucursalesModule } from './sucursales/sucursales.module';
 import { LotesModule } from './lotes/lotes.module';
+import { ComprasModule } from './compras/compras.module';
+import { InsumosModule } from './insumos/insumos.module';
 
 @Module({
   imports: [
@@ -105,6 +107,10 @@ import { LotesModule } from './lotes/lotes.module';
     SucursalesModule,
 
     LotesModule,
+
+    ComprasModule,
+
+    InsumosModule,
   ],
   controllers: [],
   providers: [],
