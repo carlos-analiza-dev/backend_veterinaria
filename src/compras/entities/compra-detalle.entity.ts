@@ -1,11 +1,6 @@
-import {
-  Column,
-  Entity,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Compra } from './compra.entity';
-import { Insumo } from 'src/insumos/entities/insumo.entity';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 
 @Entity('compras_detalles')
 export class CompraDetalle {
@@ -20,8 +15,8 @@ export class CompraDetalle {
   @Column({ type: 'uuid' })
   compraId: string;
 
-  @ManyToOne(() => Insumo, { eager: true })
-  producto: Insumo;
+  @ManyToOne(() => SubServicio)
+  producto: SubServicio;
 
   @Column({ type: 'uuid' })
   productoId: string;

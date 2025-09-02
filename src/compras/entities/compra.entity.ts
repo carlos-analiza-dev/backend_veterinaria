@@ -73,13 +73,13 @@ export class Compra {
   lotes: Lote[];
 
   // Campos de auditoría
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User)
   created_by: User;
 
   @Column({ type: 'uuid' })
   createdById: string;
 
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User)
   updated_by: User;
 
   @Column({ type: 'uuid', nullable: true })

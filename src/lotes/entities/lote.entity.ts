@@ -1,12 +1,7 @@
 import { Compra } from 'src/compras/entities/compra.entity';
-import { Insumo } from 'src/insumos/entities/insumo.entity';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
-import {
-  Column,
-  Entity,
-  ManyToOne,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
+import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity('lotes')
 export class Lote {
@@ -25,8 +20,8 @@ export class Lote {
   @Column({ type: 'uuid', nullable: true })
   id_sucursal: string;
 
-  @ManyToOne(() => Insumo)
-  producto: Insumo;
+  @ManyToOne(() => SubServicio)
+  producto: SubServicio;
 
   @Column({ type: 'uuid', nullable: true })
   id_producto: string;

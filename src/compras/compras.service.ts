@@ -13,7 +13,7 @@ import { Lote } from '../lotes/entities/lote.entity';
 import { User } from '../auth/entities/auth.entity';
 import { Sucursal } from '../sucursales/entities/sucursal.entity';
 import { Proveedor } from '../proveedores/entities/proveedor.entity';
-import { Insumo } from '../insumos/entities/insumo.entity';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 
 @Injectable()
 export class ComprasService {
@@ -28,8 +28,8 @@ export class ComprasService {
     private readonly sucursalRepository: Repository<Sucursal>,
     @InjectRepository(Proveedor)
     private readonly proveedorRepository: Repository<Proveedor>,
-    @InjectRepository(Insumo)
-    private readonly insumoRepository: Repository<Insumo>,
+    @InjectRepository(SubServicio)
+    private readonly servicioRepository: Repository<SubServicio>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -61,7 +61,7 @@ export class ComprasService {
 
       // Validar que todos los productos existen
       for (const detalle of createCompraDto.detalles) {
-        const producto = await this.insumoRepository.findOne({
+        const producto = await this.servicioRepository.findOne({
           where: { id: detalle.productoId },
         });
         if (!producto) {

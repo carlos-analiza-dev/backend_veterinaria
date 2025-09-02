@@ -7,8 +7,8 @@ import { CompraDetalle } from './entities/compra-detalle.entity';
 import { Lote } from '../lotes/entities/lote.entity';
 import { Sucursal } from '../sucursales/entities/sucursal.entity';
 import { Proveedor } from '../proveedores/entities/proveedor.entity';
-import { Insumo } from '../insumos/entities/insumo.entity';
 import { AuthModule } from '../auth/auth.module';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 
 @Module({
   controllers: [ComprasController],
@@ -20,7 +20,7 @@ import { AuthModule } from '../auth/auth.module';
       Lote,
       Sucursal,
       Proveedor,
-      Insumo,
+      SubServicio,
     ]),
     AuthModule,
   ],
