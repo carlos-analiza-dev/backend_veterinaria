@@ -30,6 +30,16 @@ export class CreateCompraDto {
   @Transform(({ value }) => value ? parseFloat(value) : 0)
   impuestos?: number;
 
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Transform(({ value }) => value ? parseFloat(value) : 0)
+  subtotal?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Transform(({ value }) => value ? parseFloat(value) : 0)
+  total?: number;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateCompraDetalleDto)

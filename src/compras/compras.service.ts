@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { CreateCompraDto } from './dto/create-compra.dto';
@@ -67,83 +71,38 @@ export class ComprasService {
         }
       }
 
-      // Crear la compra (encabezado)
+      // Crear la compra
       const compra = this.compraRepository.create({
         ...createCompraDto,
         createdById: user.id,
         updatedById: user.id,
       });
 
-      // Calcular totales
-      let subtotal = 0;
-      const detallesCalculados = createCompraDto.detalles.map((detalle) => {
-        console.log('Procesando detalle:', detalle);
-        const bonificacion = detalle.bonificacion || 0;
-        const cantidad_total = Number(detalle.cantidad) + Number(bonificacion);
-        const descuentos = detalle.descuentos || 0;
-        const impuestos = detalle.impuestos || 0;
-        const monto_total = (cantidad_total * Number(detalle.costo_por_unidad)) - Number(descuentos) + Number(impuestos);
-        
-        console.log('Calculados:', { cantidad_total, monto_total });
-        
-        subtotal += monto_total;
-        
-        const resultado = {
-          ...detalle,
-          cantidad_total,
-          monto_total,
-        };
-        
-        console.log('Resultado del map:', resultado);
-        
-        return resultado;
-      });
-
-      // Aplicar descuentos e impuestos generales
-      const descuentosGenerales = Number(createCompraDto.descuentos) || 0;
-      const impuestosGenerales = Number(createCompraDto.impuestos) || 0;
-      const total = subtotal - descuentosGenerales + impuestosGenerales;
-
-      compra.subtotal = subtotal;
-      compra.descuentos = descuentosGenerales;
-      compra.impuestos = impuestosGenerales;
-      compra.total = total;
-
       const compraGuardada = await queryRunner.manager.save(compra);
 
       // Crear los detalles
-      for (const detalleCalculado of detallesCalculados) {
-        console.log('Detalle calculado antes de crear entity:', detalleCalculado);
-        
-        const detalleData = {
-          productoId: detalleCalculado.productoId,
-          costo_por_unidad: detalleCalculado.costo_por_unidad,
-          cantidad: detalleCalculado.cantidad,
-          bonificacion: detalleCalculado.bonificacion || 0,
-          descuentos: detalleCalculado.descuentos || 0,
-          impuestos: detalleCalculado.impuestos || 0,
-          cantidad_total: detalleCalculado.cantidad_total,
-          monto_total: detalleCalculado.monto_total,
+      for (const detalle of createCompraDto.detalles) {
+        const detalleGuardado = this.compraDetalleRepository.create({
+          ...detalle,
           compraId: compraGuardada.id,
-          fecha_vencimiento: detalleCalculado.fecha_vencimiento 
-            ? new Date(detalleCalculado.fecha_vencimiento) 
-            : null,
-        };
-        
-        console.log('Datos para crear entity:', detalleData);
-        
-        const detalle = this.compraDetalleRepository.create(detalleData);
-        console.log('Entity creada:', detalle);
-        
-        await queryRunner.manager.save(detalle);
+        });
 
-        // AQUÍ ES LA CLAVE: Por cada detalle, crear un lote automáticamente (SOLO 6 CAMPOS)
+        await queryRunner.manager.save(detalleGuardado);
+
+        // Crear lote con costo unitario calculado
+        const cantidad_total =
+          Number(detalle.cantidad_total) ||
+          Number(detalle.cantidad) + (Number(detalle.bonificacion) || 0);
+        const monto_total = Number(detalle.monto_total) || 0;
+        const costo_unitario =
+          cantidad_total > 0 ? monto_total / cantidad_total : 0;
+
         const lote = this.loteRepository.create({
           id_compra: compraGuardada.id,
           id_sucursal: createCompraDto.sucursalId,
-          id_producto: detalleCalculado.productoId,
-          cantidad: detalleCalculado.cantidad_total, // cantidad + bonificación
-          costo: detalleCalculado.costo_por_unidad,
+          id_producto: detalle.productoId,
+          cantidad: cantidad_total,
+          costo: costo_unitario,
         });
 
         await queryRunner.manager.save(lote);
@@ -153,7 +112,6 @@ export class ComprasService {
 
       // Retornar la compra completa
       return await this.findOne(compraGuardada.id);
-
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
@@ -184,7 +142,7 @@ export class ComprasService {
 
   async update(id: string, updateCompraDto: UpdateCompraDto, user: User) {
     const compra = await this.findOne(id);
-    
+
     Object.assign(compra, {
       ...updateCompraDto,
       updatedById: user.id,
@@ -212,8 +170,18 @@ export class ComprasService {
       .andWhere('lote.id_producto IS NOT NULL')
       .andWhere('lote.id_sucursal IS NOT NULL')
       .andWhere('lote.id_compra IS NOT NULL')
-      .andWhere(sucursalId ? 'lote.id_sucursal = :sucursalId' : '1=1', sucursalId ? { sucursalId } : {})
-      .select(['lote.id', 'lote.id_compra', 'lote.id_sucursal', 'lote.id_producto', 'lote.cantidad', 'lote.costo'])
+      .andWhere(
+        sucursalId ? 'lote.id_sucursal = :sucursalId' : '1=1',
+        sucursalId ? { sucursalId } : {},
+      )
+      .select([
+        'lote.id',
+        'lote.id_compra',
+        'lote.id_sucursal',
+        'lote.id_producto',
+        'lote.cantidad',
+        'lote.costo',
+      ])
       .orderBy('lote.id', 'ASC')
       .getMany();
 
@@ -225,7 +193,7 @@ export class ComprasService {
       id_producto: productoId,
       id_sucursal: sucursalId || null,
       totalExistencia,
-      lotes: lotes.map(lote => ({
+      lotes: lotes.map((lote) => ({
         id: lote.id,
         id_compra: lote.id_compra,
         cantidad: lote.cantidad,
@@ -235,10 +203,14 @@ export class ComprasService {
   }
 
   // Método para usar/vender productos (FIFO - lote más antiguo primero)
-  async reducirInventario(productoId: string, sucursalId: string, cantidadSolicitada: number) {
+  async reducirInventario(
+    productoId: string,
+    sucursalId: string,
+    cantidadSolicitada: number,
+  ) {
     const lotes = await this.loteRepository.find({
-      where: { 
-        id_producto: productoId, 
+      where: {
+        id_producto: productoId,
         id_sucursal: sucursalId,
       },
       order: { id: 'ASC' }, // FIFO - primero el más antiguo
@@ -252,7 +224,7 @@ export class ComprasService {
       if (lote.cantidad <= 0) continue;
 
       const cantidadARebajar = Math.min(cantidadPendiente, lote.cantidad);
-      
+
       lote.cantidad -= cantidadARebajar;
       cantidadPendiente -= cantidadARebajar;
 
@@ -266,7 +238,7 @@ export class ComprasService {
 
     if (cantidadPendiente > 0) {
       throw new BadRequestException(
-        `No hay suficiente inventario. Faltaron ${cantidadPendiente} unidades.`
+        `No hay suficiente inventario. Faltaron ${cantidadPendiente} unidades.`,
       );
     }
 

@@ -2,9 +2,7 @@ import { Transform, Type } from 'class-transformer';
 import {
   IsNumber,
   IsOptional,
-  IsString,
   IsUUID,
-  IsDateString,
 } from 'class-validator';
 
 export class CreateCompraDetalleDto {
@@ -35,6 +33,13 @@ export class CreateCompraDetalleDto {
   impuestos?: number;
 
   @IsOptional()
-  @IsDateString()
-  fecha_vencimiento?: string;
+  @IsNumber({ maxDecimalPlaces: 3 })
+  @Transform(({ value }) => value ? parseFloat(value) : 0)
+  cantidad_total?: number;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Transform(({ value }) => value ? parseFloat(value) : 0)
+  monto_total?: number;
+
 }
