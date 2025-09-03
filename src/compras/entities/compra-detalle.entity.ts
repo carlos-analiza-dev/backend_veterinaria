@@ -41,7 +41,4 @@ export class CompraDetalle {
 
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   monto_total: number; // (cantidad_total * costo_por_unidad) - descuentos + impuestos
-
-  @Column({ type: 'date', nullable: true })
-  fecha_vencimiento: Date;
 }
