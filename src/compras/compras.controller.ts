@@ -16,6 +16,7 @@ import { Auth } from '../auth/decorators/auth.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../auth/entities/auth.entity';
 import { ValidRoles } from '../interfaces/valid-roles.interface';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Controller('compras')
 @Auth()
@@ -24,17 +25,14 @@ export class ComprasController {
 
   @Post()
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  create(
-    @Body() createCompraDto: CreateCompraDto,
-    @GetUser() user: User,
-  ) {
+  create(@Body() createCompraDto: CreateCompraDto, @GetUser() user: User) {
     return this.comprasService.create(createCompraDto, user);
   }
 
   @Get()
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findAll() {
-    return this.comprasService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.comprasService.findAll(paginationDto);
   }
 
   @Get('existencias/:productoId')
@@ -49,11 +47,7 @@ export class ComprasController {
   @Post('reducir-inventario')
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
   reducirInventario(
-    @Body() body: {
-      productoId: string;
-      sucursalId: string;
-      cantidad: number;
-    },
+    @Body() body: { productoId: string; sucursalId: string; cantidad: number },
   ) {
     return this.comprasService.reducirInventario(
       body.productoId,

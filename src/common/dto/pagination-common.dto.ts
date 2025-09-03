@@ -29,6 +29,18 @@ export class PaginationDto {
 
   @IsOptional()
   @IsString()
+  sucursal?: string;
+
+  @IsOptional()
+  @IsString()
+  tipoPago?: string;
+
+  @IsOptional()
+  @IsString()
+  numeroFactura?: string;
+
+  @IsOptional()
+  @IsString()
   servicio?: string;
 
   @IsOptional()

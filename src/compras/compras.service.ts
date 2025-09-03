@@ -14,6 +14,8 @@ import { User } from '../auth/entities/auth.entity';
 import { Sucursal } from '../sucursales/entities/sucursal.entity';
 import { Proveedor } from '../proveedores/entities/proveedor.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { instanceToPlain } from 'class-transformer';
 
 @Injectable()
 export class ComprasService {
@@ -138,11 +140,85 @@ export class ComprasService {
     }
   }
 
-  async findAll() {
-    return await this.compraRepository.find({
-      relations: ['detalles', 'lotes', 'proveedor', 'sucursal'],
-      order: { created_at: 'DESC' },
-    });
+  async findAll(paginationDto: PaginationDto) {
+    const {
+      limit = 10,
+      offset = 0,
+      proveedor = '',
+      sucursal = '',
+      tipoPago = '',
+      numeroFactura = '',
+    } = paginationDto;
+
+    try {
+      const queryBuilder = this.compraRepository
+        .createQueryBuilder('compra')
+        .leftJoinAndSelect('compra.detalles', 'detalles')
+        .leftJoinAndSelect('compra.lotes', 'lotes')
+        .leftJoinAndSelect('compra.proveedor', 'proveedor')
+        .leftJoinAndSelect('compra.sucursal', 'sucursal')
+        .orderBy('compra.created_at', 'DESC');
+
+      if (proveedor && proveedor.trim() !== '') {
+        queryBuilder.andWhere(
+          '(proveedor.id = :proveedorId OR proveedor.nombre_legal ILIKE :proveedorNombre)',
+          {
+            proveedorId: proveedor,
+            proveedorNombre: `%${proveedor}%`,
+          },
+        );
+      }
+
+      if (sucursal && sucursal.trim() !== '') {
+        queryBuilder.andWhere(
+          '(sucursal.id = :sucursalId OR sucursal.nombre ILIKE :sucursalNombre)',
+          {
+            sucursalId: sucursal,
+            sucursalNombre: `%${sucursal}%`,
+          },
+        );
+      }
+
+      if (tipoPago && tipoPago.trim() !== '') {
+        queryBuilder.andWhere('compra.tipo_pago = :tipoPago', {
+          tipoPago: tipoPago.toUpperCase(),
+        });
+      }
+
+      if (numeroFactura && numeroFactura.trim() !== '') {
+        queryBuilder.andWhere('compra.numero_factura ILIKE :numeroFactura', {
+          numeroFactura: `%${numeroFactura}%`,
+        });
+      }
+
+      if (limit !== undefined) queryBuilder.take(limit);
+      if (offset !== undefined) queryBuilder.skip(offset);
+
+      const [compras, total] = await queryBuilder.getManyAndCount();
+
+      if (!compras || compras.length === 0) {
+        let errorMessage = 'No se encontraron compras';
+        const filters = [];
+
+        if (proveedor) filters.push(`proveedor: ${proveedor}`);
+        if (sucursal) filters.push(`sucursal: ${sucursal}`);
+        if (tipoPago) filters.push(`tipo de pago: ${tipoPago}`);
+        if (numeroFactura) filters.push(`factura: ${numeroFactura}`);
+
+        if (filters.length > 0) {
+          errorMessage += ` con los filtros: ${filters.join(', ')}`;
+        }
+
+        throw new BadRequestException(errorMessage);
+      }
+
+      return {
+        compras: instanceToPlain(compras),
+        total,
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
   async findOne(id: string) {
