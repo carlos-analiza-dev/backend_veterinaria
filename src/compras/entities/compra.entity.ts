@@ -1,3 +1,4 @@
+// compra.entity.ts - SOLUCIÓN 1
 import {
   Column,
   CreateDateColumn,
@@ -64,9 +65,7 @@ export class Compra {
   updated_at: Date;
 
   // Relaciones
-  @OneToMany(() => CompraDetalle, (detalle) => detalle.compra, {
-    cascade: true,
-  })
+  @OneToMany(() => CompraDetalle, (detalle) => detalle.compra)
   detalles: CompraDetalle[];
 
   @OneToMany(() => Lote, (lote) => lote.compra)
