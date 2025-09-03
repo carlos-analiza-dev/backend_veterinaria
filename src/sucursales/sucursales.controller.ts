@@ -48,6 +48,11 @@ export class SucursalesController {
     return this.sucursalesService.findByPais(paisId, filterDto);
   }
 
+  @Get('pais-suc/:paisId')
+  findByPaisFree(@Param('paisId', ParseUUIDPipe) paisId: string) {
+    return this.sucursalesService.findByPaisFree(paisId);
+  }
+
   @Get('stats')
   @Auth(ValidRoles.Administrador)
   getStats(@Query('paisId') paisId?: string) {

@@ -264,7 +264,8 @@ export class SubServiciosService {
         .leftJoinAndSelect('producto.categoria', 'categoria')
         .leftJoinAndSelect('producto.tax', 'tax')
         .leftJoinAndSelect('producto.imagenes', 'imagenes')
-        .orderBy('producto.createdAt', 'DESC');
+        .orderBy('producto.createdAt', 'DESC')
+        .addOrderBy('imagenes.createdAt', 'DESC');
 
       if (pais && pais.trim() !== '') {
         queryBuilder.andWhere(

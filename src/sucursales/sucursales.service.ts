@@ -171,6 +171,15 @@ export class SucursalesService {
     return this.findAll({ ...paginationDto, isActive: true });
   }
 
+  async findByPaisFree(paisId: string) {
+    return this.sucursalRepository.find({
+      where: {
+        isActive: true,
+        pais: { id: paisId },
+      },
+    });
+  }
+
   // Obtener sucursales por país
   async findByPais(paisId: string, filterDto?: FilterSucursalDto) {
     return this.findAll({ ...filterDto, paisId });
