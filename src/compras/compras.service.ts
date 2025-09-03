@@ -39,41 +39,70 @@ export class ComprasService {
     await queryRunner.startTransaction();
 
     try {
-      // Validar que la sucursal existe
-      const sucursal = await this.sucursalRepository.findOne({
-        where: { id: createCompraDto.sucursalId },
-      });
-      if (!sucursal) {
-        throw new NotFoundException(
-          `Sucursal con ID ${createCompraDto.sucursalId} no encontrada`,
-        );
+      // Validar duplicados de productos
+      const productosIds = createCompraDto.detalles.map((d) => d.productoId);
+      const productosUnicos = new Set(productosIds);
+      if (productosIds.length !== productosUnicos.size) {
+        throw new BadRequestException('Productos duplicados en los detalles');
       }
 
-      // Validar que el proveedor existe
-      const proveedor = await this.proveedorRepository.findOne({
-        where: { id: createCompraDto.proveedorId },
-      });
-      if (!proveedor) {
-        throw new NotFoundException(
-          `Proveedor con ID ${createCompraDto.proveedorId} no encontrado`,
-        );
-      }
+      // Calcular totales y procesar detalles
+      let subtotalCompra = 0;
+      let impuestosCompra = 0;
+      let descuentosCompra = 0;
+      const lotesMap = new Map();
 
-      // Validar que todos los productos existen
-      for (const detalle of createCompraDto.detalles) {
-        const producto = await this.servicioRepository.findOne({
-          where: { id: detalle.productoId },
-        });
-        if (!producto) {
-          throw new NotFoundException(
-            `Producto con ID ${detalle.productoId} no encontrado`,
-          );
+      const detallesCalculados = createCompraDto.detalles.map((detalle) => {
+        const cantidad_total =
+          Number(detalle.cantidad) + (Number(detalle.bonificacion) || 0);
+        const subtotalDetalle =
+          cantidad_total * Number(detalle.costo_por_unidad);
+        const monto_total =
+          subtotalDetalle -
+          (Number(detalle.descuentos) || 0) +
+          (Number(detalle.impuestos) || 0);
+
+        // Acumular totales de compra
+        subtotalCompra += subtotalDetalle;
+        impuestosCompra += Number(detalle.impuestos) || 0;
+        descuentosCompra += Number(detalle.descuentos) || 0;
+
+        // Agrupar para lotes
+        if (lotesMap.has(detalle.productoId)) {
+          const loteExistente = lotesMap.get(detalle.productoId);
+          const nuevaCantidad = loteExistente.cantidad + cantidad_total;
+          const costoPromedio =
+            (loteExistente.cantidad * loteExistente.costo +
+              cantidad_total * Number(detalle.costo_por_unidad)) /
+            nuevaCantidad;
+
+          lotesMap.set(detalle.productoId, {
+            ...loteExistente,
+            cantidad: nuevaCantidad,
+            costo: costoPromedio,
+          });
+        } else {
+          lotesMap.set(detalle.productoId, {
+            id_producto: detalle.productoId,
+            cantidad: cantidad_total,
+            costo: Number(detalle.costo_por_unidad),
+          });
         }
-      }
+
+        return {
+          ...detalle,
+          cantidad_total,
+          monto_total,
+        };
+      });
 
       // Crear la compra
       const compra = this.compraRepository.create({
         ...createCompraDto,
+        subtotal: subtotalCompra,
+        impuestos: impuestosCompra,
+        descuentos: descuentosCompra,
+        total: subtotalCompra - descuentosCompra + impuestosCompra,
         createdById: user.id,
         updatedById: user.id,
       });
@@ -81,36 +110,25 @@ export class ComprasService {
       const compraGuardada = await queryRunner.manager.save(compra);
 
       // Crear los detalles
-      for (const detalle of createCompraDto.detalles) {
-        const detalleGuardado = this.compraDetalleRepository.create({
-          ...detalle,
+      for (const detalleCalculado of detallesCalculados) {
+        const detalle = this.compraDetalleRepository.create({
+          ...detalleCalculado,
           compraId: compraGuardada.id,
         });
+        await queryRunner.manager.save(detalle);
+      }
 
-        await queryRunner.manager.save(detalleGuardado);
-
-        // Crear lote con costo unitario calculado
-        const cantidad_total =
-          Number(detalle.cantidad_total) ||
-          Number(detalle.cantidad) + (Number(detalle.bonificacion) || 0);
-        const monto_total = Number(detalle.monto_total) || 0;
-        const costo_unitario =
-          cantidad_total > 0 ? monto_total / cantidad_total : 0;
-
+      // Crear lotes únicos
+      for (const loteData of lotesMap.values()) {
         const lote = this.loteRepository.create({
+          ...loteData,
           id_compra: compraGuardada.id,
           id_sucursal: createCompraDto.sucursalId,
-          id_producto: detalle.productoId,
-          cantidad: cantidad_total,
-          costo: costo_unitario,
         });
-
         await queryRunner.manager.save(lote);
       }
 
       await queryRunner.commitTransaction();
-
-      // Retornar la compra completa
       return await this.findOne(compraGuardada.id);
     } catch (error) {
       await queryRunner.rollbackTransaction();
