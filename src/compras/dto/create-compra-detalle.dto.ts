@@ -6,8 +6,13 @@ import {
 } from 'class-validator';
 
 export class CreateCompraDetalleDto {
+  @IsOptional()
   @IsUUID()
-  productoId: string;
+  productoId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  insumoId?: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Transform(({ value }) => parseFloat(value))

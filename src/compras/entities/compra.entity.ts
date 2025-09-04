@@ -19,6 +19,12 @@ export enum TipoPago {
   CREDITO = 'CREDITO',
 }
 
+export enum TipoCompra {
+  PRODUCTO = 'PRODUCTO',
+  INSUMO = 'INSUMO',
+  SERVICIO = 'SERVICIO',
+}
+
 @Entity('compras')
 export class Compra {
   @PrimaryGeneratedColumn('uuid')
@@ -42,6 +48,13 @@ export class Compra {
     default: TipoPago.CONTADO,
   })
   tipo_pago: TipoPago;
+
+  @Column({
+    type: 'enum',
+    enum: TipoCompra,
+    default: TipoCompra.PRODUCTO,
+  })
+  tipo_compra: TipoCompra;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   subtotal: number;
