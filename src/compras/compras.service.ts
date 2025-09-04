@@ -52,7 +52,6 @@ export class ComprasService {
       let subtotalCompra = 0;
       let impuestosCompra = 0;
       let descuentosCompra = 0;
-      const lotesMap = new Map();
 
       const detallesCalculados = createCompraDto.detalles.map((detalle) => {
         const cantidad_total =
@@ -68,28 +67,6 @@ export class ComprasService {
         subtotalCompra += subtotalDetalle;
         impuestosCompra += Number(detalle.impuestos) || 0;
         descuentosCompra += Number(detalle.descuentos) || 0;
-
-        // Agrupar para lotes
-        if (lotesMap.has(detalle.productoId)) {
-          const loteExistente = lotesMap.get(detalle.productoId);
-          const nuevaCantidad = loteExistente.cantidad + cantidad_total;
-          const costoPromedio =
-            (loteExistente.cantidad * loteExistente.costo +
-              cantidad_total * Number(detalle.costo_por_unidad)) /
-            nuevaCantidad;
-
-          lotesMap.set(detalle.productoId, {
-            ...loteExistente,
-            cantidad: nuevaCantidad,
-            costo: costoPromedio,
-          });
-        } else {
-          lotesMap.set(detalle.productoId, {
-            id_producto: detalle.productoId,
-            cantidad: cantidad_total,
-            costo: Number(detalle.costo_por_unidad),
-          });
-        }
 
         return {
           ...detalle,
@@ -111,19 +88,24 @@ export class ComprasService {
 
       const compraGuardada = await queryRunner.manager.save(compra);
 
-      // Crear los detalles
+      // Crear los detalles y lotes (un lote por cada línea de compra)
       for (const detalleCalculado of detallesCalculados) {
         const detalle = this.compraDetalleRepository.create({
           ...detalleCalculado,
           compraId: compraGuardada.id,
         });
         await queryRunner.manager.save(detalle);
-      }
 
-      // Crear lotes únicos
-      for (const loteData of lotesMap.values()) {
+        // Costo por unidad = (subtotal + impuestos - descuentos) / cantidad_total
+        const costoRealPorUnidad =
+          (subtotalCompra + impuestosCompra - descuentosCompra) /
+          detalleCalculado.cantidad_total;
+
+        // Crear lote por cada línea de compra con el costo prorrateado correcto
         const lote = this.loteRepository.create({
-          ...loteData,
+          id_producto: detalleCalculado.productoId,
+          cantidad: detalleCalculado.cantidad_total,
+          costo: costoRealPorUnidad, // Este es el costo real que incluye impuestos
           id_compra: compraGuardada.id,
           id_sucursal: createCompraDto.sucursalId,
         });
@@ -141,11 +123,7 @@ export class ComprasService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const {
-      limit = 10,
-      offset = 0,
-      proveedor = '',
-    } = paginationDto;
+    const { limit = 10, offset = 0, proveedor = '' } = paginationDto;
 
     try {
       const queryBuilder = this.compraRepository
