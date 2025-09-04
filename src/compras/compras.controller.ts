@@ -32,6 +32,15 @@ export class ComprasController {
     return this.comprasService.create(createCompraDto, user);
   }
 
+  @Post('insumos')
+  @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
+  createCompraInsumos(
+    @Body() createCompraDto: CreateCompraDto,
+    @GetUser() user: User,
+  ) {
+    return this.comprasService.createCompraInsumos(createCompraDto, user);
+  }
+
   @Get()
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
   findAll(@Query() paginationDto: PaginationDto) {

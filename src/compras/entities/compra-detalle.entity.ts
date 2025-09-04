@@ -1,6 +1,7 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
 import { Compra } from './compra.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
+import { Insumo } from 'src/insumos/entities/insumo.entity';
 
 @Entity('compras_detalles')
 export class CompraDetalle {
@@ -15,11 +16,17 @@ export class CompraDetalle {
   @Column({ type: 'uuid' })
   compraId: string;
 
-  @ManyToOne(() => SubServicio)
-  producto: SubServicio;
+  @ManyToOne(() => SubServicio, { nullable: true })
+  producto?: SubServicio;
 
-  @Column({ type: 'uuid' })
-  productoId: string;
+  @Column({ type: 'uuid', nullable: true })
+  productoId?: string;
+
+  @ManyToOne(() => Insumo, { nullable: true })
+  insumo?: Insumo;
+
+  @Column({ type: 'uuid', nullable: true })
+  insumoId?: string;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   costo_por_unidad: number;
