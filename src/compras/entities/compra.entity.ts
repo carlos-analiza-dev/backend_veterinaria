@@ -13,6 +13,7 @@ import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { CompraDetalle } from './compra-detalle.entity';
 import { Lote } from 'src/lotes/entities/lote.entity';
+import { Pai } from 'src/pais/entities/pai.entity';
 
 export enum TipoPago {
   CONTADO = 'CONTADO',
@@ -24,13 +25,13 @@ export class Compra {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Proveedor, { eager: true })
+  @ManyToOne(() => Proveedor)
   proveedor: Proveedor;
 
   @Column({ type: 'uuid' })
   proveedorId: string;
 
-  @ManyToOne(() => Sucursal, { eager: true })
+  @ManyToOne(() => Sucursal)
   sucursal: Sucursal;
 
   @Column({ type: 'uuid' })
@@ -70,6 +71,12 @@ export class Compra {
 
   @OneToMany(() => Lote, (lote) => lote.compra)
   lotes: Lote[];
+
+  @ManyToOne(() => Pai)
+  pais: Pai;
+
+  @Column({ type: 'uuid' })
+  paisId: string;
 
   // Campos de auditoría
   @ManyToOne(() => User)

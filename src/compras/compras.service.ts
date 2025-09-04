@@ -16,6 +16,7 @@ import { Proveedor } from '../proveedores/entities/proveedor.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
+import { Pai } from 'src/pais/entities/pai.entity';
 
 @Injectable()
 export class ComprasService {
@@ -32,6 +33,9 @@ export class ComprasService {
     private readonly proveedorRepository: Repository<Proveedor>,
     @InjectRepository(SubServicio)
     private readonly servicioRepository: Repository<SubServicio>,
+
+    @InjectRepository(Pai)
+    private readonly paisRepository: Repository<Pai>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -41,6 +45,11 @@ export class ComprasService {
     await queryRunner.startTransaction();
 
     try {
+      const pais_exist = await this.paisRepository.findOne({
+        where: { id: createCompraDto.paisId },
+      });
+      if (!pais_exist)
+        throw new NotFoundException('El pais seleccionado no existe');
       // Validar duplicados de productos
       const productosIds = createCompraDto.detalles.map((d) => d.productoId);
       const productosUnicos = new Set(productosIds);
@@ -107,6 +116,7 @@ export class ComprasService {
         total: subtotalCompra - descuentosCompra + impuestosCompra,
         createdById: user.id,
         updatedById: user.id,
+        pais: pais_exist,
       });
 
       const compraGuardada = await queryRunner.manager.save(compra);
@@ -140,14 +150,14 @@ export class ComprasService {
     }
   }
 
-  async findAll(paginationDto: PaginationDto) {
+  async findAll(user: User, paginationDto: PaginationDto) {
+    const paisId = user.pais.id;
     const {
       limit = 10,
       offset = 0,
       proveedor = '',
       sucursal = '',
       tipoPago = '',
-      numeroFactura = '',
     } = paginationDto;
 
     try {
@@ -157,7 +167,10 @@ export class ComprasService {
         .leftJoinAndSelect('compra.lotes', 'lotes')
         .leftJoinAndSelect('compra.proveedor', 'proveedor')
         .leftJoinAndSelect('compra.sucursal', 'sucursal')
+        .leftJoinAndSelect('compra.pais', 'pais')
         .orderBy('compra.created_at', 'DESC');
+
+      queryBuilder.andWhere('compra.paisId = :paisId', { paisId });
 
       if (proveedor && proveedor.trim() !== '') {
         queryBuilder.andWhere(
@@ -185,12 +198,6 @@ export class ComprasService {
         });
       }
 
-      if (numeroFactura && numeroFactura.trim() !== '') {
-        queryBuilder.andWhere('compra.numero_factura ILIKE :numeroFactura', {
-          numeroFactura: `%${numeroFactura}%`,
-        });
-      }
-
       if (limit !== undefined) queryBuilder.take(limit);
       if (offset !== undefined) queryBuilder.skip(offset);
 
@@ -203,7 +210,6 @@ export class ComprasService {
         if (proveedor) filters.push(`proveedor: ${proveedor}`);
         if (sucursal) filters.push(`sucursal: ${sucursal}`);
         if (tipoPago) filters.push(`tipo de pago: ${tipoPago}`);
-        if (numeroFactura) filters.push(`factura: ${numeroFactura}`);
 
         if (filters.length > 0) {
           errorMessage += ` con los filtros: ${filters.join(', ')}`;

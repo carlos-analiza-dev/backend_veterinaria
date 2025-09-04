@@ -31,8 +31,8 @@ export class ComprasController {
 
   @Get()
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.comprasService.findAll(paginationDto);
+  findAll(@GetUser() user: User, @Query() paginationDto: PaginationDto) {
+    return this.comprasService.findAll(user, paginationDto);
   }
 
   @Get('existencias/:productoId')

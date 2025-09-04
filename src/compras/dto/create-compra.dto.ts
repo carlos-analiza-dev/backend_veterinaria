@@ -17,27 +17,30 @@ export class CreateCompraDto {
   @IsUUID()
   sucursalId: string;
 
+  @IsUUID()
+  paisId: string;
+
   @IsEnum(TipoPago)
   tipo_pago: TipoPago;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Transform(({ value }) => value ? parseFloat(value) : 0)
+  @Transform(({ value }) => (value ? parseFloat(value) : 0))
   descuentos?: number;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Transform(({ value }) => value ? parseFloat(value) : 0)
+  @Transform(({ value }) => (value ? parseFloat(value) : 0))
   impuestos?: number;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Transform(({ value }) => value ? parseFloat(value) : 0)
+  @Transform(({ value }) => (value ? parseFloat(value) : 0))
   subtotal?: number;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Transform(({ value }) => value ? parseFloat(value) : 0)
+  @Transform(({ value }) => (value ? parseFloat(value) : 0))
   total?: number;
 
   @IsArray()
