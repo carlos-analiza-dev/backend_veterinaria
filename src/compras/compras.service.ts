@@ -14,6 +14,8 @@ import { User } from '../auth/entities/auth.entity';
 import { Sucursal } from '../sucursales/entities/sucursal.entity';
 import { Proveedor } from '../proveedores/entities/proveedor.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { instanceToPlain } from 'class-transformer';
 
 @Injectable()
 export class ComprasService {
@@ -138,11 +140,42 @@ export class ComprasService {
     }
   }
 
-  async findAll() {
-    return await this.compraRepository.find({
-      relations: ['detalles', 'lotes', 'proveedor', 'sucursal'],
-      order: { created_at: 'DESC' },
-    });
+  async findAll(paginationDto: PaginationDto) {
+    const {
+      limit = 10,
+      offset = 0,
+      proveedor = '',
+    } = paginationDto;
+
+    try {
+      const queryBuilder = this.compraRepository
+        .createQueryBuilder('compra')
+        .leftJoinAndSelect('compra.proveedor', 'proveedor')
+        .leftJoinAndSelect('compra.sucursal', 'sucursal')
+        .orderBy('compra.created_at', 'DESC');
+
+      if (proveedor && proveedor.trim() !== '') {
+        queryBuilder.andWhere(
+          '(proveedor.id = :proveedorId OR proveedor.nombre_legal ILIKE :proveedorNombre)',
+          {
+            proveedorId: proveedor,
+            proveedorNombre: `%${proveedor}%`,
+          },
+        );
+      }
+
+      if (limit !== undefined) queryBuilder.take(limit);
+      if (offset !== undefined) queryBuilder.skip(offset);
+
+      const [compras, total] = await queryBuilder.getManyAndCount();
+
+      return {
+        compras: instanceToPlain(compras),
+        total,
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
   async findOne(id: string) {

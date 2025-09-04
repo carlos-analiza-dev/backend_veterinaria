@@ -16,6 +16,7 @@ import { Auth } from '../auth/decorators/auth.decorator';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../auth/entities/auth.entity';
 import { ValidRoles } from '../interfaces/valid-roles.interface';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Controller('compras')
 @Auth()
@@ -33,8 +34,8 @@ export class ComprasController {
 
   @Get()
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findAll() {
-    return this.comprasService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.comprasService.findAll(paginationDto);
   }
 
   @Get('existencias/:productoId')
