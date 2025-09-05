@@ -64,11 +64,17 @@ export class CompraInsumosService {
 
       const detallesCalculados = createCompraInsumoDto.detalles.map(
         (detalle) => {
+          const cantidadTotal = detalle.cantidad + (detalle.bonificacion || 0);
+          const subtotal = detalle.costo_por_unidad * detalle.cantidad;
+          const impuestos = subtotal * (detalle.porcentaje_impuesto || 0) / 100;
+          const descuentos = detalle.descuentos || 0;
+          const montoTotal = subtotal + impuestos - descuentos;
+          
           return {
             ...detalle,
-            cantidad_total: detalle.cantidad_total,
-            impuestos: detalle.impuestos,
-            monto_total: detalle.monto_total,
+            cantidad_total: cantidadTotal,
+            impuestos: impuestos,
+            monto_total: montoTotal,
           };
         },
       );
@@ -101,6 +107,7 @@ export class CompraInsumosService {
         const lote = this.invLoteInsumoRepository.create({
           insumoId: detalleCalculado.insumoId,
           cantidad: detalleCalculado.cantidad_total,
+          costo: detalleCalculado.monto_total, // Costo total (subtotal + impuestos - descuentos)
           costo_por_unidad: costoRealPorUnidad, // Este es el costo real que incluye impuestos
           compraId: compraGuardada.id,
           sucursalId: createCompraInsumoDto.sucursalId,

@@ -30,5 +30,8 @@ export class InvLoteInsumo {
   cantidad: number;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
+  costo: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2 })
   costo_por_unidad: number; // Costo prorrateado = (subtotal + impuestos - descuentos) / cantidad_total
 }

@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { LotesService } from './lotes.service';
 import { LotesController } from './lotes.controller';
 import { Lote } from './entities/lote.entity';
+import { LoteInsumo } from './entities/lote-insumo.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 import { Compra } from 'src/compras/entities/compra.entity';
@@ -14,6 +15,7 @@ import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
   imports: [
     TypeOrmModule.forFeature([
       Lote,
+      LoteInsumo,
       User,
       SubServicio,
       Sucursal,
