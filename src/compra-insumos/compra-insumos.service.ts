@@ -61,29 +61,14 @@ export class CompraInsumosService {
       }
 
       // Usar los valores tal como vienen de la factura
-      let subtotalCompra = 0;
-      let impuestosCompra = 0;
-      let descuentosCompra = 0;
 
       const detallesCalculados = createCompraInsumoDto.detalles.map(
         (detalle) => {
-          // Usar los valores que vienen en el DTO (ya calculados en el frontend)
-          const cantidad_total = Number(detalle.cantidad_total);
-          const monto_total = Number(detalle.monto_total);
-
-          // Calcular subtotal de esta línea (costo * cantidad comprada)
-          const subtotalDetalle =
-            Number(detalle.cantidad) * Number(detalle.costo_por_unidad);
-
-          // Acumular totales de compra
-          subtotalCompra += subtotalDetalle;
-          impuestosCompra += Number(detalle.impuestos) || 0;
-          descuentosCompra += Number(detalle.descuentos) || 0;
-
           return {
             ...detalle,
-            cantidad_total,
-            monto_total,
+            cantidad_total: detalle.cantidad_total,
+            impuestos: detalle.impuestos,
+            monto_total: detalle.monto_total,
           };
         },
       );
@@ -91,10 +76,6 @@ export class CompraInsumosService {
       // Crear la compra
       const compra = this.compraInsumoRepository.create({
         ...createCompraInsumoDto,
-        subtotal: subtotalCompra,
-        impuestos: impuestosCompra,
-        descuentos: descuentosCompra,
-        total: subtotalCompra - descuentosCompra + impuestosCompra,
         createdById: user.id,
         updatedById: user.id,
       });
@@ -112,7 +93,7 @@ export class CompraInsumosService {
         });
         await queryRunner.manager.save(detalle);
 
-        // Costo por unidad en lote = monto_total / cantidad_total (de esta línea específica)
+        // Costo por unidad en lote = monto_total / cantidad_total
         const costoRealPorUnidad =
           detalleCalculado.monto_total / detalleCalculado.cantidad_total;
 

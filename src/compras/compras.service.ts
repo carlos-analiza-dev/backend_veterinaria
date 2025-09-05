@@ -60,7 +60,7 @@ export class ComprasService {
         const cantidad_total =
           Number(detalle.cantidad) + (Number(detalle.bonificacion) || 0);
         const subtotalDetalle =
-          cantidad_total * Number(detalle.costo_por_unidad);
+          Number(detalle.cantidad) * Number(detalle.costo_por_unidad);
         const monto_total =
           subtotalDetalle -
           (Number(detalle.descuentos) || 0) +
@@ -99,16 +99,15 @@ export class ComprasService {
         });
         await queryRunner.manager.save(detalle);
 
-        // Costo por unidad = (subtotal + impuestos - descuentos) / cantidad_total
-        const costoRealPorUnidad =
-          (subtotalCompra + impuestosCompra - descuentosCompra) /
-          detalleCalculado.cantidad_total;
+        // Costo por unidad = monto_total_del_detalle / cantidad_total (según reunión)
+        const costoRealPorUnidad = detalleCalculado.monto_total / detalleCalculado.cantidad_total;
 
         // Crear lote por cada línea de compra con el costo prorrateado correcto
         const lote = this.loteRepository.create({
           id_producto: detalleCalculado.productoId,
           cantidad: detalleCalculado.cantidad_total,
-          costo: costoRealPorUnidad, // Este es el costo real que incluye impuestos
+          costo: Number(detalleCalculado.costo_por_unidad), // Costo original del producto
+          costo_por_unidad: costoRealPorUnidad, // Costo real que incluye impuestos/descuentos
           id_compra: compraGuardada.id,
           id_sucursal: createCompraDto.sucursalId,
         });
@@ -213,6 +212,7 @@ export class ComprasService {
         'lote.id_producto',
         'lote.cantidad',
         'lote.costo',
+        'lote.costo_por_unidad',
       ])
       .orderBy('lote.id', 'ASC')
       .getMany();
@@ -230,6 +230,7 @@ export class ComprasService {
         id_compra: lote.id_compra,
         cantidad: lote.cantidad,
         costo: lote.costo,
+        costo_por_unidad: lote.costo_por_unidad,
       })),
     };
   }
@@ -310,7 +311,7 @@ export class ComprasService {
         const cantidad_total =
           Number(detalle.cantidad) + (Number(detalle.bonificacion) || 0);
         const subtotalDetalle =
-          cantidad_total * Number(detalle.costo_por_unidad);
+          Number(detalle.cantidad) * Number(detalle.costo_por_unidad);
         const monto_total =
           subtotalDetalle -
           (Number(detalle.descuentos) || 0) +
@@ -352,11 +353,15 @@ export class ComprasService {
         });
         await queryRunner.manager.save(detalle);
 
+        // Costo por unidad = monto_total_del_detalle / cantidad_total (según reunión) 
+        const costoRealPorUnidad = detalleCalculado.monto_total / detalleCalculado.cantidad_total;
+
         // Crear lote por cada línea de compra
         const lote = this.loteRepository.create({
           id_insumo: detalleCalculado.insumoId,
           cantidad: detalleCalculado.cantidad_total,
-          costo: Number(detalleCalculado.costo_por_unidad),
+          costo: Number(detalleCalculado.costo_por_unidad), // Costo original del insumo
+          costo_por_unidad: costoRealPorUnidad, // Costo real que incluye impuestos/descuentos
           id_compra_insumo: compraGuardada.id,
           id_sucursal: createCompraDto.sucursalId,
         });

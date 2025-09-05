@@ -44,4 +44,7 @@ export class Lote {
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   costo: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  costo_por_unidad?: number;
 }
