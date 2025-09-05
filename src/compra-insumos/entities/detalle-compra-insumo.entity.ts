@@ -1,32 +1,25 @@
 import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { Compra } from './compra.entity';
-import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
+import { CompraInsumo } from './compra-insumo.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
 
-@Entity('compras_detalles')
-export class CompraDetalle {
+@Entity('detalle_compra_insumos')
+export class DetalleCompraInsumo {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Compra, (compra) => compra.detalles, {
+  @ManyToOne(() => CompraInsumo, (compra) => compra.detalles, {
     onDelete: 'CASCADE',
   })
-  compra: Compra;
+  compra: CompraInsumo;
 
   @Column({ type: 'uuid' })
   compraId: string;
 
-  @ManyToOne(() => SubServicio, { nullable: true })
-  producto?: SubServicio;
+  @ManyToOne(() => Insumo, { eager: false })
+  insumo: Insumo;
 
-  @Column({ type: 'uuid', nullable: true })
-  productoId?: string;
-
-  @ManyToOne(() => Insumo, { nullable: true })
-  insumo?: Insumo;
-
-  @Column({ type: 'uuid', nullable: true })
-  insumoId?: string;
+  @Column({ type: 'uuid' })
+  insumoId: string;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   costo_por_unidad: number;

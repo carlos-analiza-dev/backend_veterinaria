@@ -1,4 +1,3 @@
-// compra.entity.ts - SOLUCIÓN 1
 import {
   Column,
   CreateDateColumn,
@@ -11,23 +10,16 @@ import {
 import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
 import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 import { User } from 'src/auth/entities/auth.entity';
-import { CompraDetalle } from './compra-detalle.entity';
-import { Lote } from 'src/lotes/entities/lote.entity';
-import { Pai } from 'src/pais/entities/pai.entity';
+import { DetalleCompraInsumo } from './detalle-compra-insumo.entity';
+import { InvLoteInsumo } from './inv-lote-insumo.entity';
 
 export enum TipoPago {
   CONTADO = 'CONTADO',
   CREDITO = 'CREDITO',
 }
 
-export enum TipoCompra {
-  PRODUCTO = 'PRODUCTO',
-  INSUMO = 'INSUMO',
-  SERVICIO = 'SERVICIO',
-}
-
-@Entity('compras')
-export class Compra {
+@Entity('compra_insumos')
+export class CompraInsumo {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -49,13 +41,6 @@ export class Compra {
     default: TipoPago.CONTADO,
   })
   tipo_pago: TipoPago;
-
-  @Column({
-    type: 'enum',
-    enum: TipoCompra,
-    default: TipoCompra.PRODUCTO,
-  })
-  tipo_compra: TipoCompra;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   subtotal: number;
@@ -79,26 +64,20 @@ export class Compra {
   updated_at: Date;
 
   // Relaciones
-  @OneToMany(() => CompraDetalle, (detalle) => detalle.compra)
-  detalles: CompraDetalle[];
+  @OneToMany(() => DetalleCompraInsumo, (detalle) => detalle.compra)
+  detalles: DetalleCompraInsumo[];
 
-  @OneToMany(() => Lote, (lote) => lote.compra)
-  lotes: Lote[];
-
-  @ManyToOne(() => Pai)
-  pais: Pai;
-
-  @Column({ type: 'uuid' })
-  paisId: string;
+  @OneToMany(() => InvLoteInsumo, (lote) => lote.compra)
+  lotes: InvLoteInsumo[];
 
   // Campos de auditoría
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { eager: false })
   created_by: User;
 
   @Column({ type: 'uuid' })
   createdById: string;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, { eager: false })
   updated_by: User;
 
   @Column({ type: 'uuid', nullable: true })

@@ -1,18 +1,13 @@
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
 import {
   IsNumber,
   IsOptional,
   IsUUID,
 } from 'class-validator';
 
-export class CreateCompraDetalleDto {
-  @IsOptional()
+export class CreateDetalleCompraInsumoDto {
   @IsUUID()
-  productoId?: string;
-
-  @IsOptional()
-  @IsUUID()
-  insumoId?: string;
+  insumoId: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Transform(({ value }) => parseFloat(value))
@@ -34,6 +29,12 @@ export class CreateCompraDetalleDto {
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
+  @Transform(({ value }) => value ? parseFloat(value) : 15)
+  porcentaje_impuesto?: number;
+
+  // Campos calculados automáticamente (no se envían en el request)
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Transform(({ value }) => value ? parseFloat(value) : 0)
   impuestos?: number;
 
@@ -46,5 +47,4 @@ export class CreateCompraDetalleDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Transform(({ value }) => value ? parseFloat(value) : 0)
   monto_total?: number;
-
 }

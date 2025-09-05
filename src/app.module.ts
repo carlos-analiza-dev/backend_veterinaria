@@ -42,6 +42,7 @@ import { TaxesPaisModule } from './taxes_pais/taxes_pais.module';
 import { ProductosImagesModule } from './productos_images/productos_images.module';
 import { LotesModule } from './lotes/lotes.module';
 import { ComprasModule } from './compras/compras.module';
+import { CompraInsumosModule } from './compra-insumos/compra-insumos.module';
 
 @Module({
   imports: [
@@ -118,6 +119,7 @@ import { ComprasModule } from './compras/compras.module';
     LotesModule,
 
     ComprasModule,
+    CompraInsumosModule,
 
     InsumosModule,
   ],
