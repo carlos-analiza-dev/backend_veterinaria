@@ -10,6 +10,7 @@ import { UpdateCompraDto } from './dto/update-compra.dto';
 import { Compra, TipoCompra } from './entities/compra.entity';
 import { CompraDetalle } from './entities/compra-detalle.entity';
 import { Lote } from '../lotes/entities/lote.entity';
+import { LoteInsumo } from '../lotes/entities/lote-insumo.entity';
 import { User } from '../auth/entities/auth.entity';
 import { Sucursal } from '../sucursales/entities/sucursal.entity';
 import { Proveedor } from '../proveedores/entities/proveedor.entity';
@@ -27,6 +28,8 @@ export class ComprasService {
     private readonly compraDetalleRepository: Repository<CompraDetalle>,
     @InjectRepository(Lote)
     private readonly loteRepository: Repository<Lote>,
+    @InjectRepository(LoteInsumo)
+    private readonly loteInsumoRepository: Repository<LoteInsumo>,
     @InjectRepository(Sucursal)
     private readonly sucursalRepository: Repository<Sucursal>,
     @InjectRepository(Proveedor)
@@ -357,7 +360,7 @@ export class ComprasService {
         const costoRealPorUnidad = detalleCalculado.monto_total / detalleCalculado.cantidad_total;
 
         // Crear lote por cada línea de compra
-        const lote = this.loteRepository.create({
+        const lote = this.loteInsumoRepository.create({
           id_insumo: detalleCalculado.insumoId,
           cantidad: detalleCalculado.cantidad_total,
           costo: Number(detalleCalculado.costo_por_unidad), // Costo original del insumo
