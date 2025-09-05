@@ -22,12 +22,6 @@ export class CompraDetalle {
   @Column({ type: 'uuid', nullable: true })
   productoId?: string;
 
-  @ManyToOne(() => Insumo, { nullable: true })
-  insumo?: Insumo;
-
-  @Column({ type: 'uuid', nullable: true })
-  insumoId?: string;
-
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   costo_por_unidad: number;
 

@@ -7,7 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { CreateCompraDto } from './dto/create-compra.dto';
 import { UpdateCompraDto } from './dto/update-compra.dto';
-import { Compra, TipoCompra } from './entities/compra.entity';
+import { Compra } from './entities/compra.entity';
 import { CompraDetalle } from './entities/compra-detalle.entity';
 import { Lote } from '../lotes/entities/lote.entity';
 import { LoteInsumo } from '../lotes/entities/lote-insumo.entity';
@@ -15,7 +15,6 @@ import { User } from '../auth/entities/auth.entity';
 import { Sucursal } from '../sucursales/entities/sucursal.entity';
 import { Proveedor } from '../proveedores/entities/proveedor.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
-import { Insumo } from 'src/insumos/entities/insumo.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
 import { Pai } from 'src/pais/entities/pai.entity';
@@ -40,8 +39,7 @@ export class ComprasService {
 
     @InjectRepository(Pai)
     private readonly paisRepository: Repository<Pai>,
-    @InjectRepository(Insumo)
-    private readonly insumoRepository: Repository<Insumo>,
+
     private readonly dataSource: DataSource,
   ) {}
 
@@ -51,6 +49,18 @@ export class ComprasService {
     await queryRunner.startTransaction();
 
     try {
+      const proveedor_exist = await this.proveedorRepository.findOne({
+        where: { id: createCompraDto.proveedorId },
+      });
+      if (!proveedor_exist)
+        throw new NotFoundException('No se encontro el proveedor seleccionado');
+
+      const sucursal_exist = await this.sucursalRepository.findOne({
+        where: { id: createCompraDto.sucursalId },
+      });
+      if (!sucursal_exist)
+        throw new NotFoundException('No se encontro la sucursal seleccionado');
+
       const pais_exist = await this.paisRepository.findOne({
         where: { id: createCompraDto.paisId },
       });
@@ -336,109 +346,5 @@ export class ComprasService {
       message: `Se redujeron ${cantidadSolicitada} unidades del inventario`,
       lotesAfectados,
     };
-  }
-
-  async createCompraInsumos(createCompraDto: CreateCompraDto, user: User) {
-    const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
-    try {
-      // Validar que todos los items sean insumos
-      const insumosIds = createCompraDto.detalles.map(
-        (d) => d.insumoId || d.productoId,
-      );
-      for (const insumoId of insumosIds) {
-        const insumo = await this.insumoRepository.findOne({
-          where: { id: insumoId },
-        });
-        if (!insumo) {
-          throw new BadRequestException(
-            `Insumo con ID ${insumoId} no encontrado`,
-          );
-        }
-      }
-
-      // Validar duplicados de insumos
-      const insumosUnicos = new Set(insumosIds);
-      if (insumosIds.length !== insumosUnicos.size) {
-        throw new BadRequestException('Insumos duplicados en los detalles');
-      }
-
-      // Calcular totales y procesar detalles
-      let subtotalCompra = 0;
-      let impuestosCompra = 0;
-      let descuentosCompra = 0;
-
-      const detallesCalculados = createCompraDto.detalles.map((detalle) => {
-        const cantidad_total =
-          Number(detalle.cantidad) + (Number(detalle.bonificacion) || 0);
-        const subtotalDetalle =
-          Number(detalle.cantidad) * Number(detalle.costo_por_unidad);
-        const monto_total =
-          subtotalDetalle -
-          (Number(detalle.descuentos) || 0) +
-          (Number(detalle.impuestos) || 0);
-
-        // Acumular totales de compra
-        subtotalCompra += subtotalDetalle;
-        impuestosCompra += Number(detalle.impuestos) || 0;
-        descuentosCompra += Number(detalle.descuentos) || 0;
-
-        return {
-          ...detalle,
-          insumoId: detalle.insumoId || detalle.productoId,
-          productoId: undefined,
-          cantidad_total,
-          monto_total,
-        };
-      });
-
-      // Crear la compra con tipo INSUMO
-      const compra = this.compraRepository.create({
-        ...createCompraDto,
-        tipo_compra: TipoCompra.INSUMO,
-        subtotal: subtotalCompra,
-        impuestos: impuestosCompra,
-        descuentos: descuentosCompra,
-        total: subtotalCompra - descuentosCompra + impuestosCompra,
-        createdById: user.id,
-        updatedById: user.id,
-      });
-
-      const compraGuardada = await queryRunner.manager.save(Compra, compra);
-
-      // Crear los detalles y lotes (un lote por cada línea de compra)
-      for (const detalleCalculado of detallesCalculados) {
-        const detalle = this.compraDetalleRepository.create({
-          ...detalleCalculado,
-          compraId: compraGuardada.id,
-        });
-        await queryRunner.manager.save(detalle);
-
-        // Costo por unidad = monto_total_del_detalle / cantidad_total (según reunión)
-        const costoRealPorUnidad =
-          detalleCalculado.monto_total / detalleCalculado.cantidad_total;
-
-        // Crear lote por cada línea de compra
-        const lote = this.loteInsumoRepository.create({
-          id_insumo: detalleCalculado.insumoId,
-          cantidad: detalleCalculado.cantidad_total,
-          costo: Number(detalleCalculado.costo_por_unidad), // Costo original del insumo
-          costo_por_unidad: costoRealPorUnidad, // Costo real que incluye impuestos/descuentos
-          id_compra_insumo: compraGuardada.id,
-          id_sucursal: createCompraDto.sucursalId,
-        });
-        await queryRunner.manager.save(lote);
-      }
-
-      await queryRunner.commitTransaction();
-      return await this.findOne(compraGuardada.id);
-    } catch (error) {
-      await queryRunner.rollbackTransaction();
-      throw error;
-    } finally {
-      await queryRunner.release();
-    }
   }
 }

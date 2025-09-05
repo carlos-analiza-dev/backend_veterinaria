@@ -12,6 +12,7 @@ import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { DetalleCompraInsumo } from './detalle-compra-insumo.entity';
 import { InvLoteInsumo } from './inv-lote-insumo.entity';
+import { Pai } from 'src/pais/entities/pai.entity';
 
 export enum TipoPago {
   CONTADO = 'CONTADO',
@@ -69,6 +70,12 @@ export class CompraInsumo {
 
   @OneToMany(() => InvLoteInsumo, (lote) => lote.compra)
   lotes: InvLoteInsumo[];
+
+  @ManyToOne(() => Pai)
+  pais: Pai;
+
+  @Column({ type: 'uuid' })
+  paisId: string;
 
   // Campos de auditoría
   @ManyToOne(() => User, { eager: false })

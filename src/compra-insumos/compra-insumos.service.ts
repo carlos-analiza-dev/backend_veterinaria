@@ -16,6 +16,7 @@ import { Proveedor } from '../proveedores/entities/proveedor.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
+import { Pai } from 'src/pais/entities/pai.entity';
 
 @Injectable()
 export class CompraInsumosService {
@@ -32,6 +33,8 @@ export class CompraInsumosService {
     private readonly proveedorRepository: Repository<Proveedor>,
     @InjectRepository(Insumo)
     private readonly insumoRepository: Repository<Insumo>,
+    @InjectRepository(Pai)
+    private readonly paisRepository: Repository<Pai>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -41,6 +44,23 @@ export class CompraInsumosService {
     await queryRunner.startTransaction();
 
     try {
+      const proveedor_exist = await this.proveedorRepository.findOne({
+        where: { id: createCompraInsumoDto.proveedorId },
+      });
+      if (!proveedor_exist)
+        throw new NotFoundException('No se encontro el proveedor seleccionado');
+
+      const sucursal_exist = await this.sucursalRepository.findOne({
+        where: { id: createCompraInsumoDto.sucursalId },
+      });
+      if (!sucursal_exist)
+        throw new NotFoundException('No se encontro la sucursal seleccionado');
+
+      const pais_exist = await this.paisRepository.findOne({
+        where: { id: createCompraInsumoDto.paisId },
+      });
+      if (!pais_exist)
+        throw new NotFoundException('El pais seleccionado no existe');
       // Validar duplicados de insumos
       const insumosIds = createCompraInsumoDto.detalles.map((d) => d.insumoId);
       const insumosUnicos = new Set(insumosIds);
@@ -66,10 +86,11 @@ export class CompraInsumosService {
         (detalle) => {
           const cantidadTotal = detalle.cantidad + (detalle.bonificacion || 0);
           const subtotal = detalle.costo_por_unidad * detalle.cantidad;
-          const impuestos = subtotal * (detalle.porcentaje_impuesto || 0) / 100;
+          const impuestos =
+            (subtotal * (detalle.porcentaje_impuesto || 0)) / 100;
           const descuentos = detalle.descuentos || 0;
           const montoTotal = subtotal + impuestos - descuentos;
-          
+
           return {
             ...detalle,
             cantidad_total: cantidadTotal,
@@ -125,15 +146,29 @@ export class CompraInsumosService {
     }
   }
 
-  async findAll(paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0, proveedor = '' } = paginationDto;
+  async findAll(user: User, paginationDto: PaginationDto) {
+    const paisId = user.pais.id;
+    const {
+      limit = 10,
+      offset = 0,
+      proveedor = '',
+      sucursal = '',
+      tipoPago = '',
+    } = paginationDto;
 
     try {
       const queryBuilder = this.compraInsumoRepository
         .createQueryBuilder('compra')
+        .leftJoinAndSelect('compra.detalles', 'detalles')
+        .leftJoinAndSelect('compra.lotes', 'lotes')
         .leftJoinAndSelect('compra.proveedor', 'proveedor')
         .leftJoinAndSelect('compra.sucursal', 'sucursal')
+        .leftJoinAndSelect('compra.pais', 'pais')
+        .leftJoinAndSelect('compra.created_by', 'created_by')
+        .leftJoinAndSelect('compra.updated_by', 'updated_by')
         .orderBy('compra.created_at', 'DESC');
+
+      queryBuilder.andWhere('compra.paisId = :paisId', { paisId });
 
       if (proveedor && proveedor.trim() !== '') {
         queryBuilder.andWhere(
@@ -145,10 +180,41 @@ export class CompraInsumosService {
         );
       }
 
+      if (sucursal && sucursal.trim() !== '') {
+        queryBuilder.andWhere(
+          '(sucursal.id = :sucursalId OR sucursal.nombre ILIKE :sucursalNombre)',
+          {
+            sucursalId: sucursal,
+            sucursalNombre: `%${sucursal}%`,
+          },
+        );
+      }
+
+      if (tipoPago && tipoPago.trim() !== '') {
+        queryBuilder.andWhere('compra.tipo_pago = :tipoPago', {
+          tipoPago: tipoPago.toUpperCase(),
+        });
+      }
+
       if (limit !== undefined) queryBuilder.take(limit);
       if (offset !== undefined) queryBuilder.skip(offset);
 
       const [compras, total] = await queryBuilder.getManyAndCount();
+
+      if (!compras || compras.length === 0) {
+        let errorMessage = 'No se encontraron compras';
+        const filters = [];
+
+        if (proveedor) filters.push(`proveedor: ${proveedor}`);
+        if (sucursal) filters.push(`sucursal: ${sucursal}`);
+        if (tipoPago) filters.push(`tipo de pago: ${tipoPago}`);
+
+        if (filters.length > 0) {
+          errorMessage += ` con los filtros: ${filters.join(', ')}`;
+        }
+
+        throw new BadRequestException(errorMessage);
+      }
 
       return {
         compras: instanceToPlain(compras),

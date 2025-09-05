@@ -8,22 +8,22 @@ export class InvLoteInsumo {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => CompraInsumo, { eager: false })
+  @ManyToOne(() => CompraInsumo)
   compra: CompraInsumo;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   compraId: string;
 
-  @ManyToOne(() => Sucursal, { eager: false })
+  @ManyToOne(() => Sucursal)
   sucursal: Sucursal;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   sucursalId: string;
 
-  @ManyToOne(() => Insumo, { eager: false })
+  @ManyToOne(() => Insumo)
   insumo: Insumo;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   insumoId: string;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })

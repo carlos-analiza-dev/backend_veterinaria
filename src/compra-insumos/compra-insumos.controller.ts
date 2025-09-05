@@ -34,8 +34,8 @@ export class CompraInsumosController {
 
   @Get()
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.compraInsumosService.findAll(paginationDto);
+  findAll(@GetUser() user: User, @Query() paginationDto: PaginationDto) {
+    return this.compraInsumosService.findAll(user, paginationDto);
   }
 
   @Get('existencias/:insumoId')

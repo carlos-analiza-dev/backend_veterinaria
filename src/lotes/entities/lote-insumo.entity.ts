@@ -8,7 +8,7 @@ export class LoteInsumo {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Compra, { nullable: true })
+  @ManyToOne(() => Compra, { nullable: true, cascade: true })
   compra_insumo?: Compra;
 
   @Column({ type: 'uuid', nullable: true })
