@@ -18,6 +18,7 @@ import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
 import { Pai } from 'src/pais/entities/pai.entity';
+import { InventarioQueryDto, TipoInventario } from './dto/inventario-query.dto';
 
 @Injectable()
 export class ComprasService {
@@ -36,10 +37,8 @@ export class ComprasService {
     private readonly proveedorRepository: Repository<Proveedor>,
     @InjectRepository(SubServicio)
     private readonly servicioRepository: Repository<SubServicio>,
-
     @InjectRepository(Pai)
     private readonly paisRepository: Repository<Pai>,
-
     private readonly dataSource: DataSource,
   ) {}
 
@@ -66,6 +65,7 @@ export class ComprasService {
       });
       if (!pais_exist)
         throw new NotFoundException('El pais seleccionado no existe');
+
       // Validar duplicados de productos
       const productosIds = createCompraDto.detalles.map((d) => d.productoId);
       const productosUnicos = new Set(productosIds);
@@ -103,6 +103,7 @@ export class ComprasService {
       // Crear la compra
       const compra = this.compraRepository.create({
         ...createCompraDto,
+        numero_factura: createCompraDto.numero_factura,
         subtotal: subtotalCompra,
         impuestos: impuestosCompra,
         descuentos: descuentosCompra,
@@ -122,7 +123,7 @@ export class ComprasService {
         });
         await queryRunner.manager.save(detalle);
 
-        // Costo por unidad = monto_total_del_detalle / cantidad_total (según reunión)
+        // Costo por unidad = monto_total_del_detalle / cantidad_total
         const costoRealPorUnidad =
           detalleCalculado.monto_total / detalleCalculado.cantidad_total;
 
@@ -130,8 +131,8 @@ export class ComprasService {
         const lote = this.loteRepository.create({
           id_producto: detalleCalculado.productoId,
           cantidad: detalleCalculado.cantidad_total,
-          costo: Number(detalleCalculado.costo_por_unidad), // Costo original del producto
-          costo_por_unidad: costoRealPorUnidad, // Costo real que incluye impuestos/descuentos
+          costo: Number(detalleCalculado.costo_por_unidad),
+          costo_por_unidad: costoRealPorUnidad,
           id_compra: compraGuardada.id,
           id_sucursal: createCompraDto.sucursalId,
         });
@@ -254,7 +255,205 @@ export class ComprasService {
     await this.compraRepository.remove(compra);
   }
 
-  // Consultar existencias totales de un producto (lo que mencionó tu jefe)
+  async getInventario(inventarioQuery: InventarioQueryDto) {
+    const {
+      limit = 10,
+      offset = 0,
+      tipo = TipoInventario.AMBOS,
+      sucursalId,
+      sucursal,
+      marcaId,
+      marca,
+      categoriaId,
+      categoria,
+      nombre,
+      codigo,
+    } = inventarioQuery;
+
+    try {
+      const inventario = [];
+
+      // ✅ PRODUCTOS - USANDO GROUP BY SQL NATIVO
+      if (tipo === TipoInventario.PRODUCTOS || tipo === TipoInventario.AMBOS) {
+        const productosQuery = this.loteRepository
+          .createQueryBuilder('lote')
+          .select([
+            'producto.id as id',
+            'producto.nombre as nombre',
+            'producto.codigo as codigo',
+            'marca.nombre as marca_nombre',
+            'categoria.nombre as categoria_nombre',
+            'sucursal.id as sucursal_id',
+            'sucursal.nombre as sucursal_nombre',
+            'SUM(lote.cantidad) as total_existencia',
+          ])
+          .leftJoin('lote.producto', 'producto')
+          .leftJoin('lote.sucursal', 'sucursal')
+          .leftJoin('producto.marca', 'marca')
+          .leftJoin('producto.categoria', 'categoria')
+          .where('lote.cantidad > 0')
+          .andWhere('lote.id_producto IS NOT NULL')
+          .groupBy('producto.id')
+          .addGroupBy('producto.nombre')
+          .addGroupBy('producto.codigo')
+          .addGroupBy('marca.nombre')
+          .addGroupBy('categoria.nombre')
+          .addGroupBy('sucursal.id')
+          .addGroupBy('sucursal.nombre');
+
+        // Aplicar filtros
+        if (sucursalId) {
+          productosQuery.andWhere('sucursal.id = :sucursalId', { sucursalId });
+        }
+        if (sucursal) {
+          productosQuery.andWhere('sucursal.nombre ILIKE :sucursal', {
+            sucursal: `%${sucursal}%`,
+          });
+        }
+        if (marcaId) {
+          productosQuery.andWhere('marca.id = :marcaId', { marcaId });
+        }
+        if (marca) {
+          productosQuery.andWhere('marca.nombre ILIKE :marca', {
+            marca: `%${marca}%`,
+          });
+        }
+        if (categoriaId) {
+          productosQuery.andWhere('categoria.id = :categoriaId', {
+            categoriaId,
+          });
+        }
+        if (categoria) {
+          productosQuery.andWhere('categoria.nombre ILIKE :categoria', {
+            categoria: `%${categoria}%`,
+          });
+        }
+        if (nombre) {
+          productosQuery.andWhere('producto.nombre ILIKE :nombre', {
+            nombre: `%${nombre}%`,
+          });
+        }
+        if (codigo) {
+          productosQuery.andWhere('producto.codigo ILIKE :codigo', {
+            codigo: `%${codigo}%`,
+          });
+        }
+
+        const productosRaw = await productosQuery.getRawMany();
+
+        // Formatear resultados
+        const productosFormateados = productosRaw.map((row) => ({
+          id: row.id,
+          nombre: row.nombre,
+          codigo: row.codigo,
+          precio: null,
+          foto: null,
+          marca_nombre: row.marca_nombre || 'Sin marca',
+          categoria_nombre: row.categoria_nombre || 'Sin categoría',
+          sucursal_id: row.sucursal_id,
+          sucursal_nombre: row.sucursal_nombre,
+          total_existencia: Number(row.total_existencia),
+          tipo: 'PRODUCTO',
+        }));
+
+        inventario.push(...productosFormateados);
+      }
+
+      // ✅ INSUMOS - USANDO GROUP BY SQL NATIVO
+      if (tipo === TipoInventario.INSUMOS || tipo === TipoInventario.AMBOS) {
+        const insumosQuery = this.loteInsumoRepository
+          .createQueryBuilder('lote_insumo')
+          .select([
+            'insumo.id as id',
+            'insumo.nombre as nombre',
+            'insumo.codigo as codigo',
+            'insumo.costo as precio',
+            'marca.nombre as marca_nombre',
+            'sucursal.id as sucursal_id',
+            'sucursal.nombre as sucursal_nombre',
+            'SUM(lote_insumo.cantidad) as total_existencia',
+          ])
+          .leftJoin('lote_insumo.insumo', 'insumo')
+          .leftJoin('lote_insumo.sucursal', 'sucursal')
+          .leftJoin('insumo.marca', 'marca')
+          .where('lote_insumo.cantidad > 0')
+          .andWhere('lote_insumo.id_insumo IS NOT NULL')
+          .groupBy('insumo.id')
+          .addGroupBy('insumo.nombre')
+          .addGroupBy('insumo.codigo')
+          .addGroupBy('insumo.costo')
+          .addGroupBy('marca.nombre')
+          .addGroupBy('sucursal.id')
+          .addGroupBy('sucursal.nombre');
+
+        // Aplicar filtros
+        if (sucursalId) {
+          insumosQuery.andWhere('sucursal.id = :sucursalId', { sucursalId });
+        }
+        if (sucursal) {
+          insumosQuery.andWhere('sucursal.nombre ILIKE :sucursal', {
+            sucursal: `%${sucursal}%`,
+          });
+        }
+        if (marcaId) {
+          insumosQuery.andWhere('marca.id = :marcaId', { marcaId });
+        }
+        if (marca) {
+          insumosQuery.andWhere('marca.nombre ILIKE :marca', {
+            marca: `%${marca}%`,
+          });
+        }
+        if (nombre) {
+          insumosQuery.andWhere('insumo.nombre ILIKE :nombre', {
+            nombre: `%${nombre}%`,
+          });
+        }
+        if (codigo) {
+          insumosQuery.andWhere('insumo.codigo ILIKE :codigo', {
+            codigo: `%${codigo}%`,
+          });
+        }
+
+        const insumosRaw = await insumosQuery.getRawMany();
+
+        // Formatear resultados
+        const insumosFormateados = insumosRaw.map((row) => ({
+          id: row.id,
+          nombre: row.nombre,
+          codigo: row.codigo,
+          precio: Number(row.precio),
+          foto: null,
+          marca_nombre: row.marca_nombre || 'Sin marca',
+          categoria_nombre: null,
+          sucursal_id: row.sucursal_id,
+          sucursal_nombre: row.sucursal_nombre,
+          total_existencia: Number(row.total_existencia),
+          tipo: 'INSUMO',
+        }));
+
+        inventario.push(...insumosFormateados);
+      }
+
+      // ✅ ORDENAR Y PAGINAR
+      inventario.sort((a, b) => a.nombre.localeCompare(b.nombre));
+      const total = inventario.length;
+      const paginatedInventario = inventario.slice(offset, offset + limit);
+
+      return {
+        inventario: instanceToPlain(paginatedInventario),
+        total,
+        limit,
+        offset,
+        totalPages: Math.ceil(total / limit),
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        `Error al obtener el inventario: ${error.message}`,
+      );
+    }
+  }
+
+  // Método existente getExistenciasProducto
   async getExistenciasProducto(productoId: string, sucursalId?: string) {
     const whereCondition: any = { id_producto: productoId };
     if (sucursalId) {
@@ -302,7 +501,7 @@ export class ComprasService {
     };
   }
 
-  // Método para usar/vender productos (FIFO - lote más antiguo primero)
+  // Método para reducir inventario (FIFO)
   async reducirInventario(
     productoId: string,
     sucursalId: string,
@@ -313,7 +512,7 @@ export class ComprasService {
         id_producto: productoId,
         id_sucursal: sucursalId,
       },
-      order: { id: 'ASC' }, // FIFO - primero el más antiguo
+      order: { id: 'ASC' }, // FIFO
     });
 
     let cantidadPendiente = cantidadSolicitada;

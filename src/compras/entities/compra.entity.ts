@@ -1,4 +1,3 @@
-// compra.entity.ts - SOLUCIÓN 1
 import {
   Column,
   CreateDateColumn,
@@ -42,6 +41,9 @@ export class Compra {
 
   @Column({ type: 'uuid' })
   sucursalId: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  numero_factura: string;
 
   @Column({
     type: 'enum',
@@ -88,7 +90,7 @@ export class Compra {
   @ManyToOne(() => Pai)
   pais: Pai;
 
-  @Column({ type: 'uuid' })
+  @Column({ type: 'uuid', nullable: true })
   paisId: string;
 
   // Campos de auditoría

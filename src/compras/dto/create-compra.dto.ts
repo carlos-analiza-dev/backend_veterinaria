@@ -4,8 +4,10 @@ import {
   IsEnum,
   IsNumber,
   IsOptional,
+  IsString,
   IsUUID,
   ValidateNested,
+  MaxLength,
 } from 'class-validator';
 import { TipoPago } from '../entities/compra.entity';
 import { CreateCompraDetalleDto } from './create-compra-detalle.dto';
@@ -19,6 +21,11 @@ export class CreateCompraDto {
 
   @IsUUID()
   paisId: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  numero_factura?: string;
 
   @IsEnum(TipoPago)
   tipo_pago: TipoPago;
