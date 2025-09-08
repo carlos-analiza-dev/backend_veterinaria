@@ -38,6 +38,21 @@ export class CompraInsumosService {
     private readonly dataSource: DataSource,
   ) {}
 
+  // Obtener tasa de impuesto por país
+  private async getTaxRateByCountry(paisId: string): Promise<number> {
+    const tax = await this.dataSource
+      .getRepository('taxes')
+      .createQueryBuilder('tax')
+      .where('tax.pais_id = :paisId', { paisId })
+      .getOne();
+
+    if (!tax) {
+      throw new BadRequestException('No existe un impuesto disponible');
+    }
+
+    return parseFloat(tax.porcentaje);
+  }
+
   async create(createCompraInsumoDto: CreateCompraInsumoDto, user: User) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -80,14 +95,17 @@ export class CompraInsumosService {
         }
       }
 
-      // Usar los valores tal como vienen de la factura
+      // Obtener tasa de impuesto del país
+      const taxRatePais = await this.getTaxRateByCountry(
+        createCompraInsumoDto.paisId,
+      );
 
       const detallesCalculados = createCompraInsumoDto.detalles.map(
         (detalle) => {
           const cantidadTotal = detalle.cantidad + (detalle.bonificacion || 0);
           const subtotal = detalle.costo_por_unidad * detalle.cantidad;
           const impuestos =
-            (subtotal * (detalle.porcentaje_impuesto || 0)) / 100;
+            (subtotal * (detalle.porcentaje_impuesto ?? taxRatePais)) / 100;
           const descuentos = detalle.descuentos || 0;
           const montoTotal = subtotal + impuestos - descuentos;
 
