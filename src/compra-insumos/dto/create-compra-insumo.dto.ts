@@ -4,7 +4,9 @@ import {
   IsEnum,
   IsNumber,
   IsOptional,
+  IsString,
   IsUUID,
+  MaxLength,
   ValidateNested,
 } from 'class-validator';
 import { TipoPago } from '../entities/compra-insumo.entity';
@@ -24,14 +26,18 @@ export class CreateCompraInsumoDto {
   tipo_pago: TipoPago;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 })
-  @Transform(({ value }) => (value ? parseFloat(value) : 0))
-  descuentos?: number;
+  @IsString()
+  @MaxLength(100)
+  numero_factura?: string;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
   @Transform(({ value }) => (value ? parseFloat(value) : 0))
-  impuestos?: number;
+  descuentos?: number;
+
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Transform(({ value }) => (value ? parseFloat(value) : 0))
+  impuestos: number;
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })

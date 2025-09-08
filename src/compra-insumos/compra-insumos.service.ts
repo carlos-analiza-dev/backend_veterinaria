@@ -105,6 +105,7 @@ export class CompraInsumosService {
         ...createCompraInsumoDto,
         createdById: user.id,
         updatedById: user.id,
+        numero_factura: createCompraInsumoDto.numero_factura,
       });
 
       const compraGuardada = await queryRunner.manager.save(
@@ -128,6 +129,7 @@ export class CompraInsumosService {
         const lote = this.invLoteInsumoRepository.create({
           insumoId: detalleCalculado.insumoId,
           cantidad: detalleCalculado.cantidad_total,
+
           costo: detalleCalculado.monto_total, // Costo total (subtotal + impuestos - descuentos)
           costo_por_unidad: costoRealPorUnidad, // Este es el costo real que incluye impuestos
           compraId: compraGuardada.id,
@@ -258,6 +260,46 @@ export class CompraInsumosService {
   async remove(id: string): Promise<void> {
     const compra = await this.findOne(id);
     await this.compraInsumoRepository.remove(compra);
+  }
+
+  async getExistenciasInsumos(user: User, paginationDto: PaginationDto) {
+    const paisId = user.pais.id;
+    const { sucursal, insumo, limit = 10, offset = 0 } = paginationDto;
+
+    const query = this.invLoteInsumoRepository
+      .createQueryBuilder('lote')
+      .leftJoin('lote.insumo', 'insumo')
+      .leftJoin('lote.sucursal', 'sucursal')
+      .leftJoin('lote.compra', 'compra')
+      .leftJoin('compra.pais', 'pais')
+      .select('insumo.id', 'insumoId')
+      .addSelect('insumo.nombre', 'insumoNombre')
+      .addSelect('insumo.codigo', 'codigo')
+      .addSelect('sucursal.id', 'sucursalId')
+      .addSelect('sucursal.nombre', 'sucursalNombre')
+      .addSelect('pais.id', 'paisId')
+      .addSelect('pais.nombre', 'paisNombre')
+      .addSelect('SUM(lote.cantidad)', 'existenciaTotal')
+      .where('pais.id = :paisId', { paisId })
+      .andWhere('lote.compraId IS NOT NULL')
+      .groupBy('insumo.id')
+      .addGroupBy('insumo.nombre')
+      .addGroupBy('sucursal.id')
+      .addGroupBy('sucursal.nombre')
+      .addGroupBy('pais.id')
+      .addGroupBy('pais.nombre')
+      .limit(limit)
+      .offset(offset);
+
+    if (sucursal) {
+      query.andWhere('sucursal.id = :sucursalId', { sucursalId: sucursal });
+    }
+
+    if (insumo) {
+      query.andWhere('insumo.id = :insumoId', { insumoId: insumo });
+    }
+
+    return await query.getRawMany();
   }
 
   // Consultar existencias totales de un insumo

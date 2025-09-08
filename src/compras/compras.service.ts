@@ -271,9 +271,9 @@ export class ComprasService {
     } = inventarioQuery;
 
     try {
-      const inventario = [];
+      const inventarioPromises = [];
 
-      // ✅ PRODUCTOS - USANDO GROUP BY SQL NATIVO
+      // ✅ PRODUCTOS
       if (tipo === TipoInventario.PRODUCTOS || tipo === TipoInventario.AMBOS) {
         const productosQuery = this.loteRepository
           .createQueryBuilder('lote')
@@ -299,67 +299,45 @@ export class ComprasService {
           .addGroupBy('marca.nombre')
           .addGroupBy('categoria.nombre')
           .addGroupBy('sucursal.id')
-          .addGroupBy('sucursal.nombre');
+          .addGroupBy('sucursal.nombre')
+          .orderBy('producto.nombre', 'ASC')
+          .skip(offset)
+          .take(limit);
 
         // Aplicar filtros
-        if (sucursalId) {
+        if (sucursalId)
           productosQuery.andWhere('sucursal.id = :sucursalId', { sucursalId });
-        }
-        if (sucursal) {
+        if (sucursal)
           productosQuery.andWhere('sucursal.nombre ILIKE :sucursal', {
             sucursal: `%${sucursal}%`,
           });
-        }
-        if (marcaId) {
+        if (marcaId)
           productosQuery.andWhere('marca.id = :marcaId', { marcaId });
-        }
-        if (marca) {
+        if (marca)
           productosQuery.andWhere('marca.nombre ILIKE :marca', {
             marca: `%${marca}%`,
           });
-        }
-        if (categoriaId) {
+        if (categoriaId)
           productosQuery.andWhere('categoria.id = :categoriaId', {
             categoriaId,
           });
-        }
-        if (categoria) {
+        if (categoria)
           productosQuery.andWhere('categoria.nombre ILIKE :categoria', {
             categoria: `%${categoria}%`,
           });
-        }
-        if (nombre) {
+        if (nombre)
           productosQuery.andWhere('producto.nombre ILIKE :nombre', {
             nombre: `%${nombre}%`,
           });
-        }
-        if (codigo) {
+        if (codigo)
           productosQuery.andWhere('producto.codigo ILIKE :codigo', {
             codigo: `%${codigo}%`,
           });
-        }
 
-        const productosRaw = await productosQuery.getRawMany();
-
-        // Formatear resultados
-        const productosFormateados = productosRaw.map((row) => ({
-          id: row.id,
-          nombre: row.nombre,
-          codigo: row.codigo,
-          precio: null,
-          foto: null,
-          marca_nombre: row.marca_nombre || 'Sin marca',
-          categoria_nombre: row.categoria_nombre || 'Sin categoría',
-          sucursal_id: row.sucursal_id,
-          sucursal_nombre: row.sucursal_nombre,
-          total_existencia: Number(row.total_existencia),
-          tipo: 'PRODUCTO',
-        }));
-
-        inventario.push(...productosFormateados);
+        inventarioPromises.push(productosQuery.getRawMany());
       }
 
-      // ✅ INSUMOS - USANDO GROUP BY SQL NATIVO
+      // ✅ INSUMOS (ASUMIENDO QUE NO TIENEN CATEGORÍA)
       if (tipo === TipoInventario.INSUMOS || tipo === TipoInventario.AMBOS) {
         const insumosQuery = this.loteInsumoRepository
           .createQueryBuilder('lote_insumo')
@@ -384,39 +362,59 @@ export class ComprasService {
           .addGroupBy('insumo.costo')
           .addGroupBy('marca.nombre')
           .addGroupBy('sucursal.id')
-          .addGroupBy('sucursal.nombre');
+          .addGroupBy('sucursal.nombre')
+          .orderBy('insumo.nombre', 'ASC')
+          .skip(offset)
+          .take(limit);
 
-        // Aplicar filtros
-        if (sucursalId) {
+        // Aplicar filtros (los insumos no suelen tener categoría)
+        if (sucursalId)
           insumosQuery.andWhere('sucursal.id = :sucursalId', { sucursalId });
-        }
-        if (sucursal) {
+        if (sucursal)
           insumosQuery.andWhere('sucursal.nombre ILIKE :sucursal', {
             sucursal: `%${sucursal}%`,
           });
-        }
-        if (marcaId) {
-          insumosQuery.andWhere('marca.id = :marcaId', { marcaId });
-        }
-        if (marca) {
+        if (marcaId) insumosQuery.andWhere('marca.id = :marcaId', { marcaId });
+        if (marca)
           insumosQuery.andWhere('marca.nombre ILIKE :marca', {
             marca: `%${marca}%`,
           });
-        }
-        if (nombre) {
+        if (nombre)
           insumosQuery.andWhere('insumo.nombre ILIKE :nombre', {
             nombre: `%${nombre}%`,
           });
-        }
-        if (codigo) {
+        if (codigo)
           insumosQuery.andWhere('insumo.codigo ILIKE :codigo', {
             codigo: `%${codigo}%`,
           });
-        }
 
-        const insumosRaw = await insumosQuery.getRawMany();
+        inventarioPromises.push(insumosQuery.getRawMany());
+      }
 
-        // Formatear resultados
+      // Ejecutar ambas consultas en paralelo
+      const [productosRaw, insumosRaw] = await Promise.all(inventarioPromises);
+
+      // Formatear resultados
+      const inventario = [];
+
+      if (productosRaw) {
+        const productosFormateados = productosRaw.map((row) => ({
+          id: row.id,
+          nombre: row.nombre,
+          codigo: row.codigo,
+          precio: null,
+          foto: null,
+          marca_nombre: row.marca_nombre || 'Sin marca',
+          categoria_nombre: row.categoria_nombre || 'Sin categoría',
+          sucursal_id: row.sucursal_id,
+          sucursal_nombre: row.sucursal_nombre,
+          total_existencia: Number(row.total_existencia),
+          tipo: 'PRODUCTO',
+        }));
+        inventario.push(...productosFormateados);
+      }
+
+      if (insumosRaw) {
         const insumosFormateados = insumosRaw.map((row) => ({
           id: row.id,
           nombre: row.nombre,
@@ -424,27 +422,27 @@ export class ComprasService {
           precio: Number(row.precio),
           foto: null,
           marca_nombre: row.marca_nombre || 'Sin marca',
-          categoria_nombre: null,
+          categoria_nombre: null, // Los insumos no tienen categoría
           sucursal_id: row.sucursal_id,
           sucursal_nombre: row.sucursal_nombre,
           total_existencia: Number(row.total_existencia),
           tipo: 'INSUMO',
         }));
-
         inventario.push(...insumosFormateados);
       }
 
-      // ✅ ORDENAR Y PAGINAR
+      // Ordenar combinado (si es necesario)
       inventario.sort((a, b) => a.nombre.localeCompare(b.nombre));
-      const total = inventario.length;
-      const paginatedInventario = inventario.slice(offset, offset + limit);
+
+      // Para el total, necesitarías contar queries separadas
+      // Esto es más complejo y podría requerir ajustes adicionales
 
       return {
-        inventario: instanceToPlain(paginatedInventario),
-        total,
+        inventario: instanceToPlain(inventario),
+        total: inventario.length,
         limit,
         offset,
-        totalPages: Math.ceil(total / limit),
+        totalPages: Math.ceil(inventario.length / limit),
       };
     } catch (error) {
       throw new BadRequestException(

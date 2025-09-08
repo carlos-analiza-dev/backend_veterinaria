@@ -43,6 +43,9 @@ export class CompraInsumo {
   })
   tipo_pago: TipoPago;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  numero_factura: string;
+
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   subtotal: number;
 

@@ -38,13 +38,13 @@ export class CompraInsumosController {
     return this.compraInsumosService.findAll(user, paginationDto);
   }
 
-  @Get('existencias/:insumoId')
+  @Get('existencias-insumos')
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  getExistenciasInsumo(
-    @Param('insumoId', ParseUUIDPipe) insumoId: string,
-    @Query('sucursalId') sucursalId?: string,
+  getExistenciasInsumos(
+    @GetUser() user: User,
+    @Query() paginationDto: PaginationDto,
   ) {
-    return this.compraInsumosService.getExistenciasInsumo(insumoId, sucursalId);
+    return this.compraInsumosService.getExistenciasInsumos(user, paginationDto);
   }
 
   @Get(':id')

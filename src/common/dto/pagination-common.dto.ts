@@ -29,6 +29,14 @@ export class PaginationDto {
 
   @IsOptional()
   @IsString()
+  producto?: string;
+
+  @IsOptional()
+  @IsString()
+  insumo?: string;
+
+  @IsOptional()
+  @IsString()
   sucursal?: string;
 
   @IsOptional()

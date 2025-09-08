@@ -4,6 +4,8 @@ import { Repository } from 'typeorm';
 import { Lote } from './entities/lote.entity';
 import { CreateLoteDto } from './dto/create-lote.dto';
 import { UpdateLoteDto } from './dto/update-lote.dto';
+import { User } from 'src/auth/entities/auth.entity';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Injectable()
 export class LotesService {
@@ -23,7 +25,14 @@ export class LotesService {
       .where('lote.id_producto IS NOT NULL')
       .andWhere('lote.id_sucursal IS NOT NULL')
       .andWhere('lote.id_compra IS NOT NULL')
-      .select(['lote.id', 'lote.id_compra', 'lote.id_sucursal', 'lote.id_producto', 'lote.cantidad', 'lote.costo'])
+      .select([
+        'lote.id',
+        'lote.id_compra',
+        'lote.id_sucursal',
+        'lote.id_producto',
+        'lote.cantidad',
+        'lote.costo',
+      ])
       .orderBy('lote.id', 'DESC')
       .getMany();
   }
@@ -31,7 +40,14 @@ export class LotesService {
   async findByProducto(id_producto: string) {
     return await this.loteRepo.find({
       where: { id_producto },
-      select: ['id', 'id_compra', 'id_sucursal', 'id_producto', 'cantidad', 'costo'],
+      select: [
+        'id',
+        'id_compra',
+        'id_sucursal',
+        'id_producto',
+        'cantidad',
+        'costo',
+      ],
       order: { id: 'ASC' }, // FIFO - más antiguos primero
     });
   }
@@ -39,7 +55,14 @@ export class LotesService {
   async findBySucursal(id_sucursal: string) {
     return await this.loteRepo.find({
       where: { id_sucursal },
-      select: ['id', 'id_compra', 'id_sucursal', 'id_producto', 'cantidad', 'costo'],
+      select: [
+        'id',
+        'id_compra',
+        'id_sucursal',
+        'id_producto',
+        'cantidad',
+        'costo',
+      ],
       order: { id: 'DESC' },
     });
   }
@@ -47,7 +70,14 @@ export class LotesService {
   async findOne(id: string) {
     const lote = await this.loteRepo.findOne({
       where: { id },
-      select: ['id', 'id_compra', 'id_sucursal', 'id_producto', 'cantidad', 'costo'],
+      select: [
+        'id',
+        'id_compra',
+        'id_sucursal',
+        'id_producto',
+        'cantidad',
+        'costo',
+      ],
     });
 
     if (!lote) {
@@ -68,44 +98,52 @@ export class LotesService {
     return await this.loteRepo.remove(lote);
   }
 
-  // Consultar existencias totales por producto
-  async getExistenciasByProducto(id_producto: string, id_sucursal?: string) {
-    const whereCondition: any = { id_producto };
-    if (id_sucursal) {
-      whereCondition.id_sucursal = id_sucursal;
+  async getExistenciasByProducto(user: User, paginationDto: PaginationDto) {
+    const paisId = user.pais.id;
+    const { sucursal, producto, limit = 10, offset = 0 } = paginationDto;
+
+    const query = this.loteRepo
+      .createQueryBuilder('lote')
+      .leftJoin('lote.producto', 'producto')
+      .leftJoin('lote.sucursal', 'sucursal')
+      .leftJoin('lote.compra', 'compra')
+      .leftJoin('compra.pais', 'pais')
+      .select('producto.id', 'productoId')
+      .addSelect('producto.nombre', 'productoNombre')
+      .addSelect('producto.codigo', 'codigo')
+      .addSelect('producto.codigo_barra', 'codigo_barra')
+      .addSelect('sucursal.id', 'sucursalId')
+      .addSelect('sucursal.nombre', 'sucursalNombre')
+      .addSelect('pais.id', 'paisId')
+      .addSelect('pais.nombre', 'paisNombre')
+      .addSelect('SUM(lote.cantidad)', 'existenciaTotal')
+      .where('pais.id = :paisId', { paisId })
+      .groupBy('producto.id')
+      .addGroupBy('producto.nombre')
+      .addGroupBy('sucursal.id')
+      .addGroupBy('sucursal.nombre')
+      .addGroupBy('pais.id')
+      .addGroupBy('pais.nombre')
+      .limit(limit)
+      .offset(offset);
+
+    if (sucursal) {
+      query.andWhere('sucursal.id = :sucursalId', { sucursalId: sucursal });
     }
 
-    const lotes = await this.loteRepo
-      .createQueryBuilder('lote')
-      .where('lote.id_producto = :id_producto', { id_producto })
-      .andWhere('lote.cantidad > 0')
-      .andWhere('lote.id_producto IS NOT NULL')
-      .andWhere('lote.id_sucursal IS NOT NULL')
-      .andWhere('lote.id_compra IS NOT NULL')
-      .andWhere(id_sucursal ? 'lote.id_sucursal = :id_sucursal' : '1=1', id_sucursal ? { id_sucursal } : {})
-      .select(['lote.id', 'lote.id_compra', 'lote.id_sucursal', 'lote.id_producto', 'lote.cantidad', 'lote.costo'])
-      .orderBy('lote.id', 'ASC')
-      .getMany();
+    if (producto) {
+      query.andWhere('producto.id = :productoId', { productoId: producto });
+    }
 
-    const totalExistencia = lotes.reduce((total, lote) => {
-      return total + Number(lote.cantidad);
-    }, 0);
-
-    return {
-      id_producto: id_producto,
-      id_sucursal: id_sucursal || null,
-      totalExistencia,
-      lotes: lotes.map(lote => ({
-        id: lote.id,
-        id_compra: lote.id_compra,
-        cantidad: lote.cantidad,
-        costo: lote.costo,
-      })),
-    };
+    return await query.getRawMany();
   }
 
   // Reducir inventario usando FIFO (lote más antiguo primero)
-  async reducirInventario(id_producto: string, id_sucursal: string, cantidadSolicitada: number) {
+  async reducirInventario(
+    id_producto: string,
+    id_sucursal: string,
+    cantidadSolicitada: number,
+  ) {
     const lotes = await this.loteRepo.find({
       where: { id_producto, id_sucursal },
       order: { id: 'ASC' }, // FIFO - primero el más antiguo
@@ -119,7 +157,7 @@ export class LotesService {
       if (lote.cantidad <= 0) continue;
 
       const cantidadARebajar = Math.min(cantidadPendiente, lote.cantidad);
-      
+
       lote.cantidad = Number(lote.cantidad) - cantidadARebajar;
       cantidadPendiente -= cantidadARebajar;
 
@@ -133,7 +171,7 @@ export class LotesService {
 
     if (cantidadPendiente > 0) {
       throw new NotFoundException(
-        `No hay suficiente inventario. Faltaron ${cantidadPendiente} unidades.`
+        `No hay suficiente inventario. Faltaron ${cantidadPendiente} unidades.`,
       );
     }
 

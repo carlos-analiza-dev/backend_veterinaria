@@ -21,7 +21,8 @@ export class Lote {
   @Column({ type: 'uuid', nullable: true })
   id_compra?: string;
 
-  @ManyToOne(() => Sucursal)
+  @ManyToOne(() => Sucursal, { nullable: true })
+  @JoinColumn({ name: 'id_sucursal' })
   sucursal: Sucursal;
 
   @Column({ type: 'uuid', nullable: true })
