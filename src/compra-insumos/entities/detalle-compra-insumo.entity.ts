@@ -27,18 +27,18 @@ export class DetalleCompraInsumo {
   @Column({ type: 'decimal', precision: 12, scale: 3 })
   cantidad: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 3, default: 0 })
+  @Column({ type: 'decimal', precision: 12, scale: 3 })
   bonificacion: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 3, nullable: true })
-  cantidad_total: number; // cantidad + bonificacion
+  @Column({ type: 'decimal', precision: 12, scale: 3 })
+  cantidad_total: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 12, scale: 2 })
   descuentos: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  @Column({ type: 'decimal', precision: 12, scale: 2 })
   impuestos: number;
 
-  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
-  monto_total: number; // (cantidad_total * costo_por_unidad) - descuentos + impuestos
+  @Column({ type: 'decimal', precision: 12, scale: 2 })
+  monto_total: number;
 }

@@ -43,6 +43,7 @@ import { ProductosImagesModule } from './productos_images/productos_images.modul
 import { LotesModule } from './lotes/lotes.module';
 import { ComprasModule } from './compras/compras.module';
 import { CompraInsumosModule } from './compra-insumos/compra-insumos.module';
+import { DatosProductosModule } from './datos-productos/datos-productos.module';
 
 @Module({
   imports: [
@@ -120,6 +121,7 @@ import { CompraInsumosModule } from './compra-insumos/compra-insumos.module';
 
     ComprasModule,
     CompraInsumosModule,
+    DatosProductosModule,
 
     InsumosModule,
   ],

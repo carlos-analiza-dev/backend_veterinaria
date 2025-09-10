@@ -38,21 +38,6 @@ export class CompraInsumosService {
     private readonly dataSource: DataSource,
   ) {}
 
-  // Obtener tasa de impuesto por país
-  private async getTaxRateByCountry(paisId: string): Promise<number> {
-    const tax = await this.dataSource
-      .getRepository('taxes')
-      .createQueryBuilder('tax')
-      .where('tax.pais_id = :paisId', { paisId })
-      .getOne();
-
-    if (!tax) {
-      throw new BadRequestException('No existe un impuesto disponible');
-    }
-
-    return parseFloat(tax.porcentaje);
-  }
-
   async create(createCompraInsumoDto: CreateCompraInsumoDto, user: User) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -76,6 +61,7 @@ export class CompraInsumosService {
       });
       if (!pais_exist)
         throw new NotFoundException('El pais seleccionado no existe');
+
       // Validar duplicados de insumos
       const insumosIds = createCompraInsumoDto.detalles.map((d) => d.insumoId);
       const insumosUnicos = new Set(insumosIds);
@@ -95,29 +81,6 @@ export class CompraInsumosService {
         }
       }
 
-      // Obtener tasa de impuesto del país
-      const taxRatePais = await this.getTaxRateByCountry(
-        createCompraInsumoDto.paisId,
-      );
-
-      const detallesCalculados = createCompraInsumoDto.detalles.map(
-        (detalle) => {
-          const cantidadTotal = detalle.cantidad + (detalle.bonificacion || 0);
-          const subtotal = detalle.costo_por_unidad * detalle.cantidad;
-          const impuestos =
-            (subtotal * (detalle.porcentaje_impuesto ?? taxRatePais)) / 100;
-          const descuentos = detalle.descuentos || 0;
-          const montoTotal = subtotal + impuestos - descuentos;
-
-          return {
-            ...detalle,
-            cantidad_total: cantidadTotal,
-            impuestos: impuestos,
-            monto_total: montoTotal,
-          };
-        },
-      );
-
       // Crear la compra
       const compra = this.compraInsumoRepository.create({
         ...createCompraInsumoDto,
@@ -131,23 +94,22 @@ export class CompraInsumosService {
       );
 
       // Crear los detalles y lotes (un lote por cada línea de compra)
-      for (const detalleCalculado of detallesCalculados) {
-        const detalle = this.detalleCompraInsumoRepository.create({
-          ...detalleCalculado,
+      for (const detalle of createCompraInsumoDto.detalles) {
+        const detalleEntity = this.detalleCompraInsumoRepository.create({
+          ...detalle,
           compraId: compraGuardada.id,
         });
-        await queryRunner.manager.save(detalle);
+        await queryRunner.manager.save(detalleEntity);
 
-        // Costo por unidad en lote = monto_total / cantidad_total
-        const costoRealPorUnidad =
-          detalleCalculado.monto_total / detalleCalculado.cantidad_total;
+        const cantidadTotal = detalle.cantidad + (detalle.bonificacion || 0);
 
-        // Crear lote por cada línea de compra con el costo prorrateado correcto
+        const costoRealPorUnidad = detalle.monto_total / cantidadTotal;
+
         const lote = this.invLoteInsumoRepository.create({
-          insumoId: detalleCalculado.insumoId,
-          cantidad: detalleCalculado.cantidad_total,
-          costo: detalleCalculado.monto_total, // Costo total (subtotal + impuestos - descuentos)
-          costo_por_unidad: costoRealPorUnidad, // Este es el costo real que incluye impuestos
+          insumoId: detalle.insumoId,
+          cantidad: cantidadTotal,
+          costo: detalle.monto_total, // Total que viene del frontend
+          costo_por_unidad: costoRealPorUnidad, // Este SÍ lo calculamos
           compraId: compraGuardada.id,
           sucursalId: createCompraInsumoDto.sucursalId,
         });

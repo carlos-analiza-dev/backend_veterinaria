@@ -21,6 +21,7 @@ import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
 import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
 import { ProductosImage } from 'src/productos_images/entities/productos_image.entity';
+import { DatosProducto } from 'src/datos-productos/entities/datos-producto.entity';
 
 export enum UnidadVenta {
   UNIDAD = 'unidad',
@@ -79,6 +80,9 @@ export class SubServicio {
 
   @Column({ default: true })
   disponible: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  es_compra_bodega: boolean;
 
   @CreateDateColumn()
   createdAt: Date;
@@ -148,4 +152,7 @@ export class SubServicio {
     eager: false,
   })
   imagenes: ProductosImage[];
+
+  @OneToMany(() => DatosProducto, datosProducto => datosProducto.sub_servicio)
+  datos_sucursales: DatosProducto[];
 }
