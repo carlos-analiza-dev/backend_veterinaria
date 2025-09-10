@@ -25,22 +25,20 @@ export class CreateDetalleCompraInsumoDto {
 
   @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Transform(({ value }) => (value ? parseFloat(value) : 15))
+  @Transform(({ value }) =>
+    value !== undefined ? parseFloat(value) : undefined,
+  )
   porcentaje_impuesto?: number;
 
-  // Campos calculados automáticamente (no se envían en el request)
-  @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Transform(({ value }) => (value ? parseFloat(value) : 0))
-  impuestos?: number;
+  @Transform(({ value }) => parseFloat(value))
+  impuestos: number;
 
-  @IsOptional()
   @IsNumber({ maxDecimalPlaces: 3 })
-  @Transform(({ value }) => (value ? parseFloat(value) : 0))
-  cantidad_total?: number;
+  @Transform(({ value }) => parseFloat(value))
+  cantidad_total: number;
 
-  @IsOptional()
   @IsNumber({ maxDecimalPlaces: 2 })
-  @Transform(({ value }) => (value ? parseFloat(value) : 0))
-  monto_total?: number;
+  @Transform(({ value }) => parseFloat(value))
+  monto_total: number;
 }

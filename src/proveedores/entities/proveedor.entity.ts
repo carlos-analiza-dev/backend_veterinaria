@@ -43,6 +43,13 @@ export class Proveedor {
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
 
+  @Column({ 
+    type: 'enum', 
+    enum: ['CONTADO', 'CREDITO'], 
+    default: 'CONTADO' 
+  })
+  tipo_pago_default: 'CONTADO' | 'CREDITO';
+
   @CreateDateColumn()
   created_at: Date;
 
@@ -50,20 +57,20 @@ export class Proveedor {
   updated_at: Date;
 
   // Relaciones
-  @ManyToOne(() => Pai, { eager: true, nullable: true })
+  @ManyToOne(() => Pai, { eager: false, nullable: true })
   pais: Pai;
 
-  @ManyToOne(() => DepartamentosPai, { eager: true, nullable: true })
+  @ManyToOne(() => DepartamentosPai, { eager: false, nullable: true })
   departamento: DepartamentosPai;
 
-  @ManyToOne(() => MunicipiosDepartamentosPai, { eager: true, nullable: true })
+  @ManyToOne(() => MunicipiosDepartamentosPai, { eager: false, nullable: true })
   municipio: MunicipiosDepartamentosPai;
 
   // Campos de auditoría
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User, { eager: false })
   created_by: User;
 
-  @ManyToOne(() => User, { eager: true })
+  @ManyToOne(() => User, { eager: false })
   updated_by: User;
 
   @OneToMany(() => SubServicio, (producto) => producto.proveedor)
