@@ -3,7 +3,7 @@ import { Transform } from 'class-transformer';
 
 export class CreateDatosProductoDto {
   @IsUUID('4', { message: 'El ID del producto debe ser un UUID válido' })
-  sub_servicioId: string;
+  productoId: string;
 
   @IsUUID('4', { message: 'El ID de la sucursal debe ser un UUID válido' })
   sucursalId: string;
@@ -14,13 +14,21 @@ export class CreateDatosProductoDto {
   @Transform(({ value }) => parseInt(value))
   punto_reorden?: number;
 
-  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El precio debe ser un número válido con máximo 2 decimales' })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    { message: 'El precio debe ser un número válido con máximo 2 decimales' },
+  )
   @Min(0, { message: 'El precio no puede ser negativo' })
   @Transform(({ value }) => parseFloat(value))
   precio: number;
 
   @IsOptional()
-  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El descuento debe ser un número válido con máximo 2 decimales' })
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    {
+      message: 'El descuento debe ser un número válido con máximo 2 decimales',
+    },
+  )
   @Min(0, { message: 'El descuento no puede ser negativo' })
   @Transform(({ value }) => parseFloat(value))
   descuento?: number;

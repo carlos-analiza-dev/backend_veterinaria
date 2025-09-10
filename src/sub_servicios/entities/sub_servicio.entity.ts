@@ -22,6 +22,8 @@ import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.en
 import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
 import { ProductosImage } from 'src/productos_images/entities/productos_image.entity';
 import { DatosProducto } from 'src/datos-productos/entities/datos-producto.entity';
+import { EscalasProducto } from 'src/escalas_producto/entities/escalas_producto.entity';
+import { DescuentosProducto } from 'src/descuentos_producto/entities/descuentos_producto.entity';
 
 export enum UnidadVenta {
   UNIDAD = 'unidad',
@@ -113,7 +115,6 @@ export class SubServicio {
     (servicioInsumo) => servicioInsumo.servicio,
     {
       cascade: true,
-
       nullable: true,
     },
   )
@@ -153,6 +154,12 @@ export class SubServicio {
   })
   imagenes: ProductosImage[];
 
-  @OneToMany(() => DatosProducto, datosProducto => datosProducto.sub_servicio)
+  @OneToMany(() => DatosProducto, (datosProducto) => datosProducto.producto)
   datos_sucursales: DatosProducto[];
+
+  @OneToMany(() => EscalasProducto, (escala) => escala.producto)
+  escalas: EscalasProducto[];
+
+  @OneToMany(() => DescuentosProducto, (desc) => desc.producto)
+  descuentos: DescuentosProducto[];
 }

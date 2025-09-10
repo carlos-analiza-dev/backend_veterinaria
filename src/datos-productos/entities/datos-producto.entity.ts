@@ -8,28 +8,20 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
-  Unique,
 } from 'typeorm';
 
 @Entity('datos_productos')
-@Unique(['sub_servicioId', 'sucursalId'])
 export class DatosProducto {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => SubServicio, { eager: false })
-  @JoinColumn({ name: 'sub_servicioId' })
-  sub_servicio: SubServicio;
-  
-  @Column('uuid')
-  sub_servicioId: string;
+  @ManyToOne(() => SubServicio)
+  @JoinColumn({ name: 'productoId' })
+  producto: SubServicio;
 
-  @ManyToOne(() => Sucursal, { eager: false })
+  @ManyToOne(() => Sucursal)
   @JoinColumn({ name: 'sucursalId' })
   sucursal: Sucursal;
-  
-  @Column('uuid')
-  sucursalId: string;
 
   @Column({ type: 'int', default: 10 })
   punto_reorden: number;

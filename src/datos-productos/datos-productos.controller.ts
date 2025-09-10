@@ -11,6 +11,7 @@ import {
 import { DatosProductosService } from './datos-productos.service';
 import { CreateDatosProductoDto } from './dto/create-datos-producto.dto';
 import { UpdateDatosProductoDto } from './dto/update-datos-producto.dto';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Controller('datos-productos')
 export class DatosProductosController {
@@ -31,12 +32,15 @@ export class DatosProductosController {
     return this.datosProductosService.checkPuntoReorden(sucursalId);
   }
 
-  @Get('producto-sucursal/:sub_servicioId/:sucursalId')
+  @Get('producto/:productoId')
   getProductoSucursal(
-    @Param('sub_servicioId') sub_servicioId: string,
-    @Param('sucursalId') sucursalId: string,
+    @Query() paginationDto: PaginationDto,
+    @Param('productoId') productoId: string,
   ) {
-    return this.datosProductosService.getProductoSucursal(sub_servicioId, sucursalId);
+    return this.datosProductosService.getProductoSucursal(
+      paginationDto,
+      productoId,
+    );
   }
 
   @Get(':id')
@@ -45,7 +49,10 @@ export class DatosProductosController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateDatosProductoDto: UpdateDatosProductoDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateDatosProductoDto: UpdateDatosProductoDto,
+  ) {
     return this.datosProductosService.update(id, updateDatosProductoDto);
   }
 
