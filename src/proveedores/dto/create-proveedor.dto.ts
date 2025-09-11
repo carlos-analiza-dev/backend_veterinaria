@@ -1,11 +1,16 @@
 import {
+  IsBoolean,
   IsEmail,
+  IsEnum,
+  IsInt,
   IsNotEmpty,
   IsOptional,
+  IsPositive,
   IsString,
   IsUUID,
   Matches,
   MaxLength,
+  Min,
   MinLength,
 } from 'class-validator';
 
@@ -40,7 +45,6 @@ export class CreateProveedorDto {
   @MaxLength(20, { message: 'El teléfono no puede exceder 20 caracteres' })
   telefono: string;
 
-  @IsOptional()
   @IsEmail({}, { message: 'El correo debe ser válido' })
   @MaxLength(100, { message: 'El correo no puede exceder 100 caracteres' })
   correo?: string;
@@ -53,14 +57,30 @@ export class CreateProveedorDto {
   nombre_contacto: string;
 
   @IsOptional()
+  @IsInt({ message: 'El plazo debe ser un número entero' })
+  @IsPositive({ message: 'El plazo debe ser un número positivo' })
+  plazo?: number;
+
+  @IsEnum(['ESCALA', 'DESCUENTO'], {
+    message: 'El tipo de escala debe ser ESCALA o DESCUENTO',
+  })
+  tipo_escala?: 'ESCALA' | 'DESCUENTO';
+
+  @IsOptional()
+  @IsBoolean({ message: 'El estado debe ser un valor booleano' })
+  is_active?: boolean;
+
+  @IsEnum(['CONTADO', 'CREDITO'], {
+    message: 'El tipo de pago debe ser CONTADO o CREDITO',
+  })
+  tipo_pago_default?: 'CONTADO' | 'CREDITO';
+
   @IsUUID('4', { message: 'El ID del país debe ser un UUID válido' })
   paisId?: string;
 
-  @IsOptional()
   @IsUUID('4', { message: 'El ID del departamento debe ser un UUID válido' })
   departamentoId?: string;
 
-  @IsOptional()
   @IsUUID('4', { message: 'El ID del municipio debe ser un UUID válido' })
   municipioId?: string;
 }

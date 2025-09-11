@@ -107,12 +107,12 @@ export class CompraInsumosService {
         const costoRealPorUnidad = detalle.monto_total / cantidadTotal;
 
         const lote = this.invLoteInsumoRepository.create({
-          insumoId: detalle.insumoId,
+          insumo: { id: detalle.insumoId },
           cantidad: cantidadTotal,
-          costo: detalle.monto_total, // Total que viene del frontend
-          costo_por_unidad: costoRealPorUnidad, // Este SÍ lo calculamos
-          compraId: compraGuardada.id,
-          sucursalId: createCompraInsumoDto.sucursalId,
+          costo: detalle.monto_total,
+          costo_por_unidad: costoRealPorUnidad,
+          compra: { id: compraGuardada.id },
+          sucursal: { id: createCompraInsumoDto.sucursalId },
         });
         await queryRunner.manager.save(lote);
       }
@@ -279,48 +279,5 @@ export class CompraInsumosService {
     }
 
     return await query.getRawMany();
-  }
-
-  // Consultar existencias totales de un insumo
-  async getExistenciasInsumo(insumoId: string, sucursalId?: string) {
-    const whereCondition: any = { insumoId: insumoId };
-    if (sucursalId) {
-      whereCondition.sucursalId = sucursalId;
-    }
-
-    const lotes = await this.invLoteInsumoRepository
-      .createQueryBuilder('lote')
-      .where('lote.insumoId = :insumoId', { insumoId })
-      .andWhere('lote.cantidad > 0')
-      .andWhere(
-        sucursalId ? 'lote.sucursalId = :sucursalId' : '1=1',
-        sucursalId ? { sucursalId } : {},
-      )
-      .select([
-        'lote.id',
-        'lote.compraId',
-        'lote.sucursalId',
-        'lote.insumoId',
-        'lote.cantidad',
-        'lote.costo_por_unidad',
-      ])
-      .orderBy('lote.id', 'ASC')
-      .getMany();
-
-    const totalExistencia = lotes.reduce((total, lote) => {
-      return total + Number(lote.cantidad);
-    }, 0);
-
-    return {
-      insumoId: insumoId,
-      sucursalId: sucursalId || null,
-      totalExistencia,
-      lotes: lotes.map((lote) => ({
-        id: lote.id,
-        compraId: lote.compraId,
-        cantidad: lote.cantidad,
-        costo_por_unidad: lote.costo_por_unidad,
-      })),
-    };
   }
 }

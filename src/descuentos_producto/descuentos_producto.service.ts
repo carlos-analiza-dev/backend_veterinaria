@@ -9,6 +9,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DescuentosProducto } from './entities/descuentos_producto.entity';
 import { Repository } from 'typeorm';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
+import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
+import { Pai } from 'src/pais/entities/pai.entity';
 
 @Injectable()
 export class DescuentosProductoService {
@@ -17,11 +19,21 @@ export class DescuentosProductoService {
     private readonly descuentoRepository: Repository<DescuentosProducto>,
     @InjectRepository(SubServicio)
     private readonly productoRepository: Repository<SubServicio>,
+    @InjectRepository(Proveedor)
+    private readonly proveedorRepository: Repository<Proveedor>,
+    @InjectRepository(Pai)
+    private readonly paisRepository: Repository<Pai>,
   ) {}
 
   async create(createDescuentosProductoDto: CreateDescuentosProductoDto) {
-    const { cantidad_comprada, descuentos, productoId } =
-      createDescuentosProductoDto;
+    const {
+      cantidad_comprada,
+      descuentos,
+      productoId,
+      paisId,
+      proveedorId,
+      isActive,
+    } = createDescuentosProductoDto;
     try {
       const producto_existe = await this.productoRepository.findOne({
         where: { id: productoId },
@@ -29,21 +41,25 @@ export class DescuentosProductoService {
       if (!producto_existe)
         throw new NotFoundException('No se encontro el producto seleccionado');
 
-      const descuentoExistente = await this.descuentoRepository.findOne({
-        where: { producto: { id: productoId } },
-        relations: ['producto'],
+      const proveedor_existe = await this.proveedorRepository.findOne({
+        where: { id: proveedorId },
       });
+      if (!proveedor_existe)
+        throw new NotFoundException('No se encontro el proveedor seleccionado');
 
-      if (descuentoExistente) {
-        throw new BadRequestException(
-          'Este producto ya tiene un descuento asignado',
-        );
-      }
+      const pais_existe = await this.paisRepository.findOne({
+        where: { id: paisId },
+      });
+      if (!pais_existe)
+        throw new NotFoundException('No se encontro el pais seleccionado');
 
       const descuento = this.descuentoRepository.create({
         cantidad_comprada,
         descuentos,
+        isActive,
         producto: producto_existe,
+        pais: pais_existe,
+        proveedor: proveedor_existe,
       });
 
       await this.descuentoRepository.save(descuento);
@@ -57,7 +73,7 @@ export class DescuentosProductoService {
   async findAll() {
     try {
       const descuentos = await this.descuentoRepository.find({
-        relations: ['producto'],
+        relations: ['producto', 'proveedor', 'pais'],
         order: { id: 'ASC' },
       });
 
@@ -80,8 +96,8 @@ export class DescuentosProductoService {
         throw new NotFoundException('No se encontro el producto seleccionado');
       const descuentos = await this.descuentoRepository.find({
         where: { producto: { id: productoId } },
-        relations: ['producto'],
-        order: { id: 'ASC' },
+        relations: ['producto', 'proveedor', 'pais'],
+        order: { cantidad_comprada: 'ASC' },
       });
 
       if (descuentos.length === 0) {
@@ -116,7 +132,7 @@ export class DescuentosProductoService {
     updateDescuentosProductoDto: UpdateDescuentosProductoDto,
   ) {
     try {
-      const { cantidad_comprada, descuentos, productoId } =
+      const { cantidad_comprada, descuentos, productoId, isActive } =
         updateDescuentosProductoDto;
 
       const descuentoExistente = await this.descuentoRepository.findOne({
@@ -158,6 +174,10 @@ export class DescuentosProductoService {
 
       if (descuentos !== undefined) {
         descuentoExistente.descuentos = descuentos;
+      }
+
+      if (isActive !== undefined) {
+        descuentoExistente.isActive = isActive;
       }
 
       await this.descuentoRepository.save(descuentoExistente);

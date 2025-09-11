@@ -41,6 +41,11 @@ export class EscalasProductoController {
     );
   }
 
+  @Get('producto-escalas/:productoId')
+  findByProductoEscalas(@Param('productoId') productoId: string) {
+    return this.escalasProductoService.findByProductoEscalas(productoId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.escalasProductoService.findOne(id);

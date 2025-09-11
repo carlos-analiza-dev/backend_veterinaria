@@ -36,12 +36,6 @@ export class ComprasController {
     return this.comprasService.findAll(user, paginationDto);
   }
 
-  @Get('inventario')
-  @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  getInventario(@Query() inventarioQuery: InventarioQueryDto) {
-    return this.comprasService.getInventario(inventarioQuery);
-  }
-
   @Get('existencias/:productoId')
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
   getExistenciasProducto(

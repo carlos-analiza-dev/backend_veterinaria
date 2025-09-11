@@ -43,6 +43,9 @@ export class ProveedoresService {
       paisId,
       departamentoId,
       municipioId,
+      plazo,
+      tipo_escala,
+      tipo_pago_default,
     } = createProveedorDto;
 
     try {
@@ -111,6 +114,9 @@ export class ProveedoresService {
         pais,
         departamento,
         municipio,
+        plazo,
+        tipo_escala,
+        tipo_pago_default,
         created_by: user,
         updated_by: user,
       });
@@ -207,7 +213,7 @@ export class ProveedoresService {
     try {
       const proveedores = await this.proveedorRepo.find({
         where: { is_active: true, pais: pais },
-        select: ['id', 'nombre_legal', 'nit_rtn'],
+
         order: { nombre_legal: 'ASC' },
       });
 
@@ -257,6 +263,9 @@ export class ProveedoresService {
       departamentoId,
       municipioId,
       is_active,
+      plazo,
+      tipo_escala,
+      tipo_pago_default,
     } = updateProveedorDto;
 
     try {
@@ -347,6 +356,10 @@ export class ProveedoresService {
       if (correo !== undefined) proveedor.correo = correo;
       if (nombre_contacto !== undefined)
         proveedor.nombre_contacto = nombre_contacto;
+      if (plazo !== undefined) proveedor.plazo = plazo;
+      if (tipo_escala !== undefined) proveedor.tipo_escala = tipo_escala;
+      if (tipo_pago_default !== undefined)
+        proveedor.tipo_pago_default = tipo_pago_default;
       if (is_active !== undefined) proveedor.is_active = is_active;
 
       // Actualizar el usuario que modifica

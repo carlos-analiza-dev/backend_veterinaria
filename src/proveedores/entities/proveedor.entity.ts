@@ -1,5 +1,7 @@
 import { User } from 'src/auth/entities/auth.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
+import { DescuentosProducto } from 'src/descuentos_producto/entities/descuentos_producto.entity';
+import { EscalasProducto } from 'src/escalas_producto/entities/escalas_producto.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
@@ -40,13 +42,23 @@ export class Proveedor {
   @Column({ type: 'varchar', length: 150 })
   nombre_contacto: string;
 
+  @Column({ type: 'int', nullable: true })
+  plazo?: number;
+
+  @Column({
+    type: 'enum',
+    enum: ['ESCALA', 'DESCUENTO'],
+    default: 'ESCALA',
+  })
+  tipo_escala: 'ESCALA' | 'DESCUENTO';
+
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
 
-  @Column({ 
-    type: 'enum', 
-    enum: ['CONTADO', 'CREDITO'], 
-    default: 'CONTADO' 
+  @Column({
+    type: 'enum',
+    enum: ['CONTADO', 'CREDITO'],
+    default: 'CONTADO',
   })
   tipo_pago_default: 'CONTADO' | 'CREDITO';
 
@@ -57,13 +69,13 @@ export class Proveedor {
   updated_at: Date;
 
   // Relaciones
-  @ManyToOne(() => Pai, { eager: false, nullable: true })
+  @ManyToOne(() => Pai, { eager: false })
   pais: Pai;
 
-  @ManyToOne(() => DepartamentosPai, { eager: false, nullable: true })
+  @ManyToOne(() => DepartamentosPai, { eager: false })
   departamento: DepartamentosPai;
 
-  @ManyToOne(() => MunicipiosDepartamentosPai, { eager: false, nullable: true })
+  @ManyToOne(() => MunicipiosDepartamentosPai, { eager: false })
   municipio: MunicipiosDepartamentosPai;
 
   // Campos de auditoría
@@ -78,4 +90,10 @@ export class Proveedor {
 
   @OneToMany(() => Insumo, (insumo) => insumo.proveedor)
   insumos: Insumo[];
+
+  @OneToMany(() => EscalasProducto, (escala) => escala.proveedor)
+  escalas: EscalasProducto[];
+
+  @OneToMany(() => DescuentosProducto, (descuento) => descuento.proveedor)
+  descuentos: DescuentosProducto[];
 }

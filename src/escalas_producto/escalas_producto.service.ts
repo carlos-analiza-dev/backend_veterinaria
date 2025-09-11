@@ -6,6 +6,8 @@ import { EscalasProducto } from './entities/escalas_producto.entity';
 import { Repository } from 'typeorm';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
+import { Pai } from 'src/pais/entities/pai.entity';
 
 @Injectable()
 export class EscalasProductoService {
@@ -14,11 +16,22 @@ export class EscalasProductoService {
     private readonly escalasRepo: Repository<EscalasProducto>,
     @InjectRepository(SubServicio)
     private readonly productoRepo: Repository<SubServicio>,
+    @InjectRepository(Proveedor)
+    private readonly proveedorRepository: Repository<Proveedor>,
+    @InjectRepository(Pai)
+    private readonly paisRepository: Repository<Pai>,
   ) {}
 
   async create(createEscalasProductoDto: CreateEscalasProductoDto) {
-    const { cantidad_comprada, costo, bonificacion, productoId } =
-      createEscalasProductoDto;
+    const {
+      cantidad_comprada,
+      costo,
+      bonificacion,
+      productoId,
+      proveedorId,
+      paisId,
+      isActive,
+    } = createEscalasProductoDto;
     try {
       const producto_existe = await this.productoRepo.findOne({
         where: { id: productoId },
@@ -26,11 +39,26 @@ export class EscalasProductoService {
       if (!producto_existe)
         throw new NotFoundException('No se encontro el producto seleccionado');
 
+      const proveedor_existe = await this.proveedorRepository.findOne({
+        where: { id: proveedorId },
+      });
+      if (!proveedor_existe)
+        throw new NotFoundException('No se encontro el proveedor seleccionado');
+
+      const pais_existe = await this.paisRepository.findOne({
+        where: { id: paisId },
+      });
+      if (!pais_existe)
+        throw new NotFoundException('No se encontro el pais seleccionado');
+
       const escala = this.escalasRepo.create({
         cantidad_comprada,
         bonificacion,
         costo,
+        isActive,
         producto: producto_existe,
+        pais: pais_existe,
+        proveedor: proveedor_existe,
       });
       await this.escalasRepo.save(escala);
       return 'Escala del producto creada exitosamente';
@@ -74,7 +102,7 @@ export class EscalasProductoService {
     try {
       const [escalas, total] = await this.escalasRepo.findAndCount({
         where: { producto: { id: productoId } },
-        relations: ['producto'],
+        relations: ['producto', 'proveedor', 'pais'],
         order: { cantidad_comprada: 'ASC' },
         take: limit,
         skip: offset,
@@ -90,6 +118,26 @@ export class EscalasProductoService {
         data: escalas,
         total,
       };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findByProductoEscalas(productoId: string) {
+    try {
+      const escalas = await this.escalasRepo.find({
+        where: { producto: { id: productoId } },
+        relations: ['producto', 'proveedor', 'pais'],
+        order: { cantidad_comprada: 'ASC' },
+      });
+
+      if (!escalas || escalas.length === 0) {
+        throw new NotFoundException(
+          `No se encontraron escalas para el producto con ID ${productoId}`,
+        );
+      }
+
+      return escalas;
     } catch (error) {
       throw error;
     }

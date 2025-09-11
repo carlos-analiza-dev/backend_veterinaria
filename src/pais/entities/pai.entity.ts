@@ -1,5 +1,7 @@
 import { User } from 'src/auth/entities/auth.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
+import { DescuentosProducto } from 'src/descuentos_producto/entities/descuentos_producto.entity';
+import { EscalasProducto } from 'src/escalas_producto/entities/escalas_producto.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
 import { Servicio } from 'src/servicios/entities/servicio.entity';
@@ -52,6 +54,12 @@ export class Pai {
 
   @OneToMany(() => Servicio, (servicio) => servicio.pais)
   servicios: Servicio[];
+
+  @OneToMany(() => EscalasProducto, (escala) => escala.pais)
+  escalasProductos: EscalasProducto[];
+
+  @OneToMany(() => DescuentosProducto, (descuento) => descuento.pais)
+  descuentosProductos: DescuentosProducto[];
 
   @Column({ type: 'bool', default: true })
   isActive: boolean;
