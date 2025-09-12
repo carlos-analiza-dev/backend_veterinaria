@@ -110,6 +110,43 @@ export class DescuentosProductoService {
     }
   }
 
+  async findByProveedorAndProducto(proveedorId: string, productoId: string) {
+    try {
+      const [proveedor, producto] = await Promise.all([
+        this.proveedorRepository.findOne({ where: { id: proveedorId } }),
+        this.productoRepository.findOne({ where: { id: productoId } }),
+      ]);
+
+      if (!proveedor) {
+        throw new NotFoundException('No se encontró el proveedor seleccionado');
+      }
+
+      if (!producto) {
+        throw new NotFoundException('No se encontró el producto seleccionado');
+      }
+
+      const descuentos = await this.descuentoRepository.find({
+        where: {
+          proveedor: { id: proveedorId },
+          producto: { id: productoId },
+          isActive: true,
+        },
+        relations: ['producto', 'proveedor', 'pais'],
+        order: { cantidad_comprada: 'ASC' },
+      });
+
+      if (descuentos.length === 0) {
+        throw new NotFoundException(
+          'No se encontraron descuentos para esta combinación de proveedor y producto',
+        );
+      }
+
+      return descuentos;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findOne(id: string) {
     try {
       const descuento = await this.descuentoRepository.findOne({

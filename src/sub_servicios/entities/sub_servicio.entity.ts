@@ -24,6 +24,7 @@ import { ProductosImage } from 'src/productos_images/entities/productos_image.en
 import { DatosProducto } from 'src/datos-productos/entities/datos-producto.entity';
 import { EscalasProducto } from 'src/escalas_producto/entities/escalas_producto.entity';
 import { DescuentosProducto } from 'src/descuentos_producto/entities/descuentos_producto.entity';
+import { DescuentosInsumo } from 'src/descuentos_insumos/entities/descuentos_insumo.entity';
 
 export enum UnidadVenta {
   UNIDAD = 'unidad',
@@ -162,4 +163,7 @@ export class SubServicio {
 
   @OneToMany(() => DescuentosProducto, (desc) => desc.producto)
   descuentos: DescuentosProducto[];
+
+  @OneToMany(() => DescuentosInsumo, (desc) => desc.insumo)
+  descuentos_insumo: DescuentosInsumo[];
 }

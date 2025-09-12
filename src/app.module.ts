@@ -46,6 +46,8 @@ import { CompraInsumosModule } from './compra-insumos/compra-insumos.module';
 import { DatosProductosModule } from './datos-productos/datos-productos.module';
 import { EscalasProductoModule } from './escalas_producto/escalas_producto.module';
 import { DescuentosProductoModule } from './descuentos_producto/descuentos_producto.module';
+import { DescuentosInsumosModule } from './descuentos_insumos/descuentos_insumos.module';
+import { EscalasInsumosModule } from './escalas_insumos/escalas_insumos.module';
 
 @Module({
   imports: [
@@ -130,6 +132,10 @@ import { DescuentosProductoModule } from './descuentos_producto/descuentos_produ
     EscalasProductoModule,
 
     DescuentosProductoModule,
+
+    DescuentosInsumosModule,
+
+    EscalasInsumosModule,
   ],
   controllers: [],
   providers: [],

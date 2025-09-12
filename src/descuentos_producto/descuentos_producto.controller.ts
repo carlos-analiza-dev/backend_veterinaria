@@ -32,6 +32,17 @@ export class DescuentosProductoController {
     return this.descuentosProductoService.findDescuentoProducto(productoId);
   }
 
+  @Get('proveedor/:proveedorId/producto/:productoId')
+  findByProveedorAndProducto(
+    @Param('proveedorId') proveedorId: string,
+    @Param('productoId') productoId: string,
+  ) {
+    return this.descuentosProductoService.findByProveedorAndProducto(
+      proveedorId,
+      productoId,
+    );
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.descuentosProductoService.findOne(id);

@@ -123,6 +123,43 @@ export class EscalasProductoService {
     }
   }
 
+  async findByProveedorAndProducto(proveedorId: string, productoId: string) {
+    try {
+      const [proveedor, producto] = await Promise.all([
+        this.proveedorRepository.findOne({ where: { id: proveedorId } }),
+        this.productoRepo.findOne({ where: { id: productoId } }),
+      ]);
+
+      if (!proveedor) {
+        throw new NotFoundException('No se encontró el proveedor seleccionado');
+      }
+
+      if (!producto) {
+        throw new NotFoundException('No se encontró el producto seleccionado');
+      }
+
+      const escalas = await this.escalasRepo.find({
+        where: {
+          proveedor: { id: proveedorId },
+          producto: { id: productoId },
+          isActive: true,
+        },
+        relations: ['producto', 'proveedor', 'pais'],
+        order: { cantidad_comprada: 'ASC' },
+      });
+
+      if (escalas.length === 0) {
+        throw new NotFoundException(
+          'No se encontraron escalas para esta combinación de proveedor y producto',
+        );
+      }
+
+      return escalas;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findByProductoEscalas(productoId: string) {
     try {
       const escalas = await this.escalasRepo.find({

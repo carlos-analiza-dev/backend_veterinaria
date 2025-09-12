@@ -1,5 +1,6 @@
 import { User } from 'src/auth/entities/auth.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
+import { DescuentosInsumo } from 'src/descuentos_insumos/entities/descuentos_insumo.entity';
 import { DescuentosProducto } from 'src/descuentos_producto/entities/descuentos_producto.entity';
 import { EscalasProducto } from 'src/escalas_producto/entities/escalas_producto.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
@@ -96,4 +97,7 @@ export class Proveedor {
 
   @OneToMany(() => DescuentosProducto, (descuento) => descuento.proveedor)
   descuentos: DescuentosProducto[];
+
+  @OneToMany(() => DescuentosInsumo, (descuento) => descuento.proveedor)
+  descuentos_insumo: DescuentosInsumo[];
 }
