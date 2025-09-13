@@ -186,7 +186,7 @@ export class EscalasInsumosService {
 
       const escalaActualizada = await this.escalasRepo.findOne({
         where: { id },
-        relations: ['inaumo'],
+        relations: ['insumo'],
       });
 
       return {
