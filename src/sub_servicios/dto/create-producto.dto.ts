@@ -95,4 +95,29 @@ export class CreateProductoDto {
   @IsUUID('4', { message: 'El paisId debe ser un UUID válido.' })
   @IsNotEmpty({ message: 'El país es obligatorio para productos.' })
   paisId?: string;
+
+  @IsOptional()
+  @IsBoolean({
+    message:
+      'El campo es_compra_bodega debe ser un valor booleano (true o false).',
+  })
+  es_compra_bodega?: boolean;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'La compra mínima debe ser un número válido.' })
+  @Min(1, { message: 'La compra mínima debe ser al menos 1.' })
+  compra_minima?: number;
+
+  @IsOptional()
+  @IsNumber(
+    {},
+    { message: 'La distribución mínima debe ser un número válido.' },
+  )
+  @Min(1, { message: 'La distribución mínima debe ser al menos 1.' })
+  distribucion_minima?: number;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'La venta mínima debe ser un número válido.' })
+  @Min(1, { message: 'La venta mínima debe ser al menos 1.' })
+  venta_minima?: number;
 }

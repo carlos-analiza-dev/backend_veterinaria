@@ -32,8 +32,9 @@ export class ServiciosController {
   }
 
   @Get('/activos')
-  findAllActivos() {
-    return this.serviciosService.findAllActivos();
+  @Auth()
+  findAllActivos(@GetUser() user: User) {
+    return this.serviciosService.findAllActivos(user);
   }
 
   @Get(':id')

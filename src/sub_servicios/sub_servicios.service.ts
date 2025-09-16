@@ -24,6 +24,7 @@ import { UpdateServicioDto } from './dto/update-servicio.dto';
 import { User } from 'src/auth/entities/auth.entity';
 import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
+import { UpdateProductoDto } from './dto/update-producto.dto';
 
 @Injectable()
 export class SubServiciosService {
@@ -142,6 +143,10 @@ export class SubServiciosService {
       paisId,
       codigo,
       taxId,
+      compra_minima,
+      distribucion_minima,
+      es_compra_bodega,
+      venta_minima,
     } = dto;
 
     try {
@@ -217,6 +222,10 @@ export class SubServiciosService {
         codigo_barra,
         atributos,
         tax: taxeExistente,
+        compra_minima,
+        es_compra_bodega,
+        distribucion_minima,
+        venta_minima,
       });
 
       const savedProducto = await this.sub_servicio_repo.save(producto);
@@ -583,7 +592,7 @@ export class SubServiciosService {
     }
   }
 
-  async updateProducto(id: string, updateProductoDto: UpdateSubServicioDto) {
+  async updateProducto(id: string, updateProductoDto: UpdateProductoDto) {
     const {
       nombre,
       isActive,
@@ -599,6 +608,10 @@ export class SubServiciosService {
       proveedorId,
       taxId,
       codigo,
+      compra_minima,
+      distribucion_minima,
+      es_compra_bodega,
+      venta_minima,
     } = updateProductoDto;
 
     try {
@@ -635,6 +648,12 @@ export class SubServiciosService {
       if (codigo !== undefined) producto.codigo = codigo;
       if (codigo_barra !== undefined) producto.codigo_barra = codigo_barra;
       if (atributos !== undefined) producto.atributos = atributos;
+      if (compra_minima !== undefined) producto.compra_minima = compra_minima;
+      if (distribucion_minima !== undefined)
+        producto.distribucion_minima = distribucion_minima;
+      if (es_compra_bodega !== undefined)
+        producto.es_compra_bodega = es_compra_bodega;
+      if (venta_minima !== undefined) producto.venta_minima = venta_minima;
 
       if (marcaId) {
         const marca = await this.marcaRepo.findOne({

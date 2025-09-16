@@ -1,3 +1,4 @@
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
@@ -32,4 +33,7 @@ export class MunicipiosDepartamentosPai {
 
   @OneToMany(() => User, (usuario) => usuario.municipio)
   usuarios: User[];
+
+  @OneToMany(() => Cliente, (cliente) => cliente.municipio)
+  clientes: Cliente[];
 }

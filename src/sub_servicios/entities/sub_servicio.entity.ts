@@ -87,6 +87,15 @@ export class SubServicio {
   @Column({ type: 'boolean', default: false })
   es_compra_bodega: boolean;
 
+  @Column({ type: 'int', default: 1, name: 'compra_minima' })
+  compra_minima: number;
+
+  @Column({ type: 'int', default: 1, name: 'distribucion_minima' })
+  distribucion_minima: number;
+
+  @Column({ type: 'int', default: 1, name: 'venta_minima' })
+  venta_minima: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

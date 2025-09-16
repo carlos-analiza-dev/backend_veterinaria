@@ -1,3 +1,4 @@
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
 import { DescuentosInsumo } from 'src/descuentos_insumos/entities/descuentos_insumo.entity';
@@ -35,6 +36,9 @@ export class Pai {
 
   @OneToMany(() => User, (usuario) => usuario.pais)
   usuario: User[];
+
+  @OneToMany(() => Cliente, (cliente) => cliente.pais)
+  cliente: Cliente[];
 
   @OneToMany(() => ServiciosPai, (precio) => precio.pais)
   preciosServicios: ServiciosPai[];
