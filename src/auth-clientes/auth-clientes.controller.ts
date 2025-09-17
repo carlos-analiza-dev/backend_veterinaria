@@ -6,6 +6,7 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
 } from '@nestjs/common';
 import { AuthClientesService } from './auth-clientes.service';
 import { CreateAuthClienteDto } from './dto/create-auth-cliente.dto';
@@ -13,20 +14,41 @@ import { UpdateAuthClienteDto } from './dto/update-auth-cliente.dto';
 import { AuthCliente } from './decorators/auth-cliente.decorator';
 import { GetCliente } from './decorators/get-cliente.decorator';
 import { Cliente } from './entities/auth-cliente.entity';
+import { LoginClienteDto } from './dto/login-cliente.dto';
+import { UpdatePasswordDto } from './dto/update-password-cliente.dto';
+import { Auth } from 'src/auth/decorators/auth.decorator';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { User } from 'src/auth/entities/auth.entity';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Controller('auth-clientes')
 export class AuthClientesController {
   constructor(private readonly authClientesService: AuthClientesService) {}
 
-  @Post()
-  create(@Body() createAuthClienteDto: CreateAuthClienteDto) {
-    return this.authClientesService.create(createAuthClienteDto);
+  @Post('register')
+  createUser(@Body() createClienteDto: CreateAuthClienteDto) {
+    return this.authClientesService.create(createClienteDto);
   }
 
-  @Get()
+  @Post('login')
+  loginUser(@Body() loginClienteDto: LoginClienteDto) {
+    return this.authClientesService.login(loginClienteDto);
+  }
+
+  @Post('change-password')
+  actualizarContrasena(@Body() updatePassword: UpdatePasswordDto) {
+    return this.authClientesService.actualizarContrasena(updatePassword);
+  }
+
   @AuthCliente()
-  findAll(@GetCliente() cliente: Cliente) {
-    return this.authClientesService.findAll();
+  checkAuthStatus(@GetCliente() cliente: Cliente) {
+    return this.authClientesService.checkAuthStatus(cliente);
+  }
+
+  @Get('clientes')
+  @Auth()
+  getUsers(@Query() paginationDto: PaginationDto) {
+    return this.authClientesService.getClientes(paginationDto);
   }
 
   @Get(':id')

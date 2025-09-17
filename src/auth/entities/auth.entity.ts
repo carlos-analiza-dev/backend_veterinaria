@@ -71,9 +71,6 @@ export class User {
   )
   municipio: MunicipiosDepartamentosPai;
 
-  @OneToMany(() => FincasGanadero, (fincas) => fincas.propietario)
-  fincas: FincasGanadero[];
-
   @OneToMany(() => AnimalFinca, (animal) => animal.propietario)
   animales: AnimalFinca[];
 

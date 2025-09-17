@@ -57,6 +57,22 @@ export class AuthService {
       sexo,
     } = createUserDto;
 
+    const correo_existe = await this.userRepository.findOne({
+      where: { email },
+    });
+    if (correo_existe)
+      throw new NotFoundException(
+        'Ya existe un usuario registrado con este correo electronico',
+      );
+
+    const identificacion_existe = await this.userRepository.findOne({
+      where: { identificacion },
+    });
+    if (identificacion_existe)
+      throw new NotFoundException(
+        'Ya existe un usuario registrado con esta identificacion',
+      );
+
     const pais_existe = await this.paisRepo.findOne({ where: { id: paisId } });
     if (!pais_existe) {
       throw new BadRequestException('No se encontró el país seleccionado.');

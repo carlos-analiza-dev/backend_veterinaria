@@ -53,6 +53,10 @@ export class CreateAuthClienteDto {
   direccion?: string;
 
   @IsString()
+  @IsNotEmpty({ message: 'El sexo es obligatorio' })
+  sexo: string;
+
+  @IsString()
   @IsNotEmpty({ message: 'El país es obligatorio' })
   pais: string;
 

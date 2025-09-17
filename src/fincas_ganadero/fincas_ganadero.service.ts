@@ -10,14 +10,15 @@ import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Injectable()
 export class FincasGanaderoService {
   constructor(
     @InjectRepository(FincasGanadero)
     private readonly fincasRepo: Repository<FincasGanadero>,
-    @InjectRepository(User)
-    private readonly userRepo: Repository<User>,
+    @InjectRepository(Cliente)
+    private readonly clienteRepo: Repository<Cliente>,
     @InjectRepository(Pai)
     private readonly paisRepo: Repository<Pai>,
     @InjectRepository(DepartamentosPai)
@@ -30,8 +31,8 @@ export class FincasGanaderoService {
       nombre_finca,
       cantidad_animales,
       abreviatura,
-      area_ganaderia_hectarea,
-      tamaño_total_hectarea,
+      area_ganaderia,
+      tamaño_total,
       tipo_explotacion,
       ubicacion,
       especies_maneja,
@@ -45,7 +46,9 @@ export class FincasGanaderoService {
     } = createFincasGanaderoDto;
 
     try {
-      const propietario = await this.userRepo.findOneBy({ id: propietario_id });
+      const propietario = await this.clienteRepo.findOneBy({
+        id: propietario_id,
+      });
       if (!propietario) {
         throw new NotFoundException('El propietario no existe');
       }
@@ -71,8 +74,8 @@ export class FincasGanaderoService {
         nombre_finca,
         cantidad_animales,
         abreviatura,
-        area_ganaderia_hectarea,
-        tamaño_total_hectarea,
+        area_ganaderia,
+        tamaño_total,
         tipo_explotacion,
         especies_maneja,
         ubicacion,
@@ -87,6 +90,8 @@ export class FincasGanaderoService {
 
       await this.fincasRepo.save(finca);
 
+      delete finca.propietario.password;
+
       return {
         message: 'Finca creada exitosamente',
         data: finca,
@@ -99,7 +104,9 @@ export class FincasGanaderoService {
   async findAll(propietarioId: string, paginationDto: PaginationDto) {
     const { limit = 10, offset = 0, name } = paginationDto;
     try {
-      const propietario = await this.userRepo.findOneBy({ id: propietarioId });
+      const propietario = await this.clienteRepo.findOneBy({
+        id: propietarioId,
+      });
       if (!propietario) {
         throw new NotFoundException('El propietario no existe');
       }
@@ -148,8 +155,8 @@ export class FincasGanaderoService {
       nombre_finca,
       cantidad_animales,
       abreviatura,
-      area_ganaderia_hectarea,
-      tamaño_total_hectarea,
+      area_ganaderia,
+      tamaño_total,
       tipo_explotacion,
       ubicacion,
       especies_maneja,
@@ -173,7 +180,7 @@ export class FincasGanaderoService {
       }
 
       if (propietario_id) {
-        const propietario = await this.userRepo.findOneBy({
+        const propietario = await this.clienteRepo.findOneBy({
           id: propietario_id,
         });
         if (!propietario) {
@@ -213,10 +220,8 @@ export class FincasGanaderoService {
       finca.nombre_finca = nombre_finca ?? finca.nombre_finca;
       finca.cantidad_animales = cantidad_animales ?? finca.cantidad_animales;
       finca.abreviatura = abreviatura ?? finca.abreviatura;
-      finca.area_ganaderia_hectarea =
-        area_ganaderia_hectarea ?? finca.area_ganaderia_hectarea;
-      finca.tamaño_total_hectarea =
-        tamaño_total_hectarea ?? finca.tamaño_total_hectarea;
+      finca.area_ganaderia = area_ganaderia ?? finca.area_ganaderia;
+      finca.tamaño_total = tamaño_total ?? finca.tamaño_total;
       finca.tipo_explotacion = tipo_explotacion ?? finca.tipo_explotacion;
       finca.ubicacion = ubicacion ?? finca.ubicacion;
       finca.especies_maneja = especies_maneja ?? finca.especies_maneja;

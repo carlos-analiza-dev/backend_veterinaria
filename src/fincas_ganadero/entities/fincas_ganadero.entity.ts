@@ -1,4 +1,5 @@
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
@@ -45,10 +46,10 @@ export class FincasGanadero {
   municipio: MunicipiosDepartamentosPai;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  tamaño_total_hectarea: string;
+  tamaño_total: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  area_ganaderia_hectarea: string;
+  area_ganaderia: string;
 
   @Column({ type: 'varchar', length: 255, default: 'ha' })
   medida_finca: string;
@@ -65,8 +66,8 @@ export class FincasGanadero {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
-  @ManyToOne(() => User, (usuario) => usuario.fincas)
-  propietario: User;
+  @ManyToOne(() => Cliente, (cliente) => cliente.fincas)
+  propietario: Cliente;
 
   @ManyToOne(() => Pai, (pais) => pais.fincas)
   pais_id: Pai;
