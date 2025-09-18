@@ -12,6 +12,7 @@ import {
 import { ImagesAminalesService } from './images_aminales.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Auth } from 'src/auth/decorators/auth.decorator';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
 
 @Controller('images-aminales')
 export class ImagesAminalesController {
@@ -19,7 +20,7 @@ export class ImagesAminalesController {
 
   @Post('upload/:animalId')
   @UseInterceptors(FileInterceptor('file'))
-  @Auth()
+  @AuthCliente()
   async uploadProfileImage(
     @Param('animalId', ParseUUIDPipe) animalId: string,
     @UploadedFile() file: Express.Multer.File,

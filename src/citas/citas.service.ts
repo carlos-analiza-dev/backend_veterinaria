@@ -414,7 +414,7 @@ export class CitasService {
             razas: animal.razas?.map((raza) => raza.nombre) || [],
             propietario: animal.propietario
               ? {
-                  name: animal.propietario.name || 'No especificado',
+                  name: animal.propietario.nombre || 'No especificado',
                   telefono: animal.propietario.telefono || 'No especificado',
                 }
               : null,
@@ -508,7 +508,7 @@ export class CitasService {
             razas: animal.razas?.map((raza) => raza.nombre) || [],
             propietario: animal.propietario
               ? {
-                  name: animal.propietario.name || 'No especificado',
+                  name: animal.propietario.nombre || 'No especificado',
                   telefono: animal.propietario.telefono || 'No especificado',
                 }
               : null,
@@ -605,7 +605,7 @@ export class CitasService {
             razas: animal.razas?.map((raza) => raza.nombre) || [],
             propietario: animal.propietario
               ? {
-                  name: animal.propietario.name || 'No especificado',
+                  name: animal.propietario.nombre || 'No especificado',
                   telefono: animal.propietario.telefono || 'No especificado',
                 }
               : null,

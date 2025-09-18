@@ -71,8 +71,6 @@ export class User {
   )
   municipio: MunicipiosDepartamentosPai;
 
-  @OneToMany(() => AnimalFinca, (animal) => animal.propietario)
-  animales: AnimalFinca[];
 
   @OneToMany(() => ProfileImage, (profileImage) => profileImage.user, {
     eager: true,

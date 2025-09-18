@@ -204,7 +204,9 @@ export class AuthClientesService {
     try {
       const queryBuilder = this.clienteRepository
         .createQueryBuilder('cliente')
-        .leftJoinAndSelect('cliente.pais', 'pais');
+        .leftJoinAndSelect('cliente.pais', 'pais')
+        .leftJoinAndSelect('cliente.departamento', 'departamento')
+        .leftJoinAndSelect('cliente.municipio', 'municipio');
 
       if (name) {
         queryBuilder.andWhere('cliente.nombre ILIKE :nombre', {
@@ -235,12 +237,129 @@ export class AuthClientesService {
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} authCliente`;
+  async findOne(id: string) {
+    const cliente = await this.clienteRepository.findOne({ where: { id } });
+    if (!cliente)
+      throw new NotFoundException('No se encontro el cliente seleccionado');
+    return cliente;
   }
 
-  update(id: number, updateAuthClienteDto: UpdateAuthClienteDto) {
-    return `This action updates a #${id} authCliente`;
+  async update(id: string, updateAuthClienteDto: UpdateAuthClienteDto) {
+    const {
+      email,
+      nombre,
+      direccion,
+      identificacion,
+      telefono,
+      pais: paisId,
+      departamento: departamentoId,
+      municipio: municipioId,
+      sexo,
+      isActive,
+    } = updateAuthClienteDto;
+
+    const cliente = await this.clienteRepository.findOne({
+      where: { id },
+      relations: ['pais', 'departamento', 'municipio'],
+    });
+
+    if (!cliente) {
+      throw new NotFoundException(`Cliente con ID ${id} no encontrado`);
+    }
+
+    if (email && email !== cliente.email) {
+      const emailExists = await this.clienteRepository.findOne({
+        where: { email },
+      });
+      if (emailExists && emailExists.id !== id) {
+        throw new BadRequestException(
+          'El email ya está registrado por otro cliente',
+        );
+      }
+
+      const emailExistsUser = await this.userRepository.findOne({
+        where: { email },
+      });
+      if (emailExistsUser) {
+        throw new BadRequestException(
+          'El email ya está registrado por un usuario',
+        );
+      }
+    }
+
+    if (identificacion && identificacion !== cliente.identificacion) {
+      const identificacionExists = await this.clienteRepository.findOne({
+        where: { identificacion },
+      });
+      if (identificacionExists && identificacionExists.id !== id) {
+        throw new BadRequestException(
+          'La identificación ya está registrada por otro cliente',
+        );
+      }
+
+      const identificacionExistsUser = await this.userRepository.findOne({
+        where: { identificacion },
+      });
+      if (identificacionExistsUser) {
+        throw new BadRequestException(
+          'La identificación ya está registrada por un usuario',
+        );
+      }
+    }
+
+    let pais_existe = cliente.pais;
+    if (paisId && paisId !== cliente.pais?.id) {
+      pais_existe = await this.paisRepo.findOne({ where: { id: paisId } });
+      if (!pais_existe) {
+        throw new BadRequestException('No se encontró el país seleccionado.');
+      }
+    }
+
+    let departamento_existe = cliente.departamento;
+    if (departamentoId && departamentoId !== cliente.departamento?.id) {
+      departamento_existe = await this.departamentoRepo.findOne({
+        where: { id: departamentoId },
+      });
+      if (!departamento_existe) {
+        throw new BadRequestException(
+          'No se encontró el departamento seleccionado.',
+        );
+      }
+    }
+
+    let municipio_existe = cliente.municipio;
+    if (municipioId && municipioId !== cliente.municipio?.id) {
+      municipio_existe = await this.municipioRepo.findOne({
+        where: { id: municipioId },
+      });
+      if (!municipio_existe) {
+        throw new BadRequestException(
+          'No se encontró el municipio seleccionado.',
+        );
+      }
+    }
+
+    try {
+      if (email) cliente.email = email;
+      if (nombre) cliente.nombre = nombre;
+      if (direccion) cliente.direccion = direccion;
+      if (identificacion) cliente.identificacion = identificacion;
+      if (telefono) cliente.telefono = telefono;
+      if (sexo) cliente.sexo = sexo;
+      if (isActive !== undefined) cliente.isActive = isActive;
+
+      if (pais_existe) cliente.pais = pais_existe;
+      if (departamento_existe) cliente.departamento = departamento_existe;
+      if (municipio_existe) cliente.municipio = municipio_existe;
+
+      await this.clienteRepository.save(cliente);
+
+      const { password, ...result } = cliente;
+
+      return result;
+    } catch (error) {
+      this.handleDatabaseErrors(error);
+    }
   }
 
   remove(id: number) {

@@ -53,7 +53,7 @@ export class AuthClientesController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.authClientesService.findOne(+id);
+    return this.authClientesService.findOne(id);
   }
 
   @Patch(':id')
@@ -61,7 +61,7 @@ export class AuthClientesController {
     @Param('id') id: string,
     @Body() updateAuthClienteDto: UpdateAuthClienteDto,
   ) {
-    return this.authClientesService.update(+id, updateAuthClienteDto);
+    return this.authClientesService.update(id, updateAuthClienteDto);
   }
 
   @Delete(':id')

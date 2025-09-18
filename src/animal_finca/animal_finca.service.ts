@@ -9,21 +9,21 @@ import { UpdateAnimalFincaDto } from './dto/update-animal_finca.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AnimalFinca } from './entities/animal_finca.entity';
 import { In, Repository } from 'typeorm';
-import { User } from 'src/auth/entities/auth.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
 import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity';
 import { RazaAnimal } from 'src/raza_animal/entities/raza_animal.entity';
 import { UpdateDeathStatusDto } from './dto/update-death-status.dto';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Injectable()
 export class AnimalFincaService {
   constructor(
     @InjectRepository(AnimalFinca)
     private readonly animalRepo: Repository<AnimalFinca>,
-    @InjectRepository(User)
-    private readonly userRepo: Repository<User>,
+    @InjectRepository(Cliente)
+    private readonly clienteRepo: Repository<Cliente>,
     @InjectRepository(FincasGanadero)
     private readonly fincaRepo: Repository<FincasGanadero>,
     @InjectRepository(EspecieAnimal)
@@ -74,7 +74,9 @@ export class AnimalFincaService {
     } = createAnimalFincaDto;
 
     try {
-      const propietario = await this.userRepo.findOneBy({ id: propietarioId });
+      const propietario = await this.clienteRepo.findOneBy({
+        id: propietarioId,
+      });
       if (!propietario) {
         throw new NotFoundException(`Propietario no encontrado`);
       }
@@ -243,7 +245,7 @@ export class AnimalFincaService {
     } = paginationDto;
 
     try {
-      const propietario = await this.userRepo.findOne({
+      const propietario = await this.clienteRepo.findOne({
         where: { id: propietarioId },
       });
 
@@ -517,7 +519,9 @@ export class AnimalFincaService {
     }
 
     if (propietarioId) {
-      const propietario = await this.userRepo.findOneBy({ id: propietarioId });
+      const propietario = await this.clienteRepo.findOneBy({
+        id: propietarioId,
+      });
       if (!propietario) {
         throw new NotFoundException(
           `Propietario con ID ${propietarioId} no encontrado`,

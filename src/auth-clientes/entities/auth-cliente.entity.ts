@@ -10,6 +10,7 @@ import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { Exclude } from 'class-transformer';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
+import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 
 @Entity('clientes')
 export class Cliente {
@@ -55,6 +56,9 @@ export class Cliente {
 
   @OneToMany(() => FincasGanadero, (fincas) => fincas.propietario)
   fincas: FincasGanadero[];
+
+  @OneToMany(() => AnimalFinca, (animal) => animal.propietario)
+  animales: AnimalFinca[];
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
