@@ -33,6 +33,14 @@ export class CreateProductoDto {
   @IsOptional()
   unidad_venta?: UnidadVenta;
 
+  @IsEnum(UnidadVenta, {
+    message: `El tipo de fraccionamiento debe ser uno de los siguientes valores: ${Object.values(
+      UnidadVenta,
+    ).join(', ')}`,
+  })
+  @IsOptional()
+  tipo_fraccionamiento?: UnidadVenta;
+
   @IsOptional()
   @IsBoolean({
     message: 'El campo isActive debe ser un valor booleano (true o false).',
@@ -120,4 +128,17 @@ export class CreateProductoDto {
   @IsNumber({}, { message: 'La venta mínima debe ser un número válido.' })
   @Min(1, { message: 'La venta mínima debe ser al menos 1.' })
   venta_minima?: number;
+
+  @IsOptional()
+  @IsNumber(
+    {},
+    { message: 'La unidad de fraccionamiento debe ser un número válido.' },
+  )
+  @Min(1, { message: 'La unidad de fraccionamiento debe ser al menos 1.' })
+  unidad_fraccionamiento?: number;
+
+  @IsOptional()
+  @IsNumber({}, { message: 'El contenido debe ser un número válido.' })
+  @Min(1, { message: 'La contenido debe ser al menos 1.' })
+  contenido?: number;
 }

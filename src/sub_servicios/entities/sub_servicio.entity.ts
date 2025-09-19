@@ -29,11 +29,24 @@ import { DescuentosInsumo } from 'src/descuentos_insumos/entities/descuentos_ins
 export enum UnidadVenta {
   UNIDAD = 'unidad',
   KILOGRAMO = 'kilogramo',
+  GRAMO = 'gramo',
+  MILIGRAMO = 'miligramo',
   LIBRA = 'libra',
+  ONZA = 'onza',
   GALON = 'galon',
+  LITRO = 'litro',
+  CENTILITRO = 'centilitro',
+  MILILITRO = 'mililitro',
   METRO = 'metro',
+  CENTIMETRO = 'centimetro',
+  MILIMETRO = 'milimetro',
   PIE = 'pie',
+  PULGADA = 'pulgada',
   M2 = 'm2',
+  CM2 = 'cm2',
+  PIE2 = 'pie2',
+  M3 = 'm3',
+  PIEZA = 'pieza',
 }
 
 export enum TipoSubServicio {
@@ -72,6 +85,22 @@ export class SubServicio {
   })
   unidad_venta: UnidadVenta;
 
+  @Column({
+    type: 'enum',
+    enum: UnidadVenta,
+    nullable: true,
+    name: 'tipo_fraccionamiento',
+  })
+  tipo_fraccionamiento: UnidadVenta | null;
+
+  @Column({
+    type: 'int',
+
+    default: 1,
+    name: 'contenido',
+  })
+  contenido: number;
+
   @Column({ type: 'text', default: 'N/D' })
   descripcion: string | null;
 
@@ -89,6 +118,9 @@ export class SubServicio {
 
   @Column({ type: 'int', default: 1, name: 'compra_minima' })
   compra_minima: number;
+
+  @Column({ type: 'int', default: 1, name: 'unidad_fraccionamiento' })
+  unidad_fraccionamiento: number;
 
   @Column({ type: 'int', default: 1, name: 'distribucion_minima' })
   distribucion_minima: number;

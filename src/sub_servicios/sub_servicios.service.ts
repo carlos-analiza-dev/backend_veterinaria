@@ -147,6 +147,9 @@ export class SubServiciosService {
       distribucion_minima,
       es_compra_bodega,
       venta_minima,
+      contenido,
+      tipo_fraccionamiento,
+      unidad_fraccionamiento,
     } = dto;
 
     try {
@@ -226,6 +229,9 @@ export class SubServiciosService {
         es_compra_bodega,
         distribucion_minima,
         venta_minima,
+        contenido,
+        tipo_fraccionamiento,
+        unidad_fraccionamiento,
       });
 
       const savedProducto = await this.sub_servicio_repo.save(producto);
@@ -612,6 +618,9 @@ export class SubServiciosService {
       distribucion_minima,
       es_compra_bodega,
       venta_minima,
+      contenido,
+      tipo_fraccionamiento,
+      unidad_fraccionamiento,
     } = updateProductoDto;
 
     try {
@@ -654,6 +663,11 @@ export class SubServiciosService {
       if (es_compra_bodega !== undefined)
         producto.es_compra_bodega = es_compra_bodega;
       if (venta_minima !== undefined) producto.venta_minima = venta_minima;
+      if (contenido !== undefined) producto.contenido = contenido;
+      if (tipo_fraccionamiento !== undefined)
+        producto.tipo_fraccionamiento = tipo_fraccionamiento;
+      if (unidad_fraccionamiento !== undefined)
+        producto.unidad_fraccionamiento = unidad_fraccionamiento;
 
       if (marcaId) {
         const marca = await this.marcaRepo.findOne({

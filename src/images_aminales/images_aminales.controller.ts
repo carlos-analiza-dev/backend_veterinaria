@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { ImagesAminalesService } from './images_aminales.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { Auth } from 'src/auth/decorators/auth.decorator';
 import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
 
 @Controller('images-aminales')
@@ -33,19 +32,19 @@ export class ImagesAminalesController {
   }
 
   @Get('current/:animalId')
-  @Auth()
+  @AuthCliente()
   async getCurrentProfileImage(@Param('animalId') animalId: string) {
     return this.imagesAminalesService.getCurrentProfileImage(animalId);
   }
 
   @Get('all-images/:animalId')
-  @Auth()
+  @AuthCliente()
   async getImagesByUser(@Param('animalId') animalId: string) {
     return this.imagesAminalesService.getImagesByUser(animalId);
   }
 
   @Delete(':id')
-  @Auth()
+  @AuthCliente()
   async deleteProfileImage(@Param('id', ParseUUIDPipe) imageId: string) {
     return this.imagesAminalesService.deleteProfileImage(imageId);
   }
