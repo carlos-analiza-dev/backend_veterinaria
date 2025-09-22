@@ -15,6 +15,9 @@ import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
+import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Controller('servicios')
 export class ServiciosController {
@@ -32,9 +35,9 @@ export class ServiciosController {
   }
 
   @Get('/activos')
-  @Auth()
-  findAllActivos(@GetUser() user: User) {
-    return this.serviciosService.findAllActivos(user);
+  @AuthCliente()
+  findAllActivos(@GetCliente() cliente: Cliente) {
+    return this.serviciosService.findAllActivos(cliente);
   }
 
   @Get(':id')

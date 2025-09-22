@@ -11,6 +11,7 @@ import { Repository } from 'typeorm';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { User } from 'src/auth/entities/auth.entity';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Injectable()
 export class ServiciosService {
@@ -83,8 +84,8 @@ export class ServiciosService {
     }
   }
 
-  async findAllActivos(user: User) {
-    const paisId = user.pais.id;
+  async findAllActivos(cliente: Cliente) {
+    const paisId = cliente.pais.id;
     try {
       const pais_existe = await this.paisRepo.findOne({
         where: { id: paisId },

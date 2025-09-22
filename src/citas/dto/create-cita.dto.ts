@@ -22,11 +22,11 @@ export class CreateCitaDto {
   @IsNotEmpty({ message: 'Debe seleccionar al menos un animal' })
   animalesId: string[];
 
-  @IsString({ message: 'El ID del usuario debe ser un UUID válido.' })
+  @IsString({ message: 'El usuario debe ser válido.' })
   @IsNotEmpty({
     message: 'No se encontro el usuario que realiza esta solicitud.',
   })
-  usuarioId: string;
+  clienteId: string;
 
   @IsString({ message: 'El ID de la finca debe ser un UUID válido.' })
   @IsNotEmpty({ message: 'El campo finca es obligatorio.' })
@@ -66,6 +66,7 @@ export class CreateCitaDto {
 
   @IsNumber()
   @Min(0, { message: 'El total final debe ser mayor o igual a 0.' })
+  @IsOptional()
   totalFinal: number;
 
   @IsInt({ message: 'La duración debe ser un número entero (en horas).' })

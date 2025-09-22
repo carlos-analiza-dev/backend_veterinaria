@@ -8,12 +8,12 @@ import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.ent
 import { HorariosMedico } from 'src/horarios_medicos/entities/horarios_medico.entity';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
-import { User } from 'src/auth/entities/auth.entity';
 import { MailService } from 'src/mail/mail.service';
 import { CitaInsumo } from 'src/cita_insumos/entities/cita_insumo.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
 import { Inventario } from 'src/inventario/entities/inventario.entity';
 import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
+import { Cliente } from '../auth-clientes/entities/auth-cliente.entity';
 
 @Module({
   controllers: [CitasController],
@@ -25,7 +25,7 @@ import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
       HorariosMedico,
       AnimalFinca,
       SubServicio,
-      User,
+      Cliente,
       CitaInsumo,
       Insumo,
       Inventario,

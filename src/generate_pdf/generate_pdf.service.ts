@@ -22,7 +22,7 @@ export class GeneratePdfService {
         where: { id },
         relations: [
           'medico',
-          'user',
+          'cliente',
           'finca',
           'subServicio',
           'animales',
@@ -74,9 +74,9 @@ export class GeneratePdfService {
       doc.moveDown();
 
       doc.fontSize(14).text('Datos del Cliente', { underline: true });
-      doc.fontSize(12).text(`Nombre: ${cita.user.name}`);
-      doc.text(`Email: ${cita.user.email}`);
-      doc.text(`Teléfono: ${cita.user.telefono}`);
+      doc.fontSize(12).text(`Nombre: ${cita.cliente.nombre}`);
+      doc.text(`Email: ${cita.cliente.email}`);
+      doc.text(`Teléfono: ${cita.cliente.telefono}`);
       doc.moveDown();
 
       doc.fontSize(14).text('Datos del Médico', { underline: true });
@@ -134,7 +134,7 @@ export class GeneratePdfService {
               align: 'center',
             });
             doc.text(
-              `${cita.user.pais.simbolo_moneda}${precioUnitario.toFixed(2)}`,
+              `${cita.cliente.pais.simbolo_moneda}${precioUnitario.toFixed(2)}`,
               350,
               currentY,
               {
@@ -143,7 +143,7 @@ export class GeneratePdfService {
               },
             );
             doc.text(
-              `${cita.user.pais.simbolo_moneda}${subtotal.toFixed(2)}`,
+              `${cita.cliente.pais.simbolo_moneda}${subtotal.toFixed(2)}`,
               450,
               currentY,
               {
@@ -172,7 +172,7 @@ export class GeneratePdfService {
               align: 'center',
             });
             doc.text(
-              `${cita.user.pais.simbolo_moneda}${precioUnitario.toFixed(2)}`,
+              `${cita.cliente.pais.simbolo_moneda}${precioUnitario.toFixed(2)}`,
               350,
               currentY,
               {
@@ -181,7 +181,7 @@ export class GeneratePdfService {
               },
             );
             doc.text(
-              `${cita.user.pais.simbolo_moneda}${subtotal.toFixed(2)}`,
+              `${cita.cliente.pais.simbolo_moneda}${subtotal.toFixed(2)}`,
               450,
               currentY,
               {
@@ -198,7 +198,7 @@ export class GeneratePdfService {
         doc.font('Helvetica-Bold');
         doc.text('Total Materiales:', 335, currentY);
         doc.text(
-          `${cita.user.pais.simbolo_moneda}${totalMateriales.toFixed(2)}`,
+          `${cita.cliente.pais.simbolo_moneda}${totalMateriales.toFixed(2)}`,
           450,
           currentY,
         );
@@ -217,7 +217,7 @@ export class GeneratePdfService {
 
       doc.fontSize(12);
       doc.text(
-        `Costo del servicio: ${cita.user.pais.simbolo_moneda}${parseFloat(
+        `Costo del servicio: ${cita.cliente.pais.simbolo_moneda}${parseFloat(
           cita.totalPagar.toString(),
         ).toFixed(2)}`,
         { align: 'right' },
@@ -226,7 +226,7 @@ export class GeneratePdfService {
       if (totalMateriales > 0) {
         doc.text(
           `Total materiales: ${
-            cita.user.pais.simbolo_moneda
+            cita.cliente.pais.simbolo_moneda
           }${totalMateriales.toFixed(2)}`,
           { align: 'right' },
         );
@@ -235,7 +235,7 @@ export class GeneratePdfService {
       doc.moveDown(0.5);
       doc.font('Helvetica-Bold');
       doc.text(
-        `Total Final: ${cita.user.pais.simbolo_moneda}${parseFloat(
+        `Total Final: ${cita.cliente.pais.simbolo_moneda}${parseFloat(
           cita.totalFinal.toString(),
         ).toFixed(2)}`,
         { align: 'right' },

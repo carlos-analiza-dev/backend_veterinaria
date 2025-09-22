@@ -1,8 +1,6 @@
 import { Exclude } from 'class-transformer';
 import { AnalisisEficiencia } from 'src/analisis_usuario/entities/analisis_usuario.entity';
-import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
-import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { InsumosUsuario } from 'src/insumos_usuario/entities/insumos_usuario.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
@@ -70,7 +68,6 @@ export class User {
     { eager: true },
   )
   municipio: MunicipiosDepartamentosPai;
-
 
   @OneToMany(() => ProfileImage, (profileImage) => profileImage.user, {
     eager: true,

@@ -1,4 +1,5 @@
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { CitaInsumo } from 'src/cita_insumos/entities/cita_insumo.entity';
 import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
@@ -56,9 +57,9 @@ export class Cita {
   @JoinColumn({ name: 'subServicioId' })
   subServicio: SubServicio;
 
-  @ManyToOne(() => User)
-  @JoinColumn({ name: 'usuarioId' })
-  user: User;
+  @ManyToOne(() => Cliente)
+  @JoinColumn({ name: 'clienteId' })
+  cliente: Cliente;
 
   @Column({ type: 'time' })
   horaInicio: string;

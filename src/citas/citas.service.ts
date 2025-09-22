@@ -26,6 +26,7 @@ import { instanceToPlain } from 'class-transformer';
 import { UpdateCitaDto } from './dto/update-cita.dto';
 import { EstadoCita } from 'src/interfaces/estados_citas';
 import { MailService } from 'src/mail/mail.service';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Injectable()
 export class CitasService {
@@ -42,8 +43,8 @@ export class CitasService {
     private readonly animal_ganadero: Repository<AnimalFinca>,
     @InjectRepository(SubServicio)
     private readonly sub_servicio_repo: Repository<SubServicio>,
-    @InjectRepository(User)
-    private readonly user_repo: Repository<User>,
+    @InjectRepository(Cliente)
+    private readonly cliente_repo: Repository<Cliente>,
     private readonly email_service: MailService,
   ) {}
 
@@ -59,7 +60,7 @@ export class CitasService {
       subServicioId,
       totalPagar,
       totalFinal,
-      usuarioId,
+      clienteId,
     } = createCitaDto;
 
     const [horas, minutos] = horaInicio.split(':').map(Number);
@@ -142,8 +143,8 @@ export class CitasService {
         'El servicio seleccionado no esta disponible en este momento',
       );
 
-    const usuario_exist = await this.user_repo.findOne({
-      where: { id: usuarioId },
+    const usuario_exist = await this.cliente_repo.findOne({
+      where: { id: clienteId },
     });
     if (!usuario_exist)
       throw new NotFoundException(
@@ -168,14 +169,14 @@ export class CitasService {
       duracion,
       totalPagar,
       totalFinal,
-      user: usuario_exist,
+      cliente: usuario_exist,
     });
 
     try {
       await this.email_service.sendEmailCrearCita(
         medico_exist.usuario.email,
         medico_exist.usuario.name,
-        usuario_exist.name,
+        usuario_exist.nombre,
         finca_exist.nombre_finca,
         horaInicio,
         horaFin,
@@ -286,19 +287,32 @@ export class CitasService {
     const { limit = 10, offset = 0 } = paginationDto;
 
     try {
-      const usuario_exist = await this.user_repo.findOne({ where: { id } });
-      if (!usuario_exist)
+      const cliente_existe = await this.cliente_repo.findOne({ where: { id } });
+      if (!cliente_existe)
         throw new NotFoundException('No se encontró el usuario seleccionado.');
 
-      const [citas, total] = await this.citas_repo.findAndCount({
-        where: { user: { id } },
-        relations: ['medico', 'animales', 'finca', 'subServicio'],
-        take: limit,
-        skip: offset,
-        order: {
-          fecha: 'DESC',
-        },
-      });
+     const query = this.citas_repo
+  .createQueryBuilder('cita')
+  .leftJoinAndSelect('cita.medico', 'medico')
+  .leftJoinAndSelect('medico.usuario', 'usuario')
+  .leftJoinAndSelect('cita.animales', 'animal')
+  .leftJoinAndSelect('animal.especie', 'especie')
+  .leftJoinAndSelect('animal.razas', 'raza')
+  .leftJoinAndSelect('cita.finca', 'finca')
+  .leftJoinAndSelect('cita.subServicio', 'subServicio')
+  .leftJoinAndSelect(
+    'subServicio.preciosPorPais',
+    'precio',
+    'precio.paisId = :paisId',
+    { paisId: cliente_existe.pais.id },
+  )
+  .where('cita.clienteId = :id', { id })
+  .take(limit)
+  .skip(offset)
+  .orderBy('cita.fecha', 'DESC');
+
+const [citas, total] = await query.getManyAndCount();
+
 
       if (citas.length === 0)
         throw new NotFoundException(
