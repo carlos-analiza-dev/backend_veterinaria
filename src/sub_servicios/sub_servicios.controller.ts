@@ -18,6 +18,9 @@ import { UpdateProductoDto } from './dto/update-producto.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
+import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Controller('sub-servicios')
 export class SubServiciosController {
@@ -44,6 +47,18 @@ export class SubServiciosController {
     return this.subServiciosService.findAllProductosDisponibles(user);
   }
 
+  @Get('productos-disponibles-clientes')
+  @AuthCliente()
+  findAllProductosDisponiblesClientes(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.subServiciosService.findAllProductosDisponiblesClientes(
+      cliente,
+      paginationDto,
+    );
+  }
+
   @Get('servicio/:servicioId')
   findAll(@Param('servicioId') servicioId: string) {
     return this.subServiciosService.findAll(servicioId);
@@ -60,6 +75,11 @@ export class SubServiciosController {
       paisId,
       cantidadAnimales,
     );
+  }
+
+  @Get('producto/:id')
+  productoById(@Param('id') id: string) {
+    return this.subServiciosService.productoById(id);
   }
 
   @Get(':id')

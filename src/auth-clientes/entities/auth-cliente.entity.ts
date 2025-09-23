@@ -11,6 +11,7 @@ import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/en
 import { Exclude } from 'class-transformer';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
+import { ImagesClient } from 'src/images_client/entities/images_client.entity';
 
 @Entity('clientes')
 export class Cliente {
@@ -59,6 +60,19 @@ export class Cliente {
 
   @OneToMany(() => AnimalFinca, (animal) => animal.propietario)
   animales: AnimalFinca[];
+
+  @OneToMany(() => ImagesClient, (profileImage) => profileImage.cliente, {
+    eager: true,
+  })
+  profileImages: ImagesClient[];
+
+  get currentProfileImage(): ImagesClient | null {
+    if (!this.profileImages || this.profileImages.length === 0) return null;
+
+    return this.profileImages.sort(
+      (a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+    )[0];
+  }
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;

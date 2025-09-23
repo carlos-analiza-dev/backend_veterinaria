@@ -49,6 +49,7 @@ import { DescuentosProductoModule } from './descuentos_producto/descuentos_produ
 import { DescuentosInsumosModule } from './descuentos_insumos/descuentos_insumos.module';
 import { EscalasInsumosModule } from './escalas_insumos/escalas_insumos.module';
 import { AuthClientesModule } from './auth-clientes/auth-clientes.module';
+import { ImagesClientModule } from './images_client/images_client.module';
 
 @Module({
   imports: [
@@ -139,6 +140,8 @@ import { AuthClientesModule } from './auth-clientes/auth-clientes.module';
     EscalasInsumosModule,
 
     AuthClientesModule,
+
+    ImagesClientModule,
   ],
   controllers: [],
   providers: [],

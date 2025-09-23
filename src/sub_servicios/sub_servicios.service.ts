@@ -25,6 +25,7 @@ import { User } from 'src/auth/entities/auth.entity';
 import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
 import { UpdateProductoDto } from './dto/update-producto.dto';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Injectable()
 export class SubServiciosService {
@@ -377,7 +378,6 @@ export class SubServiciosService {
         .leftJoinAndSelect('producto.proveedor', 'proveedor')
         .leftJoinAndSelect('producto.categoria', 'categoria')
         .leftJoinAndSelect('producto.tax', 'tax')
-        .leftJoinAndSelect('producto.inventario', 'inventario')
         .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
         .andWhere('producto.disponible = :disponible', { disponible: true })
         .andWhere('producto.isActive = :isActive', { isActive: true })
@@ -389,6 +389,52 @@ export class SubServiciosService {
       }
 
       return { productos: productosDisponibles };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAllProductosDisponiblesClientes(
+    cliente: Cliente,
+    paginationDto: PaginationDto,
+  ) {
+    const { limit = 10, offset = 0 } = paginationDto;
+    const paisId = cliente.pais.id;
+
+    try {
+      const [productosDisponibles, total] = await this.sub_servicio_repo
+        .createQueryBuilder('producto')
+        .leftJoinAndSelect(
+          'producto.preciosPorPais',
+          'precio',
+          'precio.paisId = :paisId',
+          { paisId },
+        )
+        .leftJoinAndSelect('producto.marca', 'marca')
+        .leftJoinAndSelect('producto.proveedor', 'proveedor')
+        .leftJoinAndSelect('producto.categoria', 'categoria')
+        .leftJoinAndSelect('producto.tax', 'tax')
+        .leftJoinAndSelect('producto.imagenes', 'imagenes')
+        .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
+        .andWhere('producto.disponible = :disponible', { disponible: true })
+        .andWhere('producto.isActive = :isActive', { isActive: true })
+        .andWhere('precio.paisId IS NOT NULL')
+        .orderBy('imagenes.createdAt', 'DESC')
+        .skip(offset)
+        .take(limit)
+        .getManyAndCount();
+
+      if (!productosDisponibles || productosDisponibles.length === 0) {
+        throw new NotFoundException('No se encontraron productos disponibles');
+      }
+
+      return {
+        total,
+        limit,
+        offset,
+        productos: productosDisponibles,
+        hasMore: offset + limit < total,
+      };
     } catch (error) {
       throw error;
     }
@@ -473,6 +519,45 @@ export class SubServiciosService {
     }
 
     return subServicio;
+  }
+
+  async productoById(productoId: string) {
+    try {
+      const producto_existe = await this.sub_servicio_repo.findOne({
+        where: { id: productoId, tipo: TipoSubServicio.PRODUCTO },
+        relations: [
+          'preciosPorPais',
+          'marca',
+          'proveedor',
+          'categoria',
+          'tax',
+          'imagenes',
+        ],
+      });
+
+      if (!producto_existe) {
+        throw new NotFoundException('No se encontró el producto seleccionado');
+      }
+
+      if (
+        !producto_existe.preciosPorPais ||
+        producto_existe.preciosPorPais.length === 0
+      ) {
+        throw new BadRequestException(
+          'El producto no tiene precios configurados',
+        );
+      }
+
+      return { producto: producto_existe };
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new InternalServerErrorException('Error al obtener el producto');
+    }
   }
 
   async findOne(id: string) {
