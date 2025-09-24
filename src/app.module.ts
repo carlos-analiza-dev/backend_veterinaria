@@ -50,6 +50,8 @@ import { DescuentosInsumosModule } from './descuentos_insumos/descuentos_insumos
 import { EscalasInsumosModule } from './escalas_insumos/escalas_insumos.module';
 import { AuthClientesModule } from './auth-clientes/auth-clientes.module';
 import { ImagesClientModule } from './images_client/images_client.module';
+import { DatosEmpresaModule } from './datos-empresa/datos-empresa.module';
+import { RangosFacturaModule } from './rangos-factura/rangos-factura.module';
 
 @Module({
   imports: [
@@ -142,6 +144,10 @@ import { ImagesClientModule } from './images_client/images_client.module';
     AuthClientesModule,
 
     ImagesClientModule,
+
+    DatosEmpresaModule,
+
+    RangosFacturaModule,
   ],
   controllers: [],
   providers: [],
