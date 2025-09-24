@@ -8,8 +8,8 @@ import {
 
 @Entity('datos_empresa')
 export class DatosEmpresa {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ unique: true })
   nombre_empresa: string;

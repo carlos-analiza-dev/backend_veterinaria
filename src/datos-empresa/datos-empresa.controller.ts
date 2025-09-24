@@ -30,11 +30,11 @@ export class DatosEmpresaController {
     @Param('id') id: string,
     @Body() updateDatosEmpresaDto: UpdateDatosEmpresaDto,
   ) {
-    return this.datosEmpresaService.update(+id, updateDatosEmpresaDto);
+    return this.datosEmpresaService.update(id, updateDatosEmpresaDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.datosEmpresaService.remove(+id);
+    return this.datosEmpresaService.remove(id);
   }
 }

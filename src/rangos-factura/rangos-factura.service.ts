@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { RangoFactura, EstadoRango } from './entities/rango-factura.entity';
+import { RangoFactura } from './entities/rango-factura.entity';
 import { CreateRangoFacturaDto } from './dto/create-rango-factura.dto';
 import { UpdateRangoFacturaDto } from './dto/update-rango-factura.dto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
@@ -20,7 +20,7 @@ export class RangosFacturaService {
 
   async create(createRangoFacturaDto: CreateRangoFacturaDto) {
     const rangoActivo = await this.rangoRepository.findOne({
-      where: { estado: EstadoRango.ACTIVO },
+      where: { is_active: true },
     });
 
     if (rangoActivo) {
@@ -29,7 +29,9 @@ export class RangosFacturaService {
       );
     }
 
-    if (createRangoFacturaDto.rango_inicial >= createRangoFacturaDto.rango_final) {
+    if (
+      createRangoFacturaDto.rango_inicial >= createRangoFacturaDto.rango_final
+    ) {
       throw new BadRequestException(
         'El rango inicial debe ser menor que el rango final',
       );
@@ -38,7 +40,6 @@ export class RangosFacturaService {
     const nuevoRango = this.rangoRepository.create({
       ...createRangoFacturaDto,
       correlativo_actual: createRangoFacturaDto.rango_inicial - 1,
-      facturas_anuladas: createRangoFacturaDto.facturas_anuladas || [],
     });
 
     return await this.rangoRepository.save(nuevoRango);
@@ -64,13 +65,15 @@ export class RangosFacturaService {
     };
   }
 
-  async findOne(id: number) {
+  async findOne(id: string) {
     const rango = await this.rangoRepository.findOne({
       where: { id },
     });
 
     if (!rango) {
-      throw new NotFoundException(`Rango de factura con ID ${id} no encontrado`);
+      throw new NotFoundException(
+        `Rango de factura con ID ${id} no encontrado`,
+      );
     }
 
     return rango;
@@ -78,7 +81,7 @@ export class RangosFacturaService {
 
   async obtenerRangoActivo() {
     const rangoActivo = await this.rangoRepository.findOne({
-      where: { estado: EstadoRango.ACTIVO },
+      where: { is_active: true },
     });
 
     if (!rangoActivo) {
@@ -87,7 +90,7 @@ export class RangosFacturaService {
 
     const hoy = new Date();
     if (rangoActivo.fecha_limite_emision < hoy) {
-      rangoActivo.estado = EstadoRango.VENCIDO;
+      rangoActivo.is_active = true;
       await this.rangoRepository.save(rangoActivo);
       throw new BadRequestException('El rango activo ha vencido');
     }
@@ -98,35 +101,38 @@ export class RangosFacturaService {
   async obtenerSiguienteNumero(): Promise<string> {
     const rangoActivo = await this.rangoRepository
       .createQueryBuilder('rango')
-      .where('rango.estado = :estado', { estado: EstadoRango.ACTIVO })
+      .where('rango.is_active = :is_active', { is_active: true })
       .andWhere('rango.fecha_limite_emision > :fecha', { fecha: new Date() })
       .andWhere('rango.correlativo_actual < rango.rango_final')
       .getOne();
 
     if (!rangoActivo) {
-      throw new BadRequestException('No hay rangos de facturación activos disponibles');
+      throw new BadRequestException(
+        'No hay rangos de facturación activos disponibles',
+      );
     }
 
     const siguienteCorrelativo = rangoActivo.correlativo_actual + 1;
-    const numeroFormateado = rangoActivo.prefijo +
-      siguienteCorrelativo.toString().padStart(8, '0');
+    const numeroFormateado =
+      rangoActivo.prefijo + siguienteCorrelativo.toString().padStart(8, '0');
 
     rangoActivo.correlativo_actual = siguienteCorrelativo;
-
-    if (siguienteCorrelativo >= rangoActivo.rango_final) {
-      rangoActivo.estado = EstadoRango.AGOTADO;
-    }
 
     await this.rangoRepository.save(rangoActivo);
 
     return numeroFormateado;
   }
 
-  async update(id: number, updateRangoFacturaDto: UpdateRangoFacturaDto) {
+  async update(id: string, updateRangoFacturaDto: UpdateRangoFacturaDto) {
     const rango = await this.findOne(id);
 
-    if (updateRangoFacturaDto.rango_inicial && updateRangoFacturaDto.rango_final) {
-      if (updateRangoFacturaDto.rango_inicial >= updateRangoFacturaDto.rango_final) {
+    if (
+      updateRangoFacturaDto.rango_inicial &&
+      updateRangoFacturaDto.rango_final
+    ) {
+      if (
+        updateRangoFacturaDto.rango_inicial >= updateRangoFacturaDto.rango_final
+      ) {
         throw new BadRequestException(
           'El rango inicial debe ser menor que el rango final',
         );
@@ -138,20 +144,19 @@ export class RangosFacturaService {
     return await this.rangoRepository.save(rango);
   }
 
-  async anularFacturasNoUsadas(id: number) {
+  async anularFacturasNoUsadas(id: string) {
     const rango = await this.findOne(id);
 
-    if (rango.estado !== EstadoRango.ACTIVO) {
-      throw new BadRequestException('Solo se pueden anular facturas de rangos activos');
+    if (rango.is_active !== true) {
+      throw new BadRequestException(
+        'Solo se pueden anular facturas de rangos activos',
+      );
     }
 
     const facturasNoUsadas = [];
     for (let i = rango.correlativo_actual + 1; i <= rango.rango_final; i++) {
       facturasNoUsadas.push(i);
     }
-
-    rango.facturas_anuladas = [...(rango.facturas_anuladas || []), ...facturasNoUsadas];
-    rango.estado = EstadoRango.ANULADO;
 
     await this.rangoRepository.save(rango);
 
@@ -166,12 +171,11 @@ export class RangosFacturaService {
 
     const rangosVencidos = await this.rangoRepository
       .createQueryBuilder('rango')
-      .where('rango.estado = :estado', { estado: EstadoRango.ACTIVO })
+      .where('rango.is_active = :is_active', { is_active: true })
       .andWhere('rango.fecha_limite_emision < :fecha', { fecha: hoy })
       .getMany();
 
     for (const rango of rangosVencidos) {
-      rango.estado = EstadoRango.VENCIDO;
       await this.rangoRepository.save(rango);
     }
 
@@ -181,10 +185,10 @@ export class RangosFacturaService {
     };
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const rango = await this.findOne(id);
 
-    if (rango.estado === EstadoRango.ACTIVO) {
+    if (rango.is_active === true) {
       throw new BadRequestException('No se puede eliminar un rango activo');
     }
 

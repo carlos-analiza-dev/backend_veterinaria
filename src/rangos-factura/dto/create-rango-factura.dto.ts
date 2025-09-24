@@ -4,8 +4,8 @@ import {
   IsNumber,
   IsDateString,
   IsOptional,
-  IsArray,
   Min,
+  IsBoolean,
 } from 'class-validator';
 
 export class CreateRangoFacturaDto {
@@ -31,7 +31,7 @@ export class CreateRangoFacturaDto {
   @IsDateString()
   fecha_limite_emision: Date;
 
-  @IsArray()
   @IsOptional()
-  facturas_anuladas?: number[];
+  @IsBoolean()
+  is_active: boolean;
 }

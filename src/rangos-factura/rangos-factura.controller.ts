@@ -44,7 +44,7 @@ export class RangosFacturaController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.rangosFacturaService.findOne(+id);
+    return this.rangosFacturaService.findOne(id);
   }
 
   @Patch(':id')
@@ -52,16 +52,16 @@ export class RangosFacturaController {
     @Param('id') id: string,
     @Body() updateRangoFacturaDto: UpdateRangoFacturaDto,
   ) {
-    return this.rangosFacturaService.update(+id, updateRangoFacturaDto);
+    return this.rangosFacturaService.update(id, updateRangoFacturaDto);
   }
 
   @Patch(':id/anular-sobrantes')
   anularSobrantes(@Param('id') id: string) {
-    return this.rangosFacturaService.anularFacturasNoUsadas(+id);
+    return this.rangosFacturaService.anularFacturasNoUsadas(id);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.rangosFacturaService.remove(+id);
+    return this.rangosFacturaService.remove(id);
   }
 }

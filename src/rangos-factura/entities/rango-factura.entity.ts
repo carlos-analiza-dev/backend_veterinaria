@@ -6,17 +6,10 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-export enum EstadoRango {
-  ACTIVO = 'activo',
-  AGOTADO = 'agotado',
-  VENCIDO = 'vencido',
-  ANULADO = 'anulado',
-}
-
 @Entity('rangos_factura')
 export class RangoFactura {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ length: 50 })
   cai: string;
@@ -39,15 +32,8 @@ export class RangoFactura {
   @Column('date')
   fecha_limite_emision: Date;
 
-  @Column({
-    type: 'enum',
-    enum: EstadoRango,
-    default: EstadoRango.ACTIVO,
-  })
-  estado: EstadoRango;
-
-  @Column('json', { nullable: true })
-  facturas_anuladas: number[];
+  @Column({ type: 'boolean', default: true })
+  is_active: boolean;
 
   @CreateDateColumn()
   created_at: Date;

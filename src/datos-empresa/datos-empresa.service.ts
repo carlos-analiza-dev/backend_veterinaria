@@ -49,7 +49,7 @@ export class DatosEmpresaService {
     return datosEmpresa;
   }
 
-  async update(id: number, updateDatosEmpresaDto: UpdateDatosEmpresaDto) {
+  async update(id: string, updateDatosEmpresaDto: UpdateDatosEmpresaDto) {
     const datosEmpresa = await this.datosEmpresaRepository.findOne({
       where: { id },
     });
@@ -67,7 +67,7 @@ export class DatosEmpresaService {
     return await this.datosEmpresaRepository.save(datosEmpresa);
   }
 
-  async remove(id: number) {
+  async remove(id: string) {
     const datosEmpresa = await this.datosEmpresaRepository.findOne({
       where: { id },
     });
