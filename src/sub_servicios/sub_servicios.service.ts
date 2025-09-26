@@ -14,7 +14,10 @@ import { Pai } from 'src/pais/entities/pai.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { Marca } from 'src/marcas/entities/marca.entity';
 import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
-import { Categoria } from 'src/categorias/entities/categoria.entity';
+import {
+  Categoria,
+  TipoCategoria,
+} from 'src/categorias/entities/categoria.entity';
 import { ServiciosPai } from 'src/servicios_pais/entities/servicios_pai.entity';
 import { instanceToPlain } from 'class-transformer';
 import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
@@ -270,27 +273,20 @@ export class SubServiciosService {
     try {
       const queryBuilder = this.sub_servicio_repo
         .createQueryBuilder('producto')
-        .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
-        .andWhere('producto.isActive = :isActive', { isActive: true })
-        .leftJoinAndSelect('producto.servicio', 'servicio')
-        .leftJoinAndSelect('producto.preciosPorPais', 'preciosPorPais')
-        .leftJoinAndSelect('preciosPorPais.pais', 'pais')
+        .leftJoinAndSelect('producto.preciosPorPais', 'precio')
+        .leftJoinAndSelect('precio.pais', 'pais')
         .leftJoinAndSelect('producto.marca', 'marca')
         .leftJoinAndSelect('producto.proveedor', 'proveedor')
         .leftJoinAndSelect('producto.categoria', 'categoria')
         .leftJoinAndSelect('producto.tax', 'tax')
         .leftJoinAndSelect('producto.imagenes', 'imagenes')
-        .orderBy('producto.createdAt', 'DESC')
-        .addOrderBy('imagenes.createdAt', 'DESC');
+        .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
+        .orderBy('imagenes.createdAt', 'DESC');
 
       if (pais && pais.trim() !== '') {
-        queryBuilder.andWhere(
-          '(pais.id = :paisId OR pais.nombre ILIKE :paisNombre)',
-          {
-            paisId: pais,
-            paisNombre: `%${pais}%`,
-          },
-        );
+        queryBuilder.andWhere('(pais.id = :paisId )', {
+          paisId: pais,
+        });
       }
 
       if (categoria && categoria.trim() !== '') {
@@ -323,8 +319,8 @@ export class SubServiciosService {
         );
       }
 
-      if (limit !== undefined) queryBuilder.take(limit);
-      if (offset !== undefined) queryBuilder.skip(offset);
+      queryBuilder.take(limit);
+      queryBuilder.skip(offset);
 
       const [productos, total] = await queryBuilder.getManyAndCount();
 
@@ -438,6 +434,36 @@ export class SubServiciosService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async getProductosRelacionados(
+    categoriaId: string,
+    paginationDto: PaginationDto,
+    limit: number = 10,
+  ) {
+    const { producto, tipo_categoria } = paginationDto;
+
+    return await this.sub_servicio_repo
+      .createQueryBuilder('producto')
+      .leftJoinAndSelect('producto.categoria', 'categoria')
+      .leftJoinAndSelect('producto.preciosPorPais', 'preciosPorPais')
+      .leftJoinAndSelect('producto.imagenes', 'imagenes')
+      .leftJoinAndSelect('producto.marca', 'marca')
+      .where('producto.categoriaId = :categoriaId', { categoriaId })
+      .andWhere('categoria.tipo = :tipoCategoria', {
+        tipoCategoria: tipo_categoria,
+      })
+      .andWhere('producto.id != :productoExcluirId', {
+        productoExcluirId: producto,
+      })
+      .andWhere('producto.tipo = :tipoProducto', {
+        tipoProducto: TipoSubServicio.PRODUCTO,
+      })
+      .andWhere('producto.disponible = :disponible', { disponible: true })
+      .andWhere('producto.isActive = :isActive', { isActive: true })
+      .orderBy('producto.createdAt', 'DESC')
+      .take(limit)
+      .getMany();
   }
 
   async findAll(servicioId: string) {

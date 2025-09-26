@@ -1,10 +1,12 @@
 import {
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { TipoCategoria } from '../entities/categoria.entity';
 
 export class CreateCategoriaDto {
   @IsString({ message: 'El nombre debe ser un texto' })
@@ -17,4 +19,10 @@ export class CreateCategoriaDto {
   @IsString({ message: 'La descripción debe ser un texto' })
   @MaxLength(500, { message: 'La descripción no puede exceder 500 caracteres' })
   descripcion?: string;
+
+  @IsEnum(TipoCategoria, {
+    message: 'La categoría debe ser "Ganaderia" o "Agricultura"',
+  })
+  @IsNotEmpty({ message: 'La categoría es obligatoria' })
+  tipo: TipoCategoria;
 }

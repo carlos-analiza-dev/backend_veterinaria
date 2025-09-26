@@ -33,6 +33,10 @@ export class PaginationDto {
 
   @IsOptional()
   @IsString()
+  tipo_categoria?: string;
+
+  @IsOptional()
+  @IsString()
   insumo?: string;
 
   @IsOptional()

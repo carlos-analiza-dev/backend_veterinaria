@@ -20,7 +20,6 @@ import { User } from 'src/auth/entities/auth.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Controller('lotes')
-@Auth()
 export class LotesController {
   constructor(private readonly lotesService: LotesService) {}
 
@@ -55,6 +54,17 @@ export class LotesController {
     @Query() paginationDto: PaginationDto,
   ) {
     return this.lotesService.getExistenciasByProducto(user, paginationDto);
+  }
+
+  @Get('existencia/producto/:id_producto/sucursal/:id_sucursal')
+  getExistenciaPorProductoSucursal(
+    @Param('id_producto', ParseUUIDPipe) id_producto: string,
+    @Param('id_sucursal', ParseUUIDPipe) id_sucursal: string,
+  ) {
+    return this.lotesService.getExistenciaPorProductoSucursal(
+      id_producto,
+      id_sucursal,
+    );
   }
 
   @Post('reducir-inventario')

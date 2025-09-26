@@ -206,6 +206,21 @@ export class CompraInsumosService {
     }
   }
 
+  async findByInsumo(id_insumo: string) {
+    const lotes = await this.invLoteInsumoRepository.find({
+      where: { insumo: { id: id_insumo } },
+      relations: ['compra', 'sucursal', 'insumo'],
+      order: { id: 'ASC' },
+    });
+
+    if (!lotes || lotes.length === 0) {
+      throw new NotFoundException(
+        `No se encontraron lotes para el insumo con ID: ${id_insumo}`,
+      );
+    }
+    return lotes;
+  }
+
   async findOne(id: string) {
     const compra = await this.compraInsumoRepository.findOne({
       where: { id },

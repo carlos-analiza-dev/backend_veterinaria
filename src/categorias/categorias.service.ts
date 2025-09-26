@@ -22,7 +22,7 @@ export class CategoriasService {
   ) {}
 
   async create(createCategoriaDto: CreateCategoriaDto, userId: string) {
-    const { nombre, descripcion } = createCategoriaDto;
+    const { nombre, descripcion, tipo } = createCategoriaDto;
 
     try {
       const user = await this.user_repo.findOneBy({ id: userId });
@@ -42,6 +42,7 @@ export class CategoriasService {
       const nuevaCategoria = this.categoria_repo.create({
         nombre: nombre.toUpperCase(),
         descripcion,
+        tipo,
         created_by: user,
         updated_by: user,
       });
@@ -82,7 +83,7 @@ export class CategoriasService {
       if (search && search.trim() !== '') {
         whereConditions.push(
           '(LOWER(categoria.nombre) LIKE LOWER(:search) OR ' +
-          'LOWER(categoria.descripcion) LIKE LOWER(:search))'
+            'LOWER(categoria.descripcion) LIKE LOWER(:search))',
         );
         parameters.search = `%${search}%`;
       }

@@ -7,6 +7,9 @@ import {
   Param,
   Delete,
   Query,
+  ParseUUIDPipe,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { SubServiciosService } from './sub_servicios.service';
 
@@ -80,6 +83,19 @@ export class SubServiciosController {
   @Get('producto/:id')
   productoById(@Param('id') id: string) {
     return this.subServiciosService.productoById(id);
+  }
+
+  @Get('categoria/:categoriaId')
+  getProductosPorCategoria(
+    @Param('categoriaId', ParseUUIDPipe) categoriaId: string,
+    @Query() paginationDto: PaginationDto,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit?: number,
+  ) {
+    return this.subServiciosService.getProductosRelacionados(
+      categoriaId,
+      paginationDto,
+      limit,
+    );
   }
 
   @Get(':id')

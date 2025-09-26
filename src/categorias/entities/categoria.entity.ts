@@ -10,6 +10,11 @@ import {
 import { User } from 'src/auth/entities/auth.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 
+export enum TipoCategoria {
+  GANADERIA = 'Ganaderia',
+  AGRICULTURA = 'Agricultura',
+}
+
 @Entity('categorias')
 export class Categoria {
   @PrimaryGeneratedColumn('uuid')
@@ -21,6 +26,13 @@ export class Categoria {
   @Column({ type: 'text', nullable: true })
   descripcion: string;
 
+  @Column({
+    type: 'enum',
+    enum: TipoCategoria,
+    default: TipoCategoria.GANADERIA,
+  })
+  tipo: TipoCategoria;
+
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
 
@@ -30,7 +42,6 @@ export class Categoria {
   @UpdateDateColumn()
   updated_at: Date;
 
-  // Campos de auditoría
   @ManyToOne(() => User, { eager: false })
   created_by: User;
 

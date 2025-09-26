@@ -47,6 +47,12 @@ export class CompraInsumosController {
     return this.compraInsumosService.getExistenciasInsumos(user, paginationDto);
   }
 
+  @Get('insumo/:id_insumo')
+  @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
+  findByProducto(@Param('id_insumo', ParseUUIDPipe) id_insumo: string) {
+    return this.compraInsumosService.findByInsumo(id_insumo);
+  }
+
   @Get(':id')
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
   findOne(@Param('id', ParseUUIDPipe) id: string) {

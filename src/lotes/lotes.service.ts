@@ -38,18 +38,18 @@ export class LotesService {
   }
 
   async findByProducto(id_producto: string) {
-    return await this.loteRepo.find({
+    const lotes = await this.loteRepo.find({
       where: { id_producto },
-      select: [
-        'id',
-        'id_compra',
-        'id_sucursal',
-        'id_producto',
-        'cantidad',
-        'costo',
-      ],
-      order: { id: 'ASC' }, // FIFO - más antiguos primero
+      relations: ['compra', 'sucursal', 'producto'],
+      order: { id: 'ASC' },
     });
+
+    if (!lotes || lotes.length === 0) {
+      throw new NotFoundException(
+        `No se encontraron lotes para el producto con ID: ${id_producto}`,
+      );
+    }
+    return lotes;
   }
 
   async findBySucursal(id_sucursal: string) {
@@ -136,6 +136,21 @@ export class LotesService {
     }
 
     return await query.getRawMany();
+  }
+
+  async getExistenciaPorProductoSucursal(
+    id_producto: string,
+    id_sucursal: string,
+  ): Promise<number> {
+    const resultado = await this.loteRepo
+      .createQueryBuilder('lote')
+      .select('SUM(lote.cantidad)', 'total')
+      .where('lote.id_producto = :id_producto', { id_producto })
+      .andWhere('lote.id_sucursal = :id_sucursal', { id_sucursal })
+      .andWhere('lote.cantidad > 0')
+      .getRawOne();
+
+    return parseFloat(resultado.total) || 0;
   }
 
   // Reducir inventario usando FIFO (lote más antiguo primero)
