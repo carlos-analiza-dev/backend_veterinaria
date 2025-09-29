@@ -394,11 +394,11 @@ export class SubServiciosService {
     cliente: Cliente,
     paginationDto: PaginationDto,
   ) {
-    const { limit = 10, offset = 0 } = paginationDto;
+    const { limit = 10, offset = 0, tipo_categoria = '' } = paginationDto;
     const paisId = cliente.pais.id;
 
     try {
-      const [productosDisponibles, total] = await this.sub_servicio_repo
+      const queryBuilder = this.sub_servicio_repo
         .createQueryBuilder('producto')
         .leftJoinAndSelect(
           'producto.preciosPorPais',
@@ -414,7 +414,15 @@ export class SubServiciosService {
         .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
         .andWhere('producto.disponible = :disponible', { disponible: true })
         .andWhere('producto.isActive = :isActive', { isActive: true })
-        .andWhere('precio.paisId IS NOT NULL')
+        .andWhere('precio.paisId IS NOT NULL');
+
+      if (tipo_categoria && tipo_categoria.trim() !== '') {
+        queryBuilder.andWhere('categoria.tipo = :tipoCategoria', {
+          tipoCategoria: tipo_categoria,
+        });
+      }
+
+      const [productosDisponibles, total] = await queryBuilder
         .orderBy('imagenes.createdAt', 'DESC')
         .skip(offset)
         .take(limit)
@@ -549,32 +557,30 @@ export class SubServiciosService {
 
   async productoById(productoId: string) {
     try {
-      const producto_existe = await this.sub_servicio_repo.findOne({
-        where: { id: productoId, tipo: TipoSubServicio.PRODUCTO },
-        relations: [
-          'preciosPorPais',
-          'marca',
-          'proveedor',
-          'categoria',
-          'tax',
-          'imagenes',
-        ],
-      });
+      const producto = await this.sub_servicio_repo
+        .createQueryBuilder('producto')
+        .leftJoinAndSelect('producto.preciosPorPais', 'precio')
+        .leftJoinAndSelect('producto.marca', 'marca')
+        .leftJoinAndSelect('producto.proveedor', 'proveedor')
+        .leftJoinAndSelect('producto.categoria', 'categoria')
+        .leftJoinAndSelect('producto.tax', 'tax')
+        .leftJoinAndSelect('producto.imagenes', 'imagenes')
+        .where('producto.id = :productoId', { productoId })
+        .andWhere('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
+        .orderBy('imagenes.createdAt', 'DESC')
+        .getOne();
 
-      if (!producto_existe) {
+      if (!producto) {
         throw new NotFoundException('No se encontró el producto seleccionado');
       }
 
-      if (
-        !producto_existe.preciosPorPais ||
-        producto_existe.preciosPorPais.length === 0
-      ) {
+      if (!producto.preciosPorPais || producto.preciosPorPais.length === 0) {
         throw new BadRequestException(
           'El producto no tiene precios configurados',
         );
       }
 
-      return { producto: producto_existe };
+      return { producto };
     } catch (error) {
       if (
         error instanceof NotFoundException ||
