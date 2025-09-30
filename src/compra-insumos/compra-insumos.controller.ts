@@ -49,7 +49,7 @@ export class CompraInsumosController {
 
   @Get('insumo/:id_insumo')
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findByProducto(@Param('id_insumo', ParseUUIDPipe) id_insumo: string) {
+  findByInsumo(@Param('id_insumo', ParseUUIDPipe) id_insumo: string) {
     return this.compraInsumosService.findByInsumo(id_insumo);
   }
 

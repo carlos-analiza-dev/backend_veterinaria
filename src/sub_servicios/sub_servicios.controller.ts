@@ -86,14 +86,17 @@ export class SubServiciosController {
   }
 
   @Get('categoria/:categoriaId')
+  @AuthCliente()
   getProductosPorCategoria(
     @Param('categoriaId', ParseUUIDPipe) categoriaId: string,
     @Query() paginationDto: PaginationDto,
+    @GetCliente() cliente: Cliente,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit?: number,
   ) {
     return this.subServiciosService.getProductosRelacionados(
       categoriaId,
       paginationDto,
+      cliente,
       limit,
     );
   }

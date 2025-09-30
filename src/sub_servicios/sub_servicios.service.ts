@@ -8,7 +8,7 @@ import {
 import { UpdateSubServicioDto } from './dto/update-sub_servicio.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SubServicio, TipoSubServicio } from './entities/sub_servicio.entity';
-import { In, Repository } from 'typeorm';
+import { In, Repository, SelectQueryBuilder } from 'typeorm';
 import { Servicio } from 'src/servicios/entities/servicio.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
@@ -273,6 +273,7 @@ export class SubServiciosService {
     try {
       const queryBuilder = this.sub_servicio_repo
         .createQueryBuilder('producto')
+        .distinctOn(['producto.id'])
         .leftJoinAndSelect('producto.preciosPorPais', 'precio')
         .leftJoinAndSelect('precio.pais', 'pais')
         .leftJoinAndSelect('producto.marca', 'marca')
@@ -281,48 +282,63 @@ export class SubServiciosService {
         .leftJoinAndSelect('producto.tax', 'tax')
         .leftJoinAndSelect('producto.imagenes', 'imagenes')
         .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
-        .orderBy('imagenes.createdAt', 'DESC');
+        .orderBy('producto.id', 'ASC')
+        .addOrderBy('imagenes.createdAt', 'DESC');
 
-      if (pais && pais.trim() !== '') {
-        queryBuilder.andWhere('(pais.id = :paisId )', {
-          paisId: pais,
-        });
-      }
+      const countQueryBuilder = this.sub_servicio_repo
+        .createQueryBuilder('producto')
+        .leftJoin('producto.preciosPorPais', 'precio')
+        .leftJoin('precio.pais', 'pais')
+        .leftJoin('producto.marca', 'marca')
+        .leftJoin('producto.proveedor', 'proveedor')
+        .leftJoin('producto.categoria', 'categoria')
+        .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO });
 
-      if (categoria && categoria.trim() !== '') {
-        queryBuilder.andWhere(
-          '(categoria.id = :categoriaId OR categoria.nombre ILIKE :categoriaNombre)',
-          {
-            categoriaId: categoria,
-            categoriaNombre: `%${categoria}%`,
-          },
-        );
-      }
+      const applyFilters = (qb: SelectQueryBuilder<any>) => {
+        if (pais && pais.trim() !== '') {
+          qb.andWhere('(pais.id = :paisId )', {
+            paisId: pais,
+          });
+        }
 
-      if (marca && marca.trim() !== '') {
-        queryBuilder.andWhere(
-          '(marca.id = :marcaId OR marca.nombre ILIKE :marcaNombre)',
-          {
-            marcaId: marca,
-            marcaNombre: `%${marca}%`,
-          },
-        );
-      }
+        if (categoria && categoria.trim() !== '') {
+          qb.andWhere(
+            '(categoria.id = :categoriaId OR categoria.nombre ILIKE :categoriaNombre)',
+            {
+              categoriaId: categoria,
+              categoriaNombre: `%${categoria}%`,
+            },
+          );
+        }
 
-      if (proveedor && proveedor.trim() !== '') {
-        queryBuilder.andWhere(
-          '(proveedor.id = :proveedor OR proveedor.nombre_legal ILIKE :proveedorNombre)',
-          {
-            proveedor: proveedor,
-            proveedorNombre: `%${proveedor}%`,
-          },
-        );
-      }
+        if (marca && marca.trim() !== '') {
+          qb.andWhere(
+            '(marca.id = :marcaId OR marca.nombre ILIKE :marcaNombre)',
+            {
+              marcaId: marca,
+              marcaNombre: `%${marca}%`,
+            },
+          );
+        }
 
-      queryBuilder.take(limit);
-      queryBuilder.skip(offset);
+        if (proveedor && proveedor.trim() !== '') {
+          qb.andWhere(
+            '(proveedor.id = :proveedor OR proveedor.nombre_legal ILIKE :proveedorNombre)',
+            {
+              proveedor: proveedor,
+              proveedorNombre: `%${proveedor}%`,
+            },
+          );
+        }
+      };
 
-      const [productos, total] = await queryBuilder.getManyAndCount();
+      applyFilters(queryBuilder);
+      applyFilters(countQueryBuilder);
+
+      const [productos, total] = await Promise.all([
+        queryBuilder.skip(offset).take(limit).getMany(),
+        countQueryBuilder.getCount(),
+      ]);
 
       if (!productos || productos.length === 0) {
         let errorMessage = 'No se encontraron productos disponibles';
@@ -357,7 +373,6 @@ export class SubServiciosService {
       throw error;
     }
   }
-
   async findAllProductosDisponibles(user: User) {
     const paisId = user.pais.id;
 
@@ -400,6 +415,7 @@ export class SubServiciosService {
     try {
       const queryBuilder = this.sub_servicio_repo
         .createQueryBuilder('producto')
+        .distinctOn(['producto.id'])
         .leftJoinAndSelect(
           'producto.preciosPorPais',
           'precio',
@@ -422,11 +438,35 @@ export class SubServiciosService {
         });
       }
 
-      const [productosDisponibles, total] = await queryBuilder
-        .orderBy('imagenes.createdAt', 'DESC')
-        .skip(offset)
-        .take(limit)
-        .getManyAndCount();
+      const countQueryBuilder = this.sub_servicio_repo
+        .createQueryBuilder('producto')
+        .leftJoin(
+          'producto.preciosPorPais',
+          'precio',
+          'precio.paisId = :paisId',
+          { paisId },
+        )
+        .leftJoin('producto.categoria', 'categoria')
+        .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
+        .andWhere('producto.disponible = :disponible', { disponible: true })
+        .andWhere('producto.isActive = :isActive', { isActive: true })
+        .andWhere('precio.paisId IS NOT NULL');
+
+      if (tipo_categoria && tipo_categoria.trim() !== '') {
+        countQueryBuilder.andWhere('categoria.tipo = :tipoCategoria', {
+          tipoCategoria: tipo_categoria,
+        });
+      }
+
+      const [productosDisponibles, total] = await Promise.all([
+        queryBuilder
+          .orderBy('producto.id', 'ASC')
+          .addOrderBy('imagenes.createdAt', 'DESC')
+          .skip(offset)
+          .take(limit)
+          .getMany(),
+        countQueryBuilder.getCount(),
+      ]);
 
       if (!productosDisponibles || productosDisponibles.length === 0) {
         throw new NotFoundException('No se encontraron productos disponibles');
@@ -447,14 +487,21 @@ export class SubServiciosService {
   async getProductosRelacionados(
     categoriaId: string,
     paginationDto: PaginationDto,
+    cliente: Cliente,
     limit: number = 10,
   ) {
+    const paisId = cliente.pais.id;
     const { producto, tipo_categoria } = paginationDto;
 
     return await this.sub_servicio_repo
       .createQueryBuilder('producto')
       .leftJoinAndSelect('producto.categoria', 'categoria')
-      .leftJoinAndSelect('producto.preciosPorPais', 'preciosPorPais')
+      .leftJoinAndSelect(
+        'producto.preciosPorPais',
+        'precio',
+        'precio.paisId = :paisId',
+        { paisId },
+      )
       .leftJoinAndSelect('producto.imagenes', 'imagenes')
       .leftJoinAndSelect('producto.marca', 'marca')
       .where('producto.categoriaId = :categoriaId', { categoriaId })
@@ -469,6 +516,7 @@ export class SubServiciosService {
       })
       .andWhere('producto.disponible = :disponible', { disponible: true })
       .andWhere('producto.isActive = :isActive', { isActive: true })
+      .andWhere('precio.paisId IS NOT NULL')
       .orderBy('producto.createdAt', 'DESC')
       .take(limit)
       .getMany();
