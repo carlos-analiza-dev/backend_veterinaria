@@ -84,6 +84,28 @@ export class ServiciosService {
     }
   }
 
+  async findAllActivosAdmin(user: User) {
+    const paisId = user.pais.id;
+    try {
+      const pais_existe = await this.paisRepo.findOne({
+        where: { id: paisId },
+      });
+      if (!pais_existe)
+        throw new NotFoundException('No se encontro el pais seleccionado');
+      const servicios = await this.servicioRepo.find({
+        where: { isActive: true, pais: { id: paisId } },
+      });
+      if (!servicios || servicios.length === 0) {
+        throw new NotFoundException(
+          'No se encontraron servicios en este momento.',
+        );
+      }
+      return servicios;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findAllActivos(cliente: Cliente) {
     const paisId = cliente.pais.id;
     try {

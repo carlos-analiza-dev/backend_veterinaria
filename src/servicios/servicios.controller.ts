@@ -34,6 +34,12 @@ export class ServiciosController {
     return this.serviciosService.findAll(user, paginationDto);
   }
 
+  @Get('/activos-admin')
+  @Auth()
+  findAllActivosAdmin(@GetUser() user: User) {
+    return this.serviciosService.findAllActivosAdmin(user);
+  }
+
   @Get('/activos')
   @AuthCliente()
   findAllActivos(@GetCliente() cliente: Cliente) {

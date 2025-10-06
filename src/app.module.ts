@@ -52,6 +52,11 @@ import { AuthClientesModule } from './auth-clientes/auth-clientes.module';
 import { ImagesClientModule } from './images_client/images_client.module';
 import { DatosEmpresaModule } from './datos-empresa/datos-empresa.module';
 import { RangosFacturaModule } from './rangos-factura/rangos-factura.module';
+import { GeneratePdfModule } from './generate_pdf/generate_pdf.module';
+import { CitaProductosModule } from './cita_productos/cita_productos.module';
+import { FacturaEncabezadoModule } from './factura_encabezado/factura_encabezado.module';
+import { FacturaDetalleModule } from './factura_detalle/factura_detalle.module';
+import { GeneratePdfFacturaModule } from './generate_pdf_factura/generate_pdf_factura.module';
 
 @Module({
   imports: [
@@ -87,7 +92,8 @@ import { RangosFacturaModule } from './rangos-factura/rangos-factura.module';
     SubServiciosModule,
     CitasModule,
     MedicosModule,
-
+    GeneratePdfModule,
+    CitaProductosModule,
     HorariosMedicosModule,
 
     ProfileImagesModule,
@@ -148,6 +154,12 @@ import { RangosFacturaModule } from './rangos-factura/rangos-factura.module';
     DatosEmpresaModule,
 
     RangosFacturaModule,
+
+    FacturaEncabezadoModule,
+
+    FacturaDetalleModule,
+
+    GeneratePdfFacturaModule,
   ],
   controllers: [],
   providers: [],

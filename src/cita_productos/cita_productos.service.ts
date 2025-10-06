@@ -34,20 +34,10 @@ export class CitaProductosService {
 
     const producto = await this.productoRepository.findOne({
       where: { id: createCitaProductoDto.productoId },
-      relations: ['inventario'],
     });
     if (!producto) {
       throw new NotFoundException(
         `Producto con ID ${createCitaProductoDto.productoId} no encontrado`,
-      );
-    }
-
-    if (
-      !producto.inventario ||
-      producto.inventario.cantidadDisponible < createCitaProductoDto.cantidad
-    ) {
-      throw new NotFoundException(
-        `No hay suficiente stock del producto ${producto.nombre}`,
       );
     }
 
@@ -57,12 +47,6 @@ export class CitaProductosService {
       cantidad: createCitaProductoDto.cantidad,
       precioUnitario: createCitaProductoDto.precioUnitario,
     });
-
-    await this.inventarioRepository.decrement(
-      { id: producto.inventario.id },
-      'cantidadDisponible',
-      createCitaProductoDto.cantidad,
-    );
 
     const saved = await this.citaProductoRepository.save(citaProducto);
     return this.mapToResponseDto(saved);
