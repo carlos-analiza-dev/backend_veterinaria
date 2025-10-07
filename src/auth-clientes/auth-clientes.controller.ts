@@ -45,6 +45,12 @@ export class AuthClientesController {
     return this.authClientesService.checkAuthStatus(cliente);
   }
 
+  @Get()
+  @Auth()
+  getClientesAdmin(@GetUser() user: User) {
+    return this.authClientesService.getClientesAdmin(user);
+  }
+
   @Get('clientes')
   @Auth()
   getUsers(@Query() paginationDto: PaginationDto) {

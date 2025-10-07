@@ -201,6 +201,22 @@ export class AuthClientesService {
     };
   }
 
+  async getClientesAdmin(user: User) {
+    const paisId = user.pais.id;
+    try {
+      const clientes = await this.clienteRepository.find({
+        where: { isActive: true, pais: { id: paisId } },
+      });
+      if (!clientes || clientes.length === 0) {
+        throw new NotFoundException('No se encontraron clientes disponibles');
+      }
+      const clientes_activos = instanceToPlain(clientes);
+      return { clientes: clientes_activos };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async getClientes(paginationDto: PaginationDto) {
     const { limit = 10, offset = 0, name, pais } = paginationDto;
     try {

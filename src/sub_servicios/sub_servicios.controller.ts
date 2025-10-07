@@ -50,6 +50,12 @@ export class SubServiciosController {
     return this.subServiciosService.findAllProductosDisponibles(user);
   }
 
+  @Get('servicios-disponibles')
+  @Auth()
+  findAllServiciosDisponibles(@GetUser() user: User) {
+    return this.subServiciosService.findAllServiciosDisponibles(user);
+  }
+
   @Get('productos-disponibles-clientes')
   @AuthCliente()
   findAllProductosDisponiblesClientes(

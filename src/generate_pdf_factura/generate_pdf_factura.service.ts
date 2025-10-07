@@ -17,7 +17,7 @@ export class FacturaPdfService {
     private readonly datosEmpresaRepository: Repository<DatosEmpresa>,
   ) {}
 
-  async generarFacturaPDF(id: string, @Res() res: Response) {
+  async generarFacturaPDF(id: string, @Res() res: Response, isPreview = false) {
     try {
       const factura = await this.facturaEncabezadoRepository.findOne({
         where: { id },
@@ -46,7 +46,9 @@ export class FacturaPdfService {
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename=factura_${factura.numero_factura}.pdf`,
+        `${isPreview ? 'inline' : 'attachment'}; filename=factura_${
+          factura.numero_factura
+        }.pdf`,
       );
 
       const doc = new PDFDocument({ margin: 50, size: 'A4' });
@@ -583,7 +585,7 @@ export class FacturaPdfService {
         footerY,
         500,
         25,
-        'LA FACTURA ES BENEFICIO DE TODOS, EXIJALA!',
+        'MUCHAS GRACIAS POR TU COMPRA!',
         '#2E86AB',
         '#FFFFFF',
         10,
@@ -592,7 +594,6 @@ export class FacturaPdfService {
 
       doc.end();
     } catch (error) {
-      console.error('Error en generarFacturaPDF:', error);
       if (!res.headersSent) {
         res.status(500).json({
           message: 'Error al generar la factura PDF',
@@ -604,29 +605,8 @@ export class FacturaPdfService {
 
   async generarFacturaPreview(id: string, @Res() res: Response) {
     try {
-      const factura = await this.facturaEncabezadoRepository.findOne({
-        where: { id },
-        relations: [
-          'cliente',
-          'detalles',
-          'detalles.producto_servicio',
-          'rango_factura',
-        ],
-      });
-
-      if (!factura) {
-        return res.status(404).json({ message: 'Factura no encontrada' });
-      }
-
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader(
-        'Content-Disposition',
-        `inline; filename=factura_${factura.numero_factura}.pdf`,
-      );
-
-      return this.generarFacturaPDF(id, res);
+      return this.generarFacturaPDF(id, res, true);
     } catch (error) {
-      console.error('Error en generarFacturaPreview:', error);
       if (!res.headersSent) {
         res.status(500).json({
           message: 'Error al generar la previsualización',

@@ -13,6 +13,10 @@ import { FacturaEncabezado } from './entities/factura_encabezado.entity';
 import { FacturaDetalle } from 'src/factura_detalle/entities/factura_detalle.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { CreateFacturaDetalleDto } from 'src/factura_detalle/dto/create-factura_detalle.dto';
+import { Pai } from 'src/pais/entities/pai.entity';
+import { User } from 'src/auth/entities/auth.entity';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { instanceToPlain } from 'class-transformer';
 
 @Injectable()
 export class FacturaEncabezadoService {
@@ -38,6 +42,14 @@ export class FacturaEncabezadoService {
 
         if (!cliente) {
           throw new NotFoundException('Cliente no encontrado');
+        }
+
+        const pais = await transactionalEntityManager.findOne(Pai, {
+          where: { id: createFacturaEncabezadoDto.pais_id },
+        });
+
+        if (!pais) {
+          throw new NotFoundException('Pais no encontrado');
         }
 
         const rangoActivo = await transactionalEntityManager.findOne(
@@ -83,6 +95,7 @@ export class FacturaEncabezadoService {
 
         const factura = transactionalEntityManager.create(FacturaEncabezado, {
           ...createFacturaEncabezadoDto,
+          pais,
           cliente,
           numero_factura: numeroFactura,
           fecha_limite_emision: rangoActivo.fecha_limite_emision,
@@ -126,8 +139,35 @@ export class FacturaEncabezadoService {
       },
     );
   }
-  findAll() {
-    return `This action returns all facturaEncabezado`;
+
+  async findAll(user: User, paginationDto: PaginationDto) {
+    const { limit = 10, offset = 0 } = paginationDto;
+    const paisId = user.pais.id;
+
+    try {
+      const [facturas, total] = await this.facturaEncabezadoRepository
+        .createQueryBuilder('factura')
+        .leftJoinAndSelect('factura.cliente', 'cliente')
+        .leftJoinAndSelect('factura.rango_factura', 'rango')
+        .leftJoinAndSelect('factura.pais', 'pais')
+        .leftJoinAndSelect('factura.detalles', 'detalles')
+        .where('pais.id = :paisId', { paisId })
+        .orderBy('factura.created_at', 'DESC')
+        .skip(offset)
+        .take(limit)
+        .getManyAndCount();
+
+      if (!facturas || facturas.length === 0) {
+        throw new NotFoundException('No se encontraron facturas disponibles');
+      }
+
+      return {
+        total,
+        data: instanceToPlain(facturas),
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
   findOne(id: number) {
@@ -336,8 +376,80 @@ export class FacturaEncabezadoService {
     return 'Número demasiado grande';
   }
 
-  update(id: number, updateFacturaEncabezadoDto: UpdateFacturaEncabezadoDto) {
-    return `This action updates a #${id} facturaEncabezado`;
+  async update(
+    id: string,
+    updateFacturaEncabezadoDto: UpdateFacturaEncabezadoDto,
+  ) {
+    return await this.dataSource.transaction(
+      async (transactionalEntityManager) => {
+        const factura = await transactionalEntityManager.findOne(
+          FacturaEncabezado,
+          {
+            where: { id },
+            relations: ['detalles'],
+          },
+        );
+
+        if (!factura) {
+          throw new NotFoundException('Factura no encontrada');
+        }
+
+        if (updateFacturaEncabezadoDto.forma_pago) {
+          factura.forma_pago = updateFacturaEncabezadoDto.forma_pago;
+        }
+
+        if (updateFacturaEncabezadoDto.estado) {
+          factura.estado = updateFacturaEncabezadoDto.estado;
+        }
+
+        if (updateFacturaEncabezadoDto.descuentos_rebajas !== undefined) {
+          factura.descuentos_rebajas =
+            updateFacturaEncabezadoDto.descuentos_rebajas;
+        }
+
+        if (
+          updateFacturaEncabezadoDto.detalles &&
+          updateFacturaEncabezadoDto.detalles.length > 0
+        ) {
+          await transactionalEntityManager.delete(FacturaDetalle, {
+            id_factura: factura.id,
+          });
+
+          const { detalles, totales } = await this.procesarDetallesFactura(
+            updateFacturaEncabezadoDto.detalles,
+            transactionalEntityManager,
+          );
+
+          factura.sub_total = totales.subTotal;
+          factura.importe_gravado_15 = totales.importeGravado15;
+          factura.importe_gravado_18 = totales.importeGravado18;
+          factura.isv_15 = totales.isv15;
+          factura.isv_18 = totales.isv18;
+
+          const total = totales.subTotal + totales.isv15 + totales.isv18;
+          factura.total = total;
+          factura.total_letras = this.convertirNumeroALetras(total);
+
+          const nuevosDetalles = detalles.map((detalleDto) =>
+            transactionalEntityManager.create(FacturaDetalle, {
+              ...detalleDto,
+              id_factura: factura.id,
+            }),
+          );
+
+          await transactionalEntityManager.save(FacturaDetalle, nuevosDetalles);
+        }
+
+        const facturaActualizada = await transactionalEntityManager.save(
+          factura,
+        );
+
+        return await transactionalEntityManager.findOne(FacturaEncabezado, {
+          where: { id: facturaActualizada.id },
+          relations: ['detalles', 'detalles.producto_servicio', 'cliente'],
+        });
+      },
+    );
   }
 
   remove(id: number) {

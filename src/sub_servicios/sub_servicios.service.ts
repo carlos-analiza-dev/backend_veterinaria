@@ -405,6 +405,38 @@ export class SubServiciosService {
     }
   }
 
+  async findAllServiciosDisponibles(user: User) {
+    const paisId = user.pais.id;
+
+    try {
+      const serviciosDisponibles = await this.sub_servicio_repo
+        .createQueryBuilder('servicio')
+        .leftJoinAndSelect(
+          'servicio.preciosPorPais',
+          'precio',
+          'precio.paisId = :paisId',
+          { paisId },
+        )
+        .leftJoinAndSelect('servicio.marca', 'marca')
+        .leftJoinAndSelect('servicio.proveedor', 'proveedor')
+        .leftJoinAndSelect('servicio.categoria', 'categoria')
+        .leftJoinAndSelect('servicio.tax', 'tax')
+        .where('servicio.tipo = :tipo', { tipo: TipoSubServicio.SERVICIO })
+        .andWhere('servicio.disponible = :disponible', { disponible: true })
+        .andWhere('servicio.isActive = :isActive', { isActive: true })
+        .andWhere('precio.paisId IS NOT NULL')
+        .getMany();
+
+      if (!serviciosDisponibles || serviciosDisponibles.length === 0) {
+        throw new NotFoundException('No se encontraron productos disponibles');
+      }
+
+      return { servicios: serviciosDisponibles };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findAllProductosDisponiblesClientes(
     cliente: Cliente,
     paginationDto: PaginationDto,

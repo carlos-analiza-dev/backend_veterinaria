@@ -1,5 +1,6 @@
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { FacturaDetalle } from 'src/factura_detalle/entities/factura_detalle.entity';
+import { Pai } from 'src/pais/entities/pai.entity';
 import { RangoFactura } from 'src/rangos-factura/entities/rango-factura.entity';
 import {
   Column,
@@ -17,6 +18,12 @@ export enum FormaPago {
   CONTADO = 'Contado',
 }
 
+export enum EstadoFactura {
+  EMITIDA = 'Emitida',
+  PROCESADA = 'Procesada',
+  CANCELADA = 'Cancelada',
+}
+
 @Entity('encabezado-factura')
 export class FacturaEncabezado {
   @PrimaryGeneratedColumn('uuid')
@@ -29,6 +36,13 @@ export class FacturaEncabezado {
   @Column({ name: 'id_cliente' })
   id_cliente: string;
 
+  @ManyToOne(() => Pai)
+  @JoinColumn({ name: 'pais_id' })
+  pais: Pai;
+
+  @Column({ name: 'pais_id' })
+  pais_id: string;
+
   @OneToMany(() => FacturaDetalle, (detalle) => detalle.factura)
   detalles: FacturaDetalle[];
 
@@ -38,6 +52,13 @@ export class FacturaEncabezado {
     default: FormaPago.CONTADO,
   })
   forma_pago: FormaPago;
+
+  @Column({
+    type: 'enum',
+    enum: EstadoFactura,
+    default: EstadoFactura.EMITIDA,
+  })
+  estado: EstadoFactura;
 
   @Column({ unique: true, length: 30 })
   numero_factura: string;
