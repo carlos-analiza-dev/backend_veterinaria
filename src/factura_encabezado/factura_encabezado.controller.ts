@@ -10,11 +10,11 @@ import {
 } from '@nestjs/common';
 import { FacturaEncabezadoService } from './factura_encabezado.service';
 import { CreateFacturaEncabezadoDto } from './dto/create-factura_encabezado.dto';
-import { UpdateFacturaEncabezadoDto } from './dto/update-factura_encabezado.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { UpdateFacturaEncabezadoDto } from './dto/update-factura-encabezado.dto';
 
 @Controller('factura-encabezado')
 export class FacturaEncabezadoController {
@@ -24,8 +24,14 @@ export class FacturaEncabezadoController {
 
   @Post()
   @Auth()
-  create(@Body() createFacturaEncabezadoDto: CreateFacturaEncabezadoDto) {
-    return this.facturaEncabezadoService.create(createFacturaEncabezadoDto);
+  create(
+    @GetUser() user: User,
+    @Body() createFacturaEncabezadoDto: CreateFacturaEncabezadoDto,
+  ) {
+    return this.facturaEncabezadoService.create(
+      user,
+      createFacturaEncabezadoDto,
+    );
   }
 
   @Get()
@@ -35,11 +41,13 @@ export class FacturaEncabezadoController {
   }
 
   @Get(':id')
+  @Auth()
   findOne(@Param('id') id: string) {
-    return this.facturaEncabezadoService.findOne(+id);
+    return this.facturaEncabezadoService.findOne(id);
   }
 
   @Patch(':id')
+  @Auth()
   update(
     @Param('id') id: string,
     @Body() updateFacturaEncabezadoDto: UpdateFacturaEncabezadoDto,
@@ -48,7 +56,26 @@ export class FacturaEncabezadoController {
   }
 
   @Delete(':id')
+  @Auth()
   remove(@Param('id') id: string) {
-    return this.facturaEncabezadoService.remove(+id);
+    return this.facturaEncabezadoService.remove(id);
+  }
+
+  @Patch(':id/procesar')
+  @Auth()
+  procesarFactura(@Param('id') id: string) {
+    return this.facturaEncabezadoService.procesarFactura(id);
+  }
+
+  @Get(':id/verificar-existencia')
+  @Auth()
+  verificarExistencia(@Param('id') id: string) {
+    return this.facturaEncabezadoService.verificarExistenciaParaFactura(id);
+  }
+
+  @Patch(':id/cancelar')
+  @Auth()
+  cancelarFactura(@Param('id') id: string) {
+    return this.facturaEncabezadoService.cancelarFactura(id);
   }
 }

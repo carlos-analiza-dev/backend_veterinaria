@@ -8,6 +8,8 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { FacturaDetalle } from 'src/factura_detalle/entities/factura_detalle.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { AuthModule } from 'src/auth/auth.module';
+import { Lote } from 'src/lotes/entities/lote.entity';
+import { MovimientosLote } from 'src/movimientos_lotes/entities/movimientos_lote.entity';
 
 @Module({
   controllers: [FacturaEncabezadoController],
@@ -18,6 +20,8 @@ import { AuthModule } from 'src/auth/auth.module';
       Cliente,
       FacturaDetalle,
       SubServicio,
+      Lote,
+      MovimientosLote,
     ]),
     AuthModule,
   ],

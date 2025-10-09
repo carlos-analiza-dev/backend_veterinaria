@@ -1,4 +1,6 @@
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { User } from 'src/auth/entities/auth.entity';
+import { DescuentosCliente } from 'src/descuentos_clientes/entities/descuentos_cliente.entity';
 import { FacturaDetalle } from 'src/factura_detalle/entities/factura_detalle.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { RangoFactura } from 'src/rangos-factura/entities/rango-factura.entity';
@@ -42,6 +44,13 @@ export class FacturaEncabezado {
 
   @Column({ name: 'pais_id' })
   pais_id: string;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'usuario_id' })
+  usuario: User;
+
+  @Column({ name: 'usuario_id' })
+  usuario_id: string;
 
   @OneToMany(() => FacturaDetalle, (detalle) => detalle.factura)
   detalles: FacturaDetalle[];
@@ -87,6 +96,10 @@ export class FacturaEncabezado {
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   descuentos_rebajas: number;
+
+  @ManyToOne(() => DescuentosCliente, { eager: true, nullable: true })
+  @JoinColumn({ name: 'descuento_id' })
+  descuento: DescuentosCliente;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   importe_exento: number;

@@ -57,6 +57,8 @@ import { CitaProductosModule } from './cita_productos/cita_productos.module';
 import { FacturaEncabezadoModule } from './factura_encabezado/factura_encabezado.module';
 import { FacturaDetalleModule } from './factura_detalle/factura_detalle.module';
 import { GeneratePdfFacturaModule } from './generate_pdf_factura/generate_pdf_factura.module';
+import { DescuentosClientesModule } from './descuentos_clientes/descuentos_clientes.module';
+import { MovimientosLotesModule } from './movimientos_lotes/movimientos_lotes.module';
 
 @Module({
   imports: [
@@ -160,6 +162,10 @@ import { GeneratePdfFacturaModule } from './generate_pdf_factura/generate_pdf_fa
     FacturaDetalleModule,
 
     GeneratePdfFacturaModule,
+
+    DescuentosClientesModule,
+
+    MovimientosLotesModule,
   ],
   controllers: [],
   providers: [],

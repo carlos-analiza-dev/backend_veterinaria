@@ -3,10 +3,12 @@ import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('lotes')
@@ -43,4 +45,10 @@ export class Lote {
 
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   costo_por_unidad?: number;
+
+  @CreateDateColumn()
+  created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }

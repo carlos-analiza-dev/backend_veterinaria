@@ -2,11 +2,9 @@ import {
   ArrayMinSize,
   IsArray,
   IsEnum,
-  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsPositive,
-  IsString,
   IsUUID,
   ValidateNested,
 } from 'class-validator';
@@ -17,24 +15,21 @@ import {
 import { Type } from 'class-transformer';
 import { CreateFacturaDetalleDto } from 'src/factura_detalle/dto/create-factura_detalle.dto';
 
-export class CreateFacturaEncabezadoDto {
+export class UpdateFacturaEncabezadoDto {
   @IsUUID('4', { message: 'El campo "id_cliente" debe ser un UUID válido.' })
-  @IsNotEmpty({ message: 'El campo cliente no debe estar vacio' })
-  id_cliente: string;
+  @IsOptional()
+  id_cliente?: string;
 
   @IsOptional()
   descuento_id: string;
-
-  @IsString({ message: 'El campo "pais" debe ser una cadena de texto válida.' })
-  @IsUUID()
-  pais_id: string;
 
   @IsEnum(FormaPago, {
     message: `El campo "forma_pago" debe ser uno de los siguientes valores válidos: ${Object.values(
       FormaPago,
     ).join(', ')}.`,
   })
-  forma_pago: FormaPago;
+  @IsOptional()
+  forma_pago?: FormaPago;
 
   @IsEnum(EstadoFactura, {
     message:
@@ -45,7 +40,8 @@ export class CreateFacturaEncabezadoDto {
 
   @IsNumber({}, { message: 'El campo "sub_total" debe ser un número válido.' })
   @IsPositive({ message: 'El campo "sub_total" debe ser un número positivo.' })
-  sub_total: number;
+  @IsOptional()
+  sub_total?: number;
 
   @IsNumber(
     {},
@@ -60,7 +56,8 @@ export class CreateFacturaEncabezadoDto {
   })
   @ValidateNested({ each: true })
   @Type(() => CreateFacturaDetalleDto)
-  detalles: CreateFacturaDetalleDto[];
+  @IsOptional()
+  detalles?: CreateFacturaDetalleDto[];
 
   @IsNumber(
     {},

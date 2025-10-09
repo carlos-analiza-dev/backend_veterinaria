@@ -214,7 +214,7 @@ export class FacturaPdfService {
       doc
         .font('Helvetica-Bold')
         .text(
-          `Factura: ${
+          `Forma de Pago: ${
             factura.forma_pago === 'Credito' ? 'Crédito' : 'Contado'
           }`,
           50,

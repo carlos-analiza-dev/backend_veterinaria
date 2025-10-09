@@ -1,6 +1,7 @@
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
+import { DescuentosCliente } from 'src/descuentos_clientes/entities/descuentos_cliente.entity';
 import { DescuentosInsumo } from 'src/descuentos_insumos/entities/descuentos_insumo.entity';
 import { DescuentosProducto } from 'src/descuentos_producto/entities/descuentos_producto.entity';
 import { EscalasProducto } from 'src/escalas_producto/entities/escalas_producto.entity';
@@ -56,6 +57,9 @@ export class Pai {
 
   @OneToMany(() => TaxesPai, (tax) => tax.pais)
   taxes: TaxesPai[];
+
+  @OneToMany(() => DescuentosCliente, (desc) => desc.pais)
+  descuentos: DescuentosCliente[];
 
   @OneToMany(() => Servicio, (servicio) => servicio.pais)
   servicios: Servicio[];
