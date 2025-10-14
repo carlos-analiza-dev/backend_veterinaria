@@ -4,6 +4,7 @@ import { DescuentosCliente } from 'src/descuentos_clientes/entities/descuentos_c
 import { FacturaDetalle } from 'src/factura_detalle/entities/factura_detalle.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { RangoFactura } from 'src/rangos-factura/entities/rango-factura.entity';
+import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 import {
   Column,
   CreateDateColumn,
@@ -51,6 +52,13 @@ export class FacturaEncabezado {
 
   @Column({ name: 'usuario_id' })
   usuario_id: string;
+
+  @ManyToOne(() => Sucursal)
+  @JoinColumn({ name: 'sucursal_id' })
+  sucursal: Sucursal;
+
+  @Column({ name: 'sucursal_id' })
+  sucursal_id: string;
 
   @OneToMany(() => FacturaDetalle, (detalle) => detalle.factura)
   detalles: FacturaDetalle[];

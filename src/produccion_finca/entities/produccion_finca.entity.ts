@@ -1,3 +1,4 @@
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { ProduccionAgricola } from 'src/produccion_agricola/entities/produccion_agricola.entity';
@@ -64,9 +65,9 @@ export class ProduccionFinca {
   @JoinColumn()
   apicultura?: ProduccionApicultura;
 
-  @ManyToOne(() => User, (user) => user.producciones)
+  @ManyToOne(() => Cliente, (cliente) => cliente.producciones)
   @JoinColumn({ name: 'userId' })
-  propietario: User;
+  propietario: Cliente;
 
   @Column({ type: 'bool', default: false })
   produccion_mixta: boolean;

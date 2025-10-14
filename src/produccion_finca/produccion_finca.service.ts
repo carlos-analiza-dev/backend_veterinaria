@@ -18,6 +18,7 @@ import { ProduccionForrajesInsumo } from '../produccion_forrajes_insumos/entitie
 import { User } from '../auth/entities/auth.entity';
 import { ProduccionApicultura } from 'src/produccion_apicultura/entities/produccion_apicultura.entity';
 import { instanceToPlain } from 'class-transformer';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Injectable()
 export class ProduccionFincaService {
@@ -36,8 +37,8 @@ export class ProduccionFincaService {
     private readonly produccion_forrajes_rep: Repository<ProduccionForrajesInsumo>,
     @InjectRepository(ProduccionApicultura)
     private readonly produccion_apicultura_rep: Repository<ProduccionApicultura>,
-    @InjectRepository(User)
-    private readonly usuario_rep: Repository<User>,
+    @InjectRepository(Cliente)
+    private readonly usuario_rep: Repository<Cliente>,
   ) {}
 
   async create(createProduccionFincaDto: CreateProduccionFincaDto) {

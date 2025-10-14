@@ -70,16 +70,56 @@ export class ProductosNoVendidosService {
   }
 
   async findAll(user: User, paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0 } = paginationDto;
-    const sucursalId = user.sucursal.id;
+    const {
+      limit = 10,
+      offset = 0,
+      fechaInicio,
+      fechaFin,
+      sucursal,
+    } = paginationDto;
 
-    const [productos, total] = await this.productosNoVendidosRepo.findAndCount({
-      where: { sucursal: { id: sucursalId } },
-      relations: ['producto', 'sucursal'],
-      order: { created_at: 'DESC' },
-      take: limit,
-      skip: offset,
-    });
+    const sucursalIdUsuario = user.sucursal?.id;
+
+    const queryBuilder = this.productosNoVendidosRepo
+      .createQueryBuilder('productoNoVendido')
+      .leftJoinAndSelect('productoNoVendido.producto', 'producto')
+      .leftJoinAndSelect('productoNoVendido.sucursal', 'sucursal')
+      .orderBy('productoNoVendido.created_at', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    if (sucursal) {
+      queryBuilder.andWhere('sucursal.id = :sucursalId', {
+        sucursalId: sucursal,
+      });
+    } else if (sucursalIdUsuario) {
+      queryBuilder.andWhere('sucursal.id = :sucursalId', {
+        sucursalId: sucursalIdUsuario,
+      });
+    }
+
+    if (fechaInicio && fechaFin) {
+      queryBuilder.andWhere(
+        'DATE(productoNoVendido.created_at) BETWEEN DATE(:fechaInicio) AND DATE(:fechaFin)',
+        { fechaInicio, fechaFin },
+      );
+    } else if (fechaInicio) {
+      queryBuilder.andWhere(
+        'DATE(productoNoVendido.created_at) >= DATE(:fechaInicio)',
+        {
+          fechaInicio,
+        },
+      );
+    } else if (fechaFin) {
+      queryBuilder.andWhere(
+        'DATE(productoNoVendido.created_at) <= DATE(:fechaFin)',
+        {
+          fechaFin,
+        },
+      );
+    }
+
+    const [productos, total] = await queryBuilder.getManyAndCount();
 
     return {
       productos,

@@ -28,6 +28,7 @@ import {
   MovimientosLote,
   TipoMovimiento,
 } from 'src/movimientos_lotes/entities/movimientos_lote.entity';
+import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 
 @Injectable()
 export class FacturaEncabezadoService {
@@ -69,6 +70,14 @@ export class FacturaEncabezadoService {
 
         if (!pais) {
           throw new NotFoundException('Pais no encontrado');
+        }
+
+        const sucursal = await transactionalEntityManager.findOne(Sucursal, {
+          where: { id: createFacturaEncabezadoDto.sucursal_id },
+        });
+
+        if (!sucursal) {
+          throw new NotFoundException('Sucursal no encontrado');
         }
 
         let descuento = null;
@@ -131,6 +140,7 @@ export class FacturaEncabezadoService {
           pais,
           cliente,
           usuario_id,
+          sucursal,
           numero_factura: numeroFactura,
           fecha_limite_emision: rangoActivo.fecha_limite_emision,
           fecha_recepcion: rangoActivo.fecha_recepcion,

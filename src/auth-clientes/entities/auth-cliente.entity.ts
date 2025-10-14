@@ -12,6 +12,7 @@ import { Exclude } from 'class-transformer';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { ImagesClient } from 'src/images_client/entities/images_client.entity';
+import { ProduccionFinca } from 'src/produccion_finca/entities/produccion_finca.entity';
 
 @Entity('clientes')
 export class Cliente {
@@ -60,6 +61,9 @@ export class Cliente {
 
   @OneToMany(() => AnimalFinca, (animal) => animal.propietario)
   animales: AnimalFinca[];
+
+  @OneToMany(() => ProduccionFinca, (produccion) => produccion.propietario)
+  producciones: ProduccionFinca[];
 
   @OneToMany(() => ImagesClient, (profileImage) => profileImage.cliente, {
     eager: true,

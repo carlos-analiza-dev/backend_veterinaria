@@ -60,6 +60,7 @@ import { GeneratePdfFacturaModule } from './generate_pdf_factura/generate_pdf_fa
 import { DescuentosClientesModule } from './descuentos_clientes/descuentos_clientes.module';
 import { MovimientosLotesModule } from './movimientos_lotes/movimientos_lotes.module';
 import { ProductosNoVendidosModule } from './productos_no_vendidos/productos_no_vendidos.module';
+import { DashboardsModule } from './dashboards/dashboards.module';
 
 @Module({
   imports: [
@@ -169,6 +170,8 @@ import { ProductosNoVendidosModule } from './productos_no_vendidos/productos_no_
     MovimientosLotesModule,
 
     ProductosNoVendidosModule,
+
+    DashboardsModule,
   ],
   controllers: [],
   providers: [],

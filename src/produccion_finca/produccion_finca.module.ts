@@ -10,6 +10,7 @@ import { ProduccionAlternativa } from 'src/produccion_alternativa/entities/produ
 import { ProduccionForrajesInsumo } from 'src/produccion_forrajes_insumos/entities/produccion_forrajes_insumo.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { ProduccionApicultura } from 'src/produccion_apicultura/entities/produccion_apicultura.entity';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Module({
   controllers: [ProduccionFincaController],
@@ -23,6 +24,7 @@ import { ProduccionApicultura } from 'src/produccion_apicultura/entities/producc
       ProduccionForrajesInsumo,
       ProduccionApicultura,
       User,
+      Cliente,
     ]),
   ],
   providers: [ProduccionFincaService],

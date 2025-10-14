@@ -1,5 +1,10 @@
 import { Type } from 'class-transformer';
-import { IsOptional, IsPositive, IsString } from 'class-validator';
+import {
+  IsDateString,
+  IsOptional,
+  IsPositive,
+  IsString,
+} from 'class-validator';
 
 export class PaginationDto {
   @IsOptional()
@@ -74,4 +79,12 @@ export class PaginationDto {
   @IsOptional()
   @IsString()
   identificador?: string;
+
+  @IsOptional()
+  @IsDateString()
+  fechaInicio?: string;
+
+  @IsOptional()
+  @IsDateString()
+  fechaFin?: string;
 }

@@ -29,6 +29,9 @@ export class CreateFacturaEncabezadoDto {
   @IsUUID()
   pais_id: string;
 
+  @IsUUID()
+  sucursal_id: string;
+
   @IsEnum(FormaPago, {
     message: `El campo "forma_pago" debe ser uno de los siguientes valores válidos: ${Object.values(
       FormaPago,

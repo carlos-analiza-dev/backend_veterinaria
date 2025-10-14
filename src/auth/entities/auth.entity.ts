@@ -74,9 +74,6 @@ export class User {
   })
   profileImages: ProfileImage[];
 
-  @OneToMany(() => ProduccionFinca, (produccion) => produccion.propietario)
-  producciones: ProduccionFinca[];
-
   @OneToMany(() => InsumosUsuario, (insumo) => insumo.user)
   insumosCapex: InsumosUsuario[];
 
