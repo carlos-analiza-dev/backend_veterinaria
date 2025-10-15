@@ -61,6 +61,7 @@ import { DescuentosClientesModule } from './descuentos_clientes/descuentos_clien
 import { MovimientosLotesModule } from './movimientos_lotes/movimientos_lotes.module';
 import { ProductosNoVendidosModule } from './productos_no_vendidos/productos_no_vendidos.module';
 import { DashboardsModule } from './dashboards/dashboards.module';
+import { GenerateFacturaTermicaModule } from './generate_factura_termica/generate_factura_termica.module';
 
 @Module({
   imports: [
@@ -172,6 +173,8 @@ import { DashboardsModule } from './dashboards/dashboards.module';
     ProductosNoVendidosModule,
 
     DashboardsModule,
+
+    GenerateFacturaTermicaModule,
   ],
   controllers: [],
   providers: [],

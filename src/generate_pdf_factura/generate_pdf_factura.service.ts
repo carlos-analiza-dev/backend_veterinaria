@@ -7,6 +7,7 @@ import { Response } from 'express';
 import * as path from 'path';
 import { FacturaEncabezado } from 'src/factura_encabezado/entities/factura_encabezado.entity';
 import { DatosEmpresa } from 'src/datos-empresa/entities/datos-empresa.entity';
+import { User } from 'src/auth/entities/auth.entity';
 
 @Injectable()
 export class FacturaPdfService {
@@ -17,7 +18,13 @@ export class FacturaPdfService {
     private readonly datosEmpresaRepository: Repository<DatosEmpresa>,
   ) {}
 
-  async generarFacturaPDF(id: string, @Res() res: Response, isPreview = false) {
+  async generarFacturaPDF(
+    id: string,
+    @Res() res: Response,
+    isPreview = false,
+    user: User,
+  ) {
+    const simbolo = user.pais.simbolo_moneda;
     try {
       const factura = await this.facturaEncabezadoRepository.findOne({
         where: { id },
@@ -406,7 +413,7 @@ export class FacturaPdfService {
           currentY,
           colWidths[2],
           cellHeight,
-          `L. ${formatNumber(Number(detalle.precio))}`,
+          `${simbolo} ${formatNumber(Number(detalle.precio))}`,
           backgroundColor,
           '#000000',
           8,
@@ -416,7 +423,7 @@ export class FacturaPdfService {
           currentY,
           colWidths[3],
           cellHeight,
-          `L. ${formatNumber(Number(detalle.total))}`,
+          `${simbolo} ${formatNumber(Number(detalle.total))}`,
           backgroundColor,
           '#000000',
           8,
@@ -547,7 +554,7 @@ export class FacturaPdfService {
           yPos,
           120,
           resumenCellHeight,
-          `L. ${formatNumber(Number(item.value))}`,
+          `${simbolo} ${formatNumber(Number(item.value))}`,
           item.color,
           '#000000',
           8,
@@ -571,7 +578,7 @@ export class FacturaPdfService {
         totalY,
         120,
         resumenCellHeight + 5,
-        `L. ${formatNumber(Number(factura.total))}`,
+        `${simbolo} ${formatNumber(Number(factura.total))}`,
         '#2E86AB',
         '#FFFFFF',
         9,
@@ -603,9 +610,9 @@ export class FacturaPdfService {
     }
   }
 
-  async generarFacturaPreview(id: string, @Res() res: Response) {
+  async generarFacturaPreview(id: string, @Res() res: Response, user: User) {
     try {
-      return this.generarFacturaPDF(id, res, true);
+      return this.generarFacturaPDF(id, res, true, user);
     } catch (error) {
       if (!res.headersSent) {
         res.status(500).json({
