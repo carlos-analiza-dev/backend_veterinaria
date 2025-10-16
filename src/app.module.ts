@@ -62,6 +62,7 @@ import { MovimientosLotesModule } from './movimientos_lotes/movimientos_lotes.mo
 import { ProductosNoVendidosModule } from './productos_no_vendidos/productos_no_vendidos.module';
 import { DashboardsModule } from './dashboards/dashboards.module';
 import { GenerateFacturaTermicaModule } from './generate_factura_termica/generate_factura_termica.module';
+import { GoogleMapsModule } from './google-maps/google-maps.module';
 
 @Module({
   imports: [
@@ -175,6 +176,8 @@ import { GenerateFacturaTermicaModule } from './generate_factura_termica/generat
     DashboardsModule,
 
     GenerateFacturaTermicaModule,
+
+    GoogleMapsModule,
   ],
   controllers: [],
   providers: [],

@@ -291,28 +291,27 @@ export class CitasService {
       if (!cliente_existe)
         throw new NotFoundException('No se encontró el usuario seleccionado.');
 
-     const query = this.citas_repo
-  .createQueryBuilder('cita')
-  .leftJoinAndSelect('cita.medico', 'medico')
-  .leftJoinAndSelect('medico.usuario', 'usuario')
-  .leftJoinAndSelect('cita.animales', 'animal')
-  .leftJoinAndSelect('animal.especie', 'especie')
-  .leftJoinAndSelect('animal.razas', 'raza')
-  .leftJoinAndSelect('cita.finca', 'finca')
-  .leftJoinAndSelect('cita.subServicio', 'subServicio')
-  .leftJoinAndSelect(
-    'subServicio.preciosPorPais',
-    'precio',
-    'precio.paisId = :paisId',
-    { paisId: cliente_existe.pais.id },
-  )
-  .where('cita.clienteId = :id', { id })
-  .take(limit)
-  .skip(offset)
-  .orderBy('cita.fecha', 'DESC');
+      const query = this.citas_repo
+        .createQueryBuilder('cita')
+        .leftJoinAndSelect('cita.medico', 'medico')
+        .leftJoinAndSelect('medico.usuario', 'usuario')
+        .leftJoinAndSelect('cita.animales', 'animal')
+        .leftJoinAndSelect('animal.especie', 'especie')
+        .leftJoinAndSelect('animal.razas', 'raza')
+        .leftJoinAndSelect('cita.finca', 'finca')
+        .leftJoinAndSelect('cita.subServicio', 'subServicio')
+        .leftJoinAndSelect(
+          'subServicio.preciosPorPais',
+          'precio',
+          'precio.paisId = :paisId',
+          { paisId: cliente_existe.pais.id },
+        )
+        .where('cita.clienteId = :id', { id })
+        .take(limit)
+        .skip(offset)
+        .orderBy('cita.fecha', 'DESC');
 
-const [citas, total] = await query.getManyAndCount();
-
+      const [citas, total] = await query.getManyAndCount();
 
       if (citas.length === 0)
         throw new NotFoundException(

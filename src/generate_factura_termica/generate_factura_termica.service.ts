@@ -341,7 +341,7 @@ export class GenerateFacturaTermicaService {
 
     contenido += 'INFORMACIÓN ADICIONAL:\n';
     contenido += '-'.repeat(32) + '\n';
-    contenido += `CAI: ${factura.rango_factura?.cai || 'N/A'}\n`;
+    contenido += `C.A.I: ${factura.rango_factura?.cai || 'N/A'}\n`;
     contenido += `Rango: ${factura.rango_factura?.rango_inicial || ''}-${
       factura.rango_factura?.rango_final || ''
     }\n`;
