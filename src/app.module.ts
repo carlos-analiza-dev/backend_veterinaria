@@ -63,6 +63,8 @@ import { ProductosNoVendidosModule } from './productos_no_vendidos/productos_no_
 import { DashboardsModule } from './dashboards/dashboards.module';
 import { GenerateFacturaTermicaModule } from './generate_factura_termica/generate_factura_termica.module';
 import { GoogleMapsModule } from './google-maps/google-maps.module';
+import { PedidosModule } from './pedidos/pedidos.module';
+import { PedidoDetallesModule } from './pedido_detalles/pedido_detalles.module';
 
 @Module({
   imports: [
@@ -178,6 +180,10 @@ import { GoogleMapsModule } from './google-maps/google-maps.module';
     GenerateFacturaTermicaModule,
 
     GoogleMapsModule,
+
+    PedidosModule,
+
+    PedidoDetallesModule,
   ],
   controllers: [],
   providers: [],

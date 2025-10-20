@@ -5,6 +5,7 @@ import {
   IsPositive,
   IsString,
 } from 'class-validator';
+import { EstadoPedido } from 'src/pedidos/entities/pedido.entity';
 
 export class PaginationDto {
   @IsOptional()
@@ -39,6 +40,10 @@ export class PaginationDto {
   @IsOptional()
   @IsString()
   tipo_categoria?: string;
+
+  @IsOptional()
+  @IsString()
+  estado?: EstadoPedido;
 
   @IsOptional()
   @IsString()

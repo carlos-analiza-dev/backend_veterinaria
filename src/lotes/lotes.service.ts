@@ -41,7 +41,7 @@ export class LotesService {
     const lotes = await this.loteRepo.find({
       where: { id_producto },
       relations: ['compra', 'sucursal', 'producto'],
-      order: { id: 'ASC' },
+      order: { created_at: 'ASC' },
     });
 
     if (!lotes || lotes.length === 0) {
@@ -49,6 +49,7 @@ export class LotesService {
         `No se encontraron lotes para el producto con ID: ${id_producto}`,
       );
     }
+
     return lotes;
   }
 
