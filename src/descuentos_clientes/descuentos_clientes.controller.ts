@@ -11,7 +11,6 @@ import { DescuentosClientesService } from './descuentos_clientes.service';
 import { CreateDescuentosClienteDto } from './dto/create-descuentos_cliente.dto';
 import { UpdateDescuentosClienteDto } from './dto/update-descuentos_cliente.dto';
 import { Auth } from 'src/auth/decorators/auth.decorator';
-import { ValidRoles } from 'src/interfaces/valid-roles.interface';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
 
@@ -27,7 +26,7 @@ export class DescuentosClientesController {
   }
 
   @Get()
-  @Auth(ValidRoles.Administrador)
+  @Auth()
   findAll(@GetUser() user: User) {
     return this.descuentosClientesService.findAll(user);
   }

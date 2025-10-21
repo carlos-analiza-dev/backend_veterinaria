@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { CreateFacturaEncabezadoDto } from './dto/create-factura_encabezado.dto';
 
@@ -469,7 +470,61 @@ export class FacturaEncabezadoService {
     return lotes.reduce((total, lote) => total + Number(lote.cantidad), 0);
   }
 
-  async cancelarFactura(id: string): Promise<FacturaEncabezado> {
+  async autorizarCancelacion(
+    id: string,
+    user: User,
+  ): Promise<FacturaEncabezado> {
+    if (!['Administrador'].includes(user.role.name)) {
+      throw new UnauthorizedException(
+        'No tiene permisos para autorizar cancelaciones.',
+      );
+    }
+
+    const factura = await this.facturaEncabezadoRepository.findOne({
+      where: { id },
+      relations: ['usuario', 'sucursal'],
+    });
+
+    if (!factura) {
+      throw new NotFoundException('Factura no encontrada');
+    }
+
+    if (factura.estado !== EstadoFactura.PROCESADA) {
+      throw new BadRequestException(
+        'Solo se pueden autorizar cancelaciones de facturas procesadas.',
+      );
+    }
+
+    factura.autorizada_cancelacion = true;
+    factura.fecha_autorizacion_cancelacion = new Date();
+
+    return await this.facturaEncabezadoRepository.save(factura);
+  }
+
+  async desautorizarCancelacion(
+    id: string,
+    user: User,
+  ): Promise<FacturaEncabezado> {
+    if (!['Administrador'].includes(user.role.name)) {
+      throw new UnauthorizedException(
+        'No tiene permisos para desautorizar cancelaciones.',
+      );
+    }
+
+    const factura = await this.facturaEncabezadoRepository.findOne({
+      where: { id },
+    });
+
+    if (!factura) {
+      throw new NotFoundException('Factura no encontrada');
+    }
+
+    factura.autorizada_cancelacion = false;
+
+    return await this.facturaEncabezadoRepository.save(factura);
+  }
+
+  async cancelarFactura(id: string, user: User): Promise<FacturaEncabezado> {
     return await this.dataSource.transaction(
       async (transactionalEntityManager) => {
         const factura = await transactionalEntityManager.findOne(
@@ -489,6 +544,10 @@ export class FacturaEncabezadoService {
             `Solo se pueden cancelar facturas procesadas. Estado actual: ${factura.estado}`,
           );
         }
+
+        this.validarCancelacionMismoDia(factura.created_at);
+
+        this.validarAutorizacionCancelacion(factura, user);
 
         const movimientosOriginales = await transactionalEntityManager.find(
           MovimientosLote,
@@ -530,6 +589,88 @@ export class FacturaEncabezadoService {
         return facturaCancelada;
       },
     );
+  }
+
+  private validarAutorizacionCancelacion(
+    factura: FacturaEncabezado,
+    user: User,
+  ): void {
+    if (user.role.name === 'Administrador') {
+      return;
+    }
+
+    if (!factura.autorizada_cancelacion) {
+      throw new BadRequestException(
+        'Esta factura no está autorizada para cancelación. Solicite la autorización con el administrador.',
+      );
+    }
+
+    if (factura.fecha_autorizacion_cancelacion) {
+      this.validarVigenciaAutorizacion(factura.fecha_autorizacion_cancelacion);
+    }
+
+    if (factura.usuario_id !== user.id) {
+      throw new UnauthorizedException(
+        'Solo puede cancelar sus propias facturas.',
+      );
+    }
+
+    if (factura.sucursal_id !== user.sucursal?.id) {
+      throw new UnauthorizedException(
+        'Solo puede cancelar facturas de su sucursal.',
+      );
+    }
+
+    this.validarTiempoCancelacion(factura.created_at);
+  }
+
+  private validarVigenciaAutorizacion(fechaAutorizacion: Date): void {
+    const ahora = new Date();
+    const vigenciaHoras = 24;
+    const tiempoTranscurrido = ahora.getTime() - fechaAutorizacion.getTime();
+    const tiempoLimiteMs = vigenciaHoras * 60 * 60 * 1000;
+
+    if (tiempoTranscurrido > tiempoLimiteMs) {
+      throw new BadRequestException(
+        'La autorización de cancelación ha expirado. Solicite una nueva autorización.',
+      );
+    }
+  }
+
+  private validarCancelacionMismoDia(fechaCreacion: Date): void {
+    const hoy = new Date();
+    const fechaFactura = new Date(fechaCreacion);
+
+    const hoyNormalizado = new Date(
+      hoy.getFullYear(),
+      hoy.getMonth(),
+      hoy.getDate(),
+    );
+    const fechaFacturaNormalizada = new Date(
+      fechaFactura.getFullYear(),
+      fechaFactura.getMonth(),
+      fechaFactura.getDate(),
+    );
+
+    if (hoyNormalizado.getTime() !== fechaFacturaNormalizada.getTime()) {
+      throw new BadRequestException(
+        'Solo se pueden cancelar facturas el mismo día en que fueron generadas',
+      );
+    }
+  }
+
+  private validarTiempoCancelacion(fechaCreacion: Date): void {
+    const ahora = new Date();
+    const fechaFactura = new Date(fechaCreacion);
+
+    const tiempoLimiteMs = 3 * 60 * 60 * 1000;
+    const tiempoTranscurrido = ahora.getTime() - fechaFactura.getTime();
+
+    if (tiempoTranscurrido > tiempoLimiteMs) {
+      throw new BadRequestException(
+        'Ha excedido el tiempo límite para cancelar esta factura. Contacte a un administrador.',
+      );
+    }
   }
 
   private agruparMovimientosPorProducto(
@@ -620,22 +761,59 @@ export class FacturaEncabezadoService {
   }
 
   async findAll(user: User, paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0 } = paginationDto;
+    const {
+      limit = 10,
+      offset = 0,
+      sucursal,
+      fechaInicio,
+      fechaFin,
+    } = paginationDto;
     const paisId = user.pais.id;
 
     try {
-      const [facturas, total] = await this.facturaEncabezadoRepository
+      const queryBuilder = this.facturaEncabezadoRepository
         .createQueryBuilder('factura')
         .leftJoinAndSelect('factura.cliente', 'cliente')
         .leftJoinAndSelect('factura.rango_factura', 'rango')
         .leftJoinAndSelect('factura.pais', 'pais')
         .leftJoinAndSelect('factura.detalles', 'detalles')
         .leftJoinAndSelect('factura.descuento', 'descuento')
+        .leftJoinAndSelect('factura.sucursal', 'sucursal')
+        .leftJoinAndSelect('factura.usuario', 'usuario')
         .where('pais.id = :paisId', { paisId })
         .orderBy('factura.created_at', 'DESC')
         .skip(offset)
-        .take(limit)
-        .getManyAndCount();
+        .take(limit);
+
+      if (sucursal) {
+        queryBuilder.andWhere('sucursal.id = :sucursalId', {
+          sucursalId: sucursal,
+        });
+      } else if (user.sucursal?.id) {
+        queryBuilder.andWhere('sucursal.id = :sucursalId', {
+          sucursalId: user.sucursal.id,
+        });
+      }
+
+      if (fechaInicio && fechaFin) {
+        queryBuilder.andWhere(
+          'DATE(factura.created_at) BETWEEN DATE(:fechaInicio) AND DATE(:fechaFin)',
+          { fechaInicio, fechaFin },
+        );
+      } else if (fechaInicio) {
+        queryBuilder.andWhere(
+          'DATE(factura.created_at) >= DATE(:fechaInicio)',
+          {
+            fechaInicio,
+          },
+        );
+      } else if (fechaFin) {
+        queryBuilder.andWhere('DATE(factura.created_at) <= DATE(:fechaFin)', {
+          fechaFin,
+        });
+      }
+
+      const [facturas, total] = await queryBuilder.getManyAndCount();
 
       if (!facturas || facturas.length === 0) {
         throw new NotFoundException('No se encontraron facturas disponibles');

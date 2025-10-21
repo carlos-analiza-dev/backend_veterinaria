@@ -19,6 +19,11 @@ export enum EstadoPedido {
   CANCELADO = 'cancelado',
 }
 
+export enum TipoEntrega {
+  DELIVERY = 'delivery',
+  RECOGER = 'recoger',
+}
+
 @Entity('pedidos')
 export class Pedido {
   @PrimaryGeneratedColumn('uuid')
@@ -47,6 +52,28 @@ export class Pedido {
     default: EstadoPedido.PENDIENTE,
   })
   estado: EstadoPedido;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  direccion_entrega: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 8, nullable: true })
+  latitud: number;
+
+  @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
+  longitud: number;
+
+  @Column({
+    type: 'enum',
+    enum: TipoEntrega,
+    default: TipoEntrega.RECOGER,
+  })
+  tipo_entrega: TipoEntrega;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  costo_delivery: number;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  nombre_finca: string;
 
   @OneToMany(() => PedidoDetalle, (detalle) => detalle.pedido, {
     cascade: true,

@@ -1,6 +1,7 @@
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsNumber,
@@ -45,6 +46,10 @@ export class CreateFacturaEncabezadoDto {
   })
   @IsOptional()
   estado?: EstadoFactura;
+
+  @IsOptional()
+  @IsBoolean()
+  fecha_autorizacion_cancelacion: boolean;
 
   @IsNumber({}, { message: 'El campo "sub_total" debe ser un número válido.' })
   @IsPositive({ message: 'El campo "sub_total" debe ser un número positivo.' })

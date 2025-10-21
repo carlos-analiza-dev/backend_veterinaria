@@ -7,7 +7,7 @@ import {
 import { CreatePedidoDto } from './dto/create-pedido.dto';
 import { UpdatePedidoDto } from './dto/update-pedido.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Pedido, EstadoPedido } from './entities/pedido.entity';
+import { Pedido, EstadoPedido, TipoEntrega } from './entities/pedido.entity';
 import { Repository, DataSource } from 'typeorm';
 import { PedidoDetalle } from 'src/pedido_detalles/entities/pedido_detalle.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
@@ -65,7 +65,13 @@ export class PedidosService {
         id_cliente: createPedidoDto.id_cliente,
         id_sucursal: createPedidoDto.id_sucursal,
         total: createPedidoDto.total,
-        estado: EstadoPedido.PENDIENTE,
+        estado: createPedidoDto.estado ?? EstadoPedido.PENDIENTE,
+        direccion_entrega: createPedidoDto.direccion_entrega,
+        latitud: createPedidoDto.latitud,
+        longitud: createPedidoDto.longitud,
+        tipo_entrega: createPedidoDto.tipo_entrega ?? TipoEntrega.RECOGER,
+        costo_delivery: createPedidoDto.costo_delivery,
+        nombre_finca: createPedidoDto.nombre_finca,
       });
 
       const savedPedido = await queryRunner.manager.save(pedido);
@@ -96,9 +102,16 @@ export class PedidosService {
         detalles.push(detalle);
       }
 
-      if (Math.abs(totalCalculado - createPedidoDto.total) > 0.01) {
+      const totalEsperado =
+        totalCalculado + (createPedidoDto.costo_delivery ?? 0);
+
+      if (Math.abs(totalEsperado - createPedidoDto.total) > 0.01) {
         throw new BadRequestException(
-          'El total proporcionado no coincide con la suma de los detalles',
+          `El total proporcionado (${
+            createPedidoDto.total
+          }) no coincide con la suma de los detalles (${totalCalculado}) más el costo de delivery (${
+            createPedidoDto.costo_delivery ?? 0
+          }).`,
         );
       }
 

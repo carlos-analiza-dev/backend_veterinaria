@@ -73,9 +73,15 @@ export class FacturaEncabezadoController {
     return this.facturaEncabezadoService.verificarExistenciaParaFactura(id);
   }
 
+  @Patch(':id/autorizar-cancelacion')
+  @Auth()
+  async autorizarCancelacion(@Param('id') id: string, @GetUser() user: User) {
+    return this.facturaEncabezadoService.autorizarCancelacion(id, user);
+  }
+
   @Patch(':id/cancelar')
   @Auth()
-  cancelarFactura(@Param('id') id: string) {
-    return this.facturaEncabezadoService.cancelarFactura(id);
+  cancelarFactura(@Param('id') id: string, @GetUser() user: User) {
+    return this.facturaEncabezadoService.cancelarFactura(id, user);
   }
 }

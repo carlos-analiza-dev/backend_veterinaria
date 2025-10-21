@@ -19,6 +19,9 @@ import {
 export enum FormaPago {
   CREDITO = 'Credito',
   CONTADO = 'Contado',
+  TRANSFERENCIA = 'Transferencia',
+  NOTA_CREDITO = 'Nota de Credito',
+  COMBINACION = 'Combinacion',
 }
 
 export enum EstadoFactura {
@@ -92,6 +95,9 @@ export class FacturaEncabezado {
   @Column({ type: 'varchar', length: 100 })
   cai: string;
 
+  @Column({ type: 'boolean', default: false })
+  autorizada_cancelacion: boolean;
+
   @ManyToOne(() => RangoFactura)
   @JoinColumn({ name: 'rango_factura_id' })
   rango_factura: RangoFactura;
@@ -138,4 +144,7 @@ export class FacturaEncabezado {
 
   @UpdateDateColumn()
   updated_at: Date;
+
+  @Column({ type: 'timestamp', nullable: true })
+  fecha_autorizacion_cancelacion: Date;
 }
