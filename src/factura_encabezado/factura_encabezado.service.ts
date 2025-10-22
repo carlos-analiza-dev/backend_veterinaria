@@ -134,7 +134,16 @@ export class FacturaEncabezadoService {
           transactionalEntityManager,
         );
 
-        const total = totales.subTotal + totales.isv15 + totales.isv18;
+        const totalSinDescuento =
+          totales.subTotal + totales.isv15 + totales.isv18;
+
+        let totalConDescuento = totalSinDescuento;
+        let montoDescuento = 0;
+
+        if (descuento) {
+          montoDescuento = totalSinDescuento * (descuento.porcentaje / 100);
+          totalConDescuento = totalSinDescuento - montoDescuento;
+        }
 
         const facturaData: any = {
           ...createFacturaEncabezadoDto,
@@ -153,8 +162,10 @@ export class FacturaEncabezadoService {
           importe_gravado_18: totales.importeGravado18,
           isv_15: totales.isv15,
           isv_18: totales.isv18,
-          total: total,
-          total_letras: this.convertirNumeroALetras(total),
+
+          descuentos_rebajas: montoDescuento,
+          total: totalConDescuento,
+          total_letras: this.convertirNumeroALetras(totalConDescuento),
         };
 
         if (descuento) {
@@ -300,76 +311,6 @@ export class FacturaEncabezadoService {
           transactionalEntityManager,
           facturaId,
           'Venta de producto',
-        );
-
-        cantidadRestante -= cantidadADescontar;
-      }
-    }
-
-    if (cantidadRestante > 0) {
-      throw new BadRequestException(
-        `Error al procesar el producto ${productoId}. ` +
-          `No se pudo descontar completamente la cantidad requerida.`,
-      );
-    }
-  }
-
-  private async procesarProducto(
-    productoId: string,
-    cantidadRequerida: number,
-    transactionalEntityManager: any,
-  ): Promise<void> {
-    let cantidadRestante = cantidadRequerida;
-
-    const lotes = await transactionalEntityManager.find(Lote, {
-      where: {
-        id_producto: productoId,
-        cantidad: MoreThan(0),
-      },
-      order: { created_at: 'ASC' },
-    });
-
-    if (lotes.length === 0) {
-      throw new BadRequestException(
-        `No hay lotes disponibles para el producto ${productoId}`,
-      );
-    }
-
-    const existenciaTotal = lotes.reduce(
-      (total, lote) => total + Number(lote.cantidad),
-      0,
-    );
-
-    if (existenciaTotal < cantidadRequerida) {
-      throw new BadRequestException(
-        `Existencia insuficiente para el producto ${productoId}. ` +
-          `Requiere: ${cantidadRequerida}, Disponible: ${existenciaTotal}`,
-      );
-    }
-
-    for (const lote of lotes) {
-      if (cantidadRestante <= 0) break;
-
-      const cantidadDisponible = Number(lote.cantidad);
-
-      if (cantidadDisponible > 0) {
-        const cantidadADescontar = Math.min(
-          cantidadDisponible,
-          cantidadRestante,
-        );
-
-        const cantidadAnterior = lote.cantidad;
-        lote.cantidad = cantidadDisponible - cantidadADescontar;
-        await transactionalEntityManager.save(Lote, lote);
-
-        await this.registrarMovimientoLote(
-          lote.id,
-          productoId,
-          cantidadADescontar,
-          cantidadAnterior,
-          lote.cantidad,
-          TipoMovimiento.SALIDA,
-          transactionalEntityManager,
         );
 
         cantidadRestante -= cantidadADescontar;
@@ -826,10 +767,6 @@ export class FacturaEncabezadoService {
     } catch (error) {
       throw error;
     }
-  }
-
-  findOne(id: string) {
-    return `This action returns a #${id} facturaEncabezado`;
   }
 
   private async procesarDetallesFactura(

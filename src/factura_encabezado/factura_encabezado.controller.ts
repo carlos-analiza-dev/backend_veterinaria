@@ -40,12 +40,6 @@ export class FacturaEncabezadoController {
     return this.facturaEncabezadoService.findAll(user, paginationDto);
   }
 
-  @Get(':id')
-  @Auth()
-  findOne(@Param('id') id: string) {
-    return this.facturaEncabezadoService.findOne(id);
-  }
-
   @Patch(':id')
   @Auth()
   update(
