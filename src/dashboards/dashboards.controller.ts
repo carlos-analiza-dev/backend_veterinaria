@@ -16,6 +16,12 @@ export class DashboardsController {
     return this.dashboardService.getTopProductosVendidos(user);
   }
 
+  @Get('top-servicios-vendidos')
+  @Auth()
+  getTopServiciosVendidos(@GetUser() user: User) {
+    return this.dashboardService.getTopServiciosVendidos(user);
+  }
+
   @Get('top-sucursales')
   @Auth()
   async getTopSucursales(

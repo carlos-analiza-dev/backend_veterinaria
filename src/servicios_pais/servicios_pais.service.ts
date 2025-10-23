@@ -51,11 +51,14 @@ export class ServiciosPaisService {
         );
       }
 
+      const costoFinal =
+        costo === null || costo === undefined || costo === 0 ? precio : costo;
+
       const servicio = this.servicio_percios_Repo.create({
         pais: pais_exist,
         subServicio: servicio_exist,
         precio,
-        costo,
+        costo: costoFinal,
         tiempo,
         cantidadMin,
         cantidadMax,
@@ -113,12 +116,14 @@ export class ServiciosPaisService {
 
     if (precio !== undefined) servicio.precio = precio;
 
-    if (costo !== undefined) servicio.costo = costo;
+    if (costo === null || costo === undefined || costo === 0) {
+      servicio.costo = servicio.precio;
+    } else {
+      servicio.costo = costo;
+    }
 
     if (tiempo !== undefined) servicio.tiempo = tiempo;
-
     if (cantidadMin !== undefined) servicio.cantidadMin = cantidadMin;
-
     if (cantidadMax !== undefined) servicio.cantidadMax = cantidadMax;
 
     await this.servicio_percios_Repo.save(servicio);

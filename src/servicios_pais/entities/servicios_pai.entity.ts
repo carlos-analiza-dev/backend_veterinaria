@@ -24,7 +24,7 @@ export class ServiciosPai {
   precio: number;
 
   @Column('decimal', { precision: 10, scale: 2, nullable: true })
-  costo?: number;
+  costo: number;
 
   @Column({ type: 'int', nullable: true })
   tiempo?: number;

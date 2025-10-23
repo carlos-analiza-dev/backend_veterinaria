@@ -9,6 +9,7 @@ import { Medico } from 'src/medicos/entities/medico.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   JoinTable,
@@ -16,6 +17,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('citas')
@@ -84,4 +86,10 @@ export class Cita {
 
   @Column({ type: 'enum', enum: EstadoCita, default: EstadoCita.PENDIENTE })
   estado: EstadoCita;
+
+  @CreateDateColumn()
+  created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }

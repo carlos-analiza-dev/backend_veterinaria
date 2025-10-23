@@ -12,6 +12,7 @@ import {
   MetricasDashboard,
 } from './interfaces/dashboard-data.interface';
 import { User } from 'src/auth/entities/auth.entity';
+import { TipoSubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 
 @Injectable()
 export class DashboardService {
@@ -35,6 +36,25 @@ export class DashboardService {
       .addSelect('SUM(detalle.cantidad)', 'cantidad_total')
       .where('factura.estado = :estado', { estado: 'Procesada' })
       .andWhere('factura.pais_id = :paisId', { paisId })
+      .andWhere('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
+      .groupBy('producto.nombre')
+      .orderBy('cantidad_total', 'DESC')
+      .limit(10)
+      .getRawMany();
+  }
+
+  async getTopServiciosVendidos(user: User) {
+    const paisId = user.pais.id;
+
+    return await this.facturaDetalleRepo
+      .createQueryBuilder('detalle')
+      .innerJoin('detalle.factura', 'factura')
+      .innerJoin('detalle.producto_servicio', 'producto')
+      .select('producto.nombre', 'producto')
+      .addSelect('SUM(detalle.cantidad)', 'cantidad_total')
+      .where('factura.estado = :estado', { estado: 'Procesada' })
+      .andWhere('factura.pais_id = :paisId', { paisId })
+      .andWhere('producto.tipo = :tipo', { tipo: TipoSubServicio.SERVICIO })
       .groupBy('producto.nombre')
       .orderBy('cantidad_total', 'DESC')
       .limit(10)
