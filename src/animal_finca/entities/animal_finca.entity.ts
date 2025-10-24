@@ -1,5 +1,4 @@
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
-import { User } from 'src/auth/entities/auth.entity';
 import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { ImagesAminale } from 'src/images_aminales/entities/images_aminale.entity';

@@ -577,6 +577,10 @@ export class CitasService {
       .leftJoinAndSelect('animales.propietario', 'propietario')
       .leftJoinAndSelect('cita.finca', 'finca')
       .leftJoinAndSelect('cita.subServicio', 'subServicio')
+      .leftJoinAndSelect('cita.insumosUsados', 'insumosUsados')
+      .leftJoinAndSelect('insumosUsados.insumo', 'insumo')
+      .leftJoinAndSelect('cita.productosUsados', 'productosUsados')
+      .leftJoinAndSelect('productosUsados.producto', 'producto')
       .where('medicoUsuario.id = :userId', { userId })
       .andWhere('cita.estado = :estado', { estado: EstadoCita.COMPLETADA })
       .orderBy('cita.fecha', 'ASC')
@@ -588,7 +592,7 @@ export class CitasService {
 
     if (citas.length === 0) {
       throw new NotFoundException(
-        'No se encontraron citas confirmadas para este usuario médico',
+        'No se encontraron citas completadas para este usuario médico',
       );
     }
 
@@ -639,6 +643,33 @@ export class CitasService {
               descripcion: cita.subServicio.descripcion,
             }
           : null,
+
+        insumosUsados:
+          cita.insumosUsados?.map((insumoUsado) => ({
+            id: insumoUsado.id,
+            insumo: {
+              id: insumoUsado.insumo?.id,
+              nombre: insumoUsado.insumo?.nombre,
+              codigo: insumoUsado.insumo?.codigo,
+              unidad_venta: insumoUsado.insumo?.unidad_venta,
+            },
+            cantidad: insumoUsado.cantidad,
+            precioUnitario: insumoUsado.precioUnitario,
+            subtotal: insumoUsado.cantidad * insumoUsado.precioUnitario,
+          })) || [],
+        productosUsados:
+          cita.productosUsados?.map((productoUsado) => ({
+            id: productoUsado.id,
+            producto: {
+              id: productoUsado.producto?.id,
+              nombre: productoUsado.producto?.nombre,
+              descripcion: productoUsado.producto?.descripcion,
+              unidad_venta: productoUsado.producto?.unidad_venta,
+            },
+            cantidad: productoUsado.cantidad,
+            precioUnitario: productoUsado.precioUnitario,
+            subtotal: productoUsado.cantidad * productoUsado.precioUnitario,
+          })) || [],
       })),
     };
   }

@@ -65,6 +65,7 @@ import { GenerateFacturaTermicaModule } from './generate_factura_termica/generat
 import { GoogleMapsModule } from './google-maps/google-maps.module';
 import { PedidosModule } from './pedidos/pedidos.module';
 import { PedidoDetallesModule } from './pedido_detalles/pedido_detalles.module';
+import { CitaInsumosModule } from './cita_insumos/cita_insumos.module';
 
 @Module({
   imports: [
@@ -102,6 +103,7 @@ import { PedidoDetallesModule } from './pedido_detalles/pedido_detalles.module';
     MedicosModule,
     GeneratePdfModule,
     CitaProductosModule,
+    CitaInsumosModule,
     HorariosMedicosModule,
 
     ProfileImagesModule,
