@@ -31,3 +31,16 @@ export interface DashboardData {
     total_ventas: number;
   }>;
 }
+
+export interface DatosVentasMensuales {
+  mes: string;
+  ingresos: number;
+  ganancias: number;
+  costo: number;
+  cantidad_ventas: number;
+}
+
+export interface RendimientoMensualResponse {
+  datosVentas: DatosVentasMensuales[];
+  periodo: string;
+}

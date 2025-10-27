@@ -1,10 +1,12 @@
 import { Pai } from 'src/pais/entities/pai.entity';
+import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import {
   Column,
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -34,4 +36,10 @@ export class ServiciosPai {
 
   @Column({ type: 'int', nullable: true })
   cantidadMax?: number;
+
+  @OneToMany(
+    () => ServicioInsumo,
+    (servicioInsumo) => servicioInsumo.servicioPais,
+  )
+  insumos: ServicioInsumo[];
 }

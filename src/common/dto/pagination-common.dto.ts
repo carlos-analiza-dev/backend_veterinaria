@@ -92,4 +92,8 @@ export class PaginationDto {
   @IsOptional()
   @IsDateString()
   fechaFin?: string;
+
+  @IsOptional()
+  @IsDateString()
+  year?: number;
 }

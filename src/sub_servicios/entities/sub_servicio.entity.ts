@@ -152,16 +152,6 @@ export class SubServicio {
   @JoinColumn({ name: 'categoria_id' })
   categoria: Categoria | null;
 
-  @OneToMany(
-    () => ServicioInsumo,
-    (servicioInsumo) => servicioInsumo.servicio,
-    {
-      cascade: true,
-      nullable: true,
-    },
-  )
-  insumos: ServicioInsumo[];
-
   @Column({ name: 'categoria_id', nullable: true })
   categoriaId: string | null;
 

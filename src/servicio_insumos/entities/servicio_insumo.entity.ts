@@ -7,7 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
+import { ServiciosPai } from 'src/servicios_pais/entities/servicios_pai.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
 
 @Entity('servicio_insumos')
@@ -15,8 +15,8 @@ export class ServicioInsumo {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ name: 'servicio_id' })
-  servicioId: string;
+  @Column({ name: 'servicio_pais_id' })
+  servicioPaisId: string;
 
   @Column({ name: 'insumo_id' })
   insumoId: string;
@@ -24,11 +24,9 @@ export class ServicioInsumo {
   @Column({ type: 'int', default: 1 })
   cantidad: number;
 
-  @ManyToOne(() => SubServicio, (servicio) => servicio.insumos, {
-    onDelete: 'CASCADE',
-  })
-  @JoinColumn({ name: 'servicio_id' })
-  servicio: SubServicio;
+  @ManyToOne(() => ServiciosPai, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'servicio_pais_id' })
+  servicioPais: ServiciosPai;
 
   @ManyToOne(() => Insumo, (insumo) => insumo.servicios, {
     eager: false,

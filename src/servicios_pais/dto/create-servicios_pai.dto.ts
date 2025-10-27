@@ -1,4 +1,14 @@
-import { IsNotEmpty, IsNumber, IsOptional, IsUUID, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsUUID,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+import { CreateServicioInsumoDto } from 'src/servicio_insumos/dto/create-servicio_insumo.dto';
 
 export class CreateServiciosPaiDto {
   @IsUUID()
@@ -26,4 +36,10 @@ export class CreateServiciosPaiDto {
 
   @IsUUID()
   paisId: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateServicioInsumoDto)
+  insumos?: CreateServicioInsumoDto[];
 }

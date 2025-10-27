@@ -1,5 +1,4 @@
 import {
-  IsArray,
   IsBoolean,
   IsEnum,
   IsNotEmpty,
@@ -7,11 +6,8 @@ import {
   IsString,
   IsUUID,
   MaxLength,
-  ValidateNested,
 } from 'class-validator';
 import { TipoSubServicio, UnidadVenta } from '../entities/sub_servicio.entity';
-import { Type } from 'class-transformer';
-import { CreateServicioInsumoDto } from 'src/servicio_insumos/dto/create-servicio_insumo.dto';
 
 export class CreateServicioDto {
   @IsString({ message: 'El nombre debe ser una cadena de texto.' })
@@ -53,10 +49,4 @@ export class CreateServicioDto {
     message: 'El campo disponible debe ser un valor booleano (true o false).',
   })
   disponible?: boolean;
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => CreateServicioInsumoDto)
-  insumos?: CreateServicioInsumoDto[];
 }

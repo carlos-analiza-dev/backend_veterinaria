@@ -2,6 +2,7 @@ import {
   BadGatewayException,
   Injectable,
   NotFoundException,
+  BadRequestException,
 } from '@nestjs/common';
 import { CreateServiciosPaiDto } from './dto/create-servicios_pai.dto';
 import { UpdateServiciosPaiDto } from './dto/update-servicios_pai.dto';
@@ -9,9 +10,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ServiciosPai } from './entities/servicios_pai.entity';
 import { Repository } from 'typeorm';
 import { Pai } from 'src/pais/entities/pai.entity';
-import { Servicio } from 'src/servicios/entities/servicio.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
+import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
+import { Insumo } from 'src/insumos/entities/insumo.entity';
 
 @Injectable()
 export class ServiciosPaisService {
@@ -22,7 +24,12 @@ export class ServiciosPaisService {
     private readonly paisRepo: Repository<Pai>,
     @InjectRepository(SubServicio)
     private readonly subservicioRepo: Repository<SubServicio>,
+    @InjectRepository(ServicioInsumo)
+    private readonly servicioInsumoRepo: Repository<ServicioInsumo>,
+    @InjectRepository(Insumo)
+    private readonly insumoRepo: Repository<Insumo>,
   ) {}
+
   async create(createServiciosPaiDto: CreateServiciosPaiDto) {
     const {
       sub_servicio_id,
@@ -32,6 +39,7 @@ export class ServiciosPaisService {
       costo,
       cantidadMin,
       cantidadMax,
+      insumos,
     } = createServiciosPaiDto;
 
     try {
@@ -51,10 +59,23 @@ export class ServiciosPaisService {
         );
       }
 
+      const servicioPaisExistente = await this.servicio_percios_Repo.findOne({
+        where: {
+          subServicio: { id: sub_servicio_id },
+          pais: { id: paisId },
+        },
+      });
+
+      if (servicioPaisExistente) {
+        throw new BadRequestException(
+          'Ya existe un precio configurado para este servicio en el país seleccionado.',
+        );
+      }
+
       const costoFinal =
         costo === null || costo === undefined || costo === 0 ? precio : costo;
 
-      const servicio = this.servicio_percios_Repo.create({
+      const servicioPais = this.servicio_percios_Repo.create({
         pais: pais_exist,
         subServicio: servicio_exist,
         precio,
@@ -64,12 +85,74 @@ export class ServiciosPaisService {
         cantidadMax,
       });
 
-      await this.servicio_percios_Repo.save(servicio);
+      const servicioPaisGuardado = await this.servicio_percios_Repo.save(
+        servicioPais,
+      );
 
-      return { message: 'Servicio creado exitosamente' };
+      if (insumos && insumos.length > 0) {
+        await this.procesarInsumos(servicioPaisGuardado.id, insumos);
+      }
+
+      return {
+        message: 'Servicio creado exitosamente',
+        id: servicioPaisGuardado.id,
+        insumosAgregados: insumos?.length || 0,
+      };
     } catch (error) {
       throw error;
     }
+  }
+
+  private async procesarInsumos(servicioPaisId: string, insumos: any[]) {
+    const insumosCreados = [];
+
+    for (const insumoDto of insumos) {
+      try {
+        const insumo_exist = await this.insumoRepo.findOne({
+          where: { id: insumoDto.insumoId },
+        });
+
+        if (!insumo_exist) {
+          throw new BadRequestException(
+            `El insumo con id ${insumoDto.insumoId} no existe.`,
+          );
+        }
+
+        const relacionExistente = await this.servicioInsumoRepo.findOne({
+          where: {
+            servicioPaisId,
+            insumoId: insumoDto.insumoId,
+          },
+        });
+
+        if (relacionExistente) {
+          throw new BadRequestException(
+            `El insumo ${insumo_exist.nombre} ya está asociado a este servicio-país.`,
+          );
+        }
+
+        const servicioInsumo = this.servicioInsumoRepo.create({
+          servicioPaisId,
+          insumoId: insumoDto.insumoId,
+          cantidad: insumoDto.cantidad || 1,
+        });
+
+        const servicioInsumoGuardado = await this.servicioInsumoRepo.save(
+          servicioInsumo,
+        );
+        insumosCreados.push(servicioInsumoGuardado);
+      } catch (error) {
+        console.error(
+          `Error procesando insumo ${insumoDto.insumoId}:`,
+          error.message,
+        );
+        throw new BadRequestException(
+          `Error al procesar insumos: ${error.message}`,
+        );
+      }
+    }
+
+    return insumosCreados;
   }
 
   async findAll(servicioId: string, paginationDto: PaginationDto) {
@@ -82,6 +165,7 @@ export class ServiciosPaisService {
 
       const servicios_pais_detalle = await this.servicio_percios_Repo.find({
         where: { subServicio: servicio },
+        relations: ['pais', 'insumos', 'insumos.insumo'],
       });
       return servicios_pais_detalle;
     } catch (error) {
@@ -89,8 +173,19 @@ export class ServiciosPaisService {
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} serviciosPai`;
+  async findOne(id: string) {
+    const servicioPais = await this.servicio_percios_Repo.findOne({
+      where: { id },
+      relations: ['pais', 'subServicio', 'insumos', 'insumos.insumo'],
+    });
+
+    if (!servicioPais) {
+      throw new NotFoundException(
+        `No se encontró el servicio-país con id ${id}`,
+      );
+    }
+
+    return servicioPais;
   }
 
   async update(id: string, updateServiciosPaiDto: UpdateServiciosPaiDto) {
@@ -103,7 +198,7 @@ export class ServiciosPaisService {
       throw new NotFoundException(`No se encontró el servicio con id ${id}`);
     }
 
-    const { paisId, precio, tiempo, cantidadMin, cantidadMax, costo } =
+    const { paisId, precio, tiempo, cantidadMin, cantidadMax, costo, insumos } =
       updateServiciosPaiDto;
 
     if (paisId) {
@@ -128,10 +223,55 @@ export class ServiciosPaisService {
 
     await this.servicio_percios_Repo.save(servicio);
 
+    if (insumos && insumos.length > 0) {
+      await this.procesarInsumos(id, insumos);
+    }
+
     return { message: 'Servicio actualizado exitosamente' };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} serviciosPai`;
+  async remove(id: string) {
+    const servicioPais = await this.servicio_percios_Repo.findOne({
+      where: { id },
+    });
+
+    if (!servicioPais) {
+      throw new NotFoundException(
+        `No se encontró el servicio-país con id ${id}`,
+      );
+    }
+
+    await this.servicio_percios_Repo.remove(servicioPais);
+
+    return { message: 'Servicio-país eliminado exitosamente' };
+  }
+
+  async agregarInsumo(servicioPaisId: string, insumoDto: any) {
+    const servicioPais = await this.servicio_percios_Repo.findOne({
+      where: { id: servicioPaisId },
+    });
+
+    if (!servicioPais) {
+      throw new NotFoundException(
+        `No se encontró el servicio-país con id ${servicioPaisId}`,
+      );
+    }
+
+    return await this.procesarInsumos(servicioPaisId, [insumoDto]);
+  }
+
+  async obtenerInsumos(servicioPaisId: string) {
+    const servicioPais = await this.servicio_percios_Repo.findOne({
+      where: { id: servicioPaisId },
+      relations: ['insumos', 'insumos.insumo'],
+    });
+
+    if (!servicioPais) {
+      throw new NotFoundException(
+        `No se encontró el servicio-país con id ${servicioPaisId}`,
+      );
+    }
+
+    return servicioPais.insumos;
   }
 }

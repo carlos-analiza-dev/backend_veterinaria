@@ -8,6 +8,8 @@ import { FacturaDetalle } from 'src/factura_detalle/entities/factura_detalle.ent
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { User } from 'src/auth/entities/auth.entity';
+import { Compra } from 'src/compras/entities/compra.entity';
+import { CompraInsumo } from 'src/compra-insumos/entities/compra-insumo.entity';
 
 @Module({
   controllers: [DashboardsController],
@@ -17,6 +19,8 @@ import { User } from 'src/auth/entities/auth.entity';
       FacturaDetalle,
       Cliente,
       User,
+      Compra,
+      CompraInsumo,
     ]),
     AuthModule,
   ],

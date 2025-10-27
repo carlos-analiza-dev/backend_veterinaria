@@ -80,7 +80,6 @@ export class Compra {
   @UpdateDateColumn()
   updated_at: Date;
 
-  // Relaciones
   @OneToMany(() => CompraDetalle, (detalle) => detalle.compra)
   detalles: CompraDetalle[];
 
@@ -93,7 +92,6 @@ export class Compra {
   @Column({ type: 'uuid', nullable: true })
   paisId: string;
 
-  // Campos de auditoría
   @ManyToOne(() => User)
   created_by: User;
 

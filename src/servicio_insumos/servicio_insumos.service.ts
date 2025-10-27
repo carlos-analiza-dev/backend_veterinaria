@@ -10,7 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { ServicioInsumo } from './entities/servicio_insumo.entity';
 import { Repository } from 'typeorm';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
-import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
+import { ServiciosPai } from 'src/servicios_pais/entities/servicios_pai.entity';
 
 @Injectable()
 export class ServicioInsumosService {
@@ -21,45 +21,43 @@ export class ServicioInsumosService {
     @InjectRepository(Insumo)
     private readonly insumoRepo: Repository<Insumo>,
 
-    @InjectRepository(SubServicio)
-    private readonly subServicioRepo: Repository<SubServicio>,
+    @InjectRepository(ServiciosPai)
+    private readonly servicioPaisRepo: Repository<ServiciosPai>,
   ) {}
 
   async create(createDto: CreateServicioInsumoDto): Promise<ServicioInsumo> {
-    const { insumoId, servicioId, cantidad } = createDto;
+    const { insumoId, servicioPaisId, cantidad } = createDto;
 
     try {
       const relacionExistente = await this.servicioInsumoRepo.findOne({
-        where: {
-          insumoId,
-          servicioId,
-        },
+        where: { insumoId, servicioPaisId },
       });
 
       if (relacionExistente) {
         throw new ConflictException(
-          'Este insumo ya está asociado a este servicio',
+          'Este insumo ya está asociado a este servicio por país',
         );
       }
-      const insumo_exist = await this.insumoRepo.findOne({
+
+      const insumoExist = await this.insumoRepo.findOne({
         where: { id: insumoId },
       });
-      if (!insumo_exist) {
+      if (!insumoExist) {
         throw new BadRequestException('No se encontró el insumo seleccionado');
       }
 
-      const servicio_exist = await this.subServicioRepo.findOne({
-        where: { id: servicioId },
+      const servicioPaisExist = await this.servicioPaisRepo.findOne({
+        where: { id: servicioPaisId },
       });
-      if (!servicio_exist) {
+      if (!servicioPaisExist) {
         throw new BadRequestException(
-          'No se encontró el subservicio seleccionado',
+          'No se encontró el servicio por país seleccionado',
         );
       }
 
       const nuevo = this.servicioInsumoRepo.create({
         insumoId,
-        servicioId,
+        servicioPaisId,
         cantidad: cantidad ?? 1,
       });
 
@@ -71,31 +69,30 @@ export class ServicioInsumosService {
 
   async findAll(): Promise<ServicioInsumo[]> {
     return await this.servicioInsumoRepo.find({
-      relations: ['insumo', 'servicio'],
+      relations: ['insumo', 'servicioPais'],
     });
   }
 
   async findAllByServicio(id: string) {
-    const servicio_exist = await this.subServicioRepo.findOne({
+    const servicioPaisExist = await this.servicioPaisRepo.findOne({
       where: { id },
     });
-    if (!servicio_exist) {
+    if (!servicioPaisExist) {
       throw new BadRequestException(
-        'No se encontró el subservicio seleccionado',
+        'No se encontró el servicio por país seleccionado',
       );
     }
+
     return await this.servicioInsumoRepo.find({
-      where: {
-        servicioId: id,
-      },
-      relations: ['insumo', 'servicio'],
+      where: { servicioPaisId: id },
+      relations: ['insumo', 'servicioPais'],
     });
   }
 
   async findOne(id: string): Promise<ServicioInsumo> {
     const servicioInsumo = await this.servicioInsumoRepo.findOne({
       where: { id },
-      relations: ['insumo', 'servicio'],
+      relations: ['insumo', 'servicioPais'],
     });
 
     if (!servicioInsumo) {

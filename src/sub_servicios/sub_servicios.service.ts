@@ -62,7 +62,6 @@ export class SubServiciosService {
       isActive = true,
       disponible = true,
       unidad_venta,
-      insumos = [],
     } = createServicioDto;
 
     try {
@@ -76,7 +75,7 @@ export class SubServiciosService {
         );
       }
 
-      if (insumos.length <= 0) {
+      /*  if (insumos.length <= 0) {
         throw new BadRequestException(
           'Se debe ingresar al menos un insumo al servicio',
         );
@@ -93,7 +92,7 @@ export class SubServiciosService {
             'Uno o más insumos no existen o están inactivos',
           );
         }
-      }
+      } */
 
       const servicio = this.sub_servicio_repo.create({
         nombre,
@@ -107,7 +106,7 @@ export class SubServiciosService {
 
       const servicioCreado = await this.sub_servicio_repo.save(servicio);
 
-      if (insumos.length > 0) {
+      /* if (insumos.length > 0) {
         const servicioInsumos = insumos.map((insumoDto) =>
           this.servicioInsumoRepo.create({
             servicioId: servicioCreado.id,
@@ -117,7 +116,7 @@ export class SubServiciosService {
         );
 
         await this.servicioInsumoRepo.save(servicioInsumos);
-      }
+      } */
 
       return {
         message: 'Servicio Creado Exitosamente',
@@ -698,7 +697,6 @@ export class SubServiciosService {
       servicioId,
       disponible,
       unidad_venta,
-      insumos = [],
     } = updateServicioDto;
 
     try {
@@ -748,7 +746,7 @@ export class SubServiciosService {
 
       const servicioActualizado = await this.sub_servicio_repo.save(servicio);
 
-      if (insumos.length > 0) {
+      /*  if (insumos.length > 0) {
         const insumoIds = insumos.map((i) => i.insumoId);
         const insumosExistentes = await this.insumoRepo.find({
           where: { id: In(insumoIds) },
@@ -771,7 +769,7 @@ export class SubServiciosService {
         );
 
         await this.servicioInsumoRepo.save(nuevosInsumos);
-      }
+      } */
 
       const servicioCompleto = await this.sub_servicio_repo.findOne({
         where: { id: servicioActualizado.id },

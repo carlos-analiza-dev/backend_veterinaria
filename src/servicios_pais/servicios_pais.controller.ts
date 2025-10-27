@@ -32,7 +32,7 @@ export class ServiciosPaisController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.serviciosPaisService.findOne(+id);
+    return this.serviciosPaisService.findOne(id);
   }
 
   @Patch(':id')
@@ -45,6 +45,6 @@ export class ServiciosPaisController {
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.serviciosPaisService.remove(+id);
+    return this.serviciosPaisService.remove(id);
   }
 }
