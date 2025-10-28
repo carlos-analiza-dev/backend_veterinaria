@@ -48,6 +48,8 @@ export class ServiciosService {
         .leftJoinAndSelect('servicio.subServicios', 'subServicios')
         .leftJoinAndSelect('subServicios.preciosPorPais', 'preciosPorPais')
         .leftJoinAndSelect('preciosPorPais.pais', 'pais')
+        .leftJoinAndSelect('preciosPorPais.insumos', 'insumos')
+        .leftJoinAndSelect('insumos.insumo', 'insumo')
         .where('servicio.pais_id = :paisId', { paisId });
 
       if (servicio && servicio.trim() !== '') {

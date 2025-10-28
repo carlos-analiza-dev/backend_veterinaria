@@ -66,6 +66,8 @@ import { GoogleMapsModule } from './google-maps/google-maps.module';
 import { PedidosModule } from './pedidos/pedidos.module';
 import { PedidoDetallesModule } from './pedido_detalles/pedido_detalles.module';
 import { CitaInsumosModule } from './cita_insumos/cita_insumos.module';
+import { HistorialClinicoModule } from './historial_clinico/historial_clinico.module';
+import { HistorialDetallesModule } from './historial_detalles/historial_detalles.module';
 
 @Module({
   imports: [
@@ -186,6 +188,10 @@ import { CitaInsumosModule } from './cita_insumos/cita_insumos.module';
     PedidosModule,
 
     PedidoDetallesModule,
+
+    HistorialClinicoModule,
+
+    HistorialDetallesModule,
   ],
   controllers: [],
   providers: [],

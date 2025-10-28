@@ -561,10 +561,11 @@ export class SubServiciosService {
         .leftJoinAndSelect('sub_servicio.servicio', 'servicio')
         .leftJoinAndSelect('sub_servicio.preciosPorPais', 'preciosPorPais')
         .leftJoinAndSelect('preciosPorPais.pais', 'pais')
+        .leftJoinAndSelect('preciosPorPais.insumos', 'insumos')
+        .leftJoinAndSelect('insumos.insumo', 'insumo')
         .leftJoinAndSelect('sub_servicio.marca', 'marca')
         .leftJoinAndSelect('sub_servicio.proveedor', 'proveedor')
         .leftJoinAndSelect('sub_servicio.categoria', 'categoria')
-        .leftJoinAndSelect('sub_servicio.insumos', 'insumos')
         .orderBy('sub_servicio.createdAt', 'DESC')
         .getMany();
 

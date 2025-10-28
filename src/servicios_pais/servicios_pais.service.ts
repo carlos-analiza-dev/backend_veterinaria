@@ -104,6 +104,22 @@ export class ServiciosPaisService {
   }
 
   private async procesarInsumos(servicioPaisId: string, insumos: any[]) {
+    const servicioPaisExist = await this.servicio_percios_Repo.findOne({
+      where: { id: servicioPaisId },
+    });
+
+    if (!servicioPaisExist) {
+      throw new NotFoundException(
+        `No se encontró el servicio-país con id ${servicioPaisId}`,
+      );
+    }
+
+    await this.servicioInsumoRepo.delete({ servicioPaisId });
+
+    if (!insumos || insumos.length === 0) {
+      return [];
+    }
+
     const insumosCreados = [];
 
     for (const insumoDto of insumos) {
@@ -115,19 +131,6 @@ export class ServiciosPaisService {
         if (!insumo_exist) {
           throw new BadRequestException(
             `El insumo con id ${insumoDto.insumoId} no existe.`,
-          );
-        }
-
-        const relacionExistente = await this.servicioInsumoRepo.findOne({
-          where: {
-            servicioPaisId,
-            insumoId: insumoDto.insumoId,
-          },
-        });
-
-        if (relacionExistente) {
-          throw new BadRequestException(
-            `El insumo ${insumo_exist.nombre} ya está asociado a este servicio-país.`,
           );
         }
 
@@ -201,6 +204,22 @@ export class ServiciosPaisService {
     const { paisId, precio, tiempo, cantidadMin, cantidadMax, costo, insumos } =
       updateServiciosPaiDto;
 
+    if (cantidadMin !== undefined && cantidadMax !== undefined) {
+      if (cantidadMin >= cantidadMax) {
+        throw new BadRequestException(
+          'La cantidad mínima debe ser menor que la cantidad máxima',
+        );
+      }
+    }
+
+    if (tiempo !== undefined && tiempo <= 0) {
+      throw new BadRequestException('El tiempo debe ser mayor a 0');
+    }
+
+    if (precio !== undefined && precio <= 0) {
+      throw new BadRequestException('El precio debe ser mayor a 0');
+    }
+
     if (paisId) {
       const pais_exist = await this.paisRepo.findOne({ where: { id: paisId } });
       if (!pais_exist) {
@@ -209,12 +228,20 @@ export class ServiciosPaisService {
       servicio.pais = pais_exist;
     }
 
-    if (precio !== undefined) servicio.precio = precio;
+    if (precio !== undefined) {
+      servicio.precio = precio;
 
-    if (costo === null || costo === undefined || costo === 0) {
-      servicio.costo = servicio.precio;
-    } else {
-      servicio.costo = costo;
+      if (costo === undefined) {
+        servicio.costo = precio;
+      }
+    }
+
+    if (costo !== undefined) {
+      if (costo === null || costo === 0) {
+        servicio.costo = servicio.precio;
+      } else {
+        servicio.costo = costo;
+      }
     }
 
     if (tiempo !== undefined) servicio.tiempo = tiempo;
@@ -223,11 +250,14 @@ export class ServiciosPaisService {
 
     await this.servicio_percios_Repo.save(servicio);
 
-    if (insumos && insumos.length > 0) {
+    if (insumos !== undefined) {
       await this.procesarInsumos(id, insumos);
     }
 
-    return { message: 'Servicio actualizado exitosamente' };
+    return {
+      message: 'Servicio actualizado exitosamente',
+      id: servicio.id,
+    };
   }
 
   async remove(id: string) {

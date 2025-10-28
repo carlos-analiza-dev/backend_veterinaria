@@ -325,7 +325,7 @@ export class CitasService {
         fecha: cita.fecha,
         estado: cita.estado,
         totalPagar: cita.totalPagar,
-
+        codigo: cita.codigo,
         medico: {
           id: cita.medico.id,
           nombre: cita.medico.usuario.name,
@@ -409,6 +409,7 @@ export class CitasService {
         horaInicio: cita.horaInicio,
         horaFin: cita.horaFin,
         duracion: cita.duracion,
+        codigo: cita.codigo,
         estado: cita.estado,
         totalPagar: cita.totalPagar,
         totalFinal: cita.totalFinal,
@@ -502,6 +503,7 @@ export class CitasService {
         fecha: cita.fecha,
         horaInicio: cita.horaInicio,
         horaFin: cita.horaFin,
+        codigo: cita.codigo,
         duracion: cita.duracion,
         estado: cita.estado,
         totalPagar: cita.totalPagar,
