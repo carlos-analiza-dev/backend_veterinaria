@@ -9,10 +9,9 @@ import {
   OneToMany,
 } from 'typeorm';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
-import { Cita } from 'src/citas/entities/cita.entity';
-import { CitaInsumo } from 'src/cita_insumos/entities/cita_insumo.entity';
-import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
 import { HistorialClinico } from 'src/historial_clinico/entities/historial_clinico.entity';
+import { Exclude } from 'class-transformer';
+import { HistorialDocumento } from 'src/historial_documentos/entities/historial_documento.entity';
 
 @Entity('detalles_historial_clinico')
 export class HistorialDetalle {
@@ -21,28 +20,24 @@ export class HistorialDetalle {
 
   @ManyToOne(() => HistorialClinico, (historial) => historial.detalles)
   @JoinColumn({ name: 'historial_id' })
+  @Exclude({ toPlainOnly: true })
   historial: HistorialClinico;
 
   @ManyToOne(() => SubServicio, { nullable: true })
   @JoinColumn({ name: 'sub_servicio_id' })
   subServicio?: SubServicio;
 
-  @OneToMany(() => CitaInsumo, (insumo) => insumo.cita, { nullable: true })
-  insumos?: CitaInsumo[];
-
-  @OneToMany(() => CitaProducto, (producto) => producto.cita, {
-    nullable: true,
-  })
-  productos?: CitaProducto[];
-
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true, default: 'N/D' })
   diagnostico?: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true, default: 'N/D' })
   tratamiento?: string;
 
-  @Column({ type: 'text', nullable: true })
+  @Column({ type: 'text', nullable: true, default: 'N/D' })
   observaciones?: string;
+
+  @OneToMany(() => HistorialDocumento, (doc) => doc.detalle, { cascade: true })
+  documentos: HistorialDocumento[];
 
   @CreateDateColumn()
   createdAt: Date;

@@ -31,7 +31,6 @@ export class HistorialClinico {
 
   @OneToMany(() => HistorialDetalle, (detalle) => detalle.historial, {
     cascade: true,
-    eager: true,
   })
   detalles: HistorialDetalle[];
 

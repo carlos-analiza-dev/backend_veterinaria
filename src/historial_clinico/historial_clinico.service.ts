@@ -11,18 +11,26 @@ import { SubServicio } from '../sub_servicios/entities/sub_servicio.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { User } from 'src/auth/entities/auth.entity';
 import { instanceToPlain } from 'class-transformer';
+import { HistorialDocumento } from 'src/historial_documentos/entities/historial_documento.entity';
 
 @Injectable()
 export class HistorialClinicoService {
   constructor(
     @InjectRepository(HistorialClinico)
     private readonly historialClinicoRepository: Repository<HistorialClinico>,
+
+    @InjectRepository(HistorialDetalle)
+    private readonly historialDetalleRepository: Repository<HistorialDetalle>,
+
     @InjectRepository(AnimalFinca)
     private readonly animalFincaRepository: Repository<AnimalFinca>,
+
     @InjectRepository(Cita)
     private readonly citaRepository: Repository<Cita>,
+
     @InjectRepository(SubServicio)
     private readonly subServicioRepository: Repository<SubServicio>,
+
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
   ) {}
@@ -83,14 +91,16 @@ export class HistorialClinicoService {
           }
         }
 
-        const detalle = new HistorialDetalle();
-        Object.assign(detalle, {
+        const detalle = this.historialDetalleRepository.create({
           ...detalleInfo,
-
           subServicio,
         });
 
-        detallesCreados.push(detalle);
+        const detalleGuardado = await this.historialDetalleRepository.save(
+          detalle,
+        );
+
+        detallesCreados.push(detalleGuardado);
       }
     }
 
@@ -113,12 +123,17 @@ export class HistorialClinicoService {
     try {
       const [historial, total] = await this.historialClinicoRepository
         .createQueryBuilder('historial')
+        .leftJoinAndSelect('historial.cita', 'cita')
+        .leftJoinAndSelect('cita.finca', 'finca')
+        .leftJoinAndSelect('cita.subServicio', 'subServicioCita')
         .leftJoinAndSelect('historial.animal', 'animal')
         .leftJoinAndSelect('animal.especie', 'especie')
         .leftJoinAndSelect('animal.razas', 'razas')
         .leftJoinAndSelect('animal.propietario', 'propietario')
         .leftJoinAndSelect('historial.veterinario', 'veterinario')
         .leftJoinAndSelect('historial.detalles', 'detalles')
+        .leftJoinAndSelect('detalles.subServicio', 'subServicio')
+        .leftJoinAndSelect('detalles.documentos', 'documentos')
         .where('veterinario.id = :veterinarioId', { veterinarioId })
         .orderBy('historial.createdAt', 'DESC')
         .skip(offset)
@@ -140,14 +155,7 @@ export class HistorialClinicoService {
   async findOne(id: string): Promise<HistorialClinico> {
     const historial = await this.historialClinicoRepository.findOne({
       where: { id },
-      relations: [
-        'animal',
-        'cita',
-        'detalles',
-        'detalles.subServicio',
-        'detalles.insumos',
-        'detalles.productos',
-      ],
+      relations: ['animal', 'cita', 'detalles', 'detalles.subServicio'],
     });
 
     if (!historial) {
@@ -170,10 +178,11 @@ export class HistorialClinicoService {
   async update(
     id: string,
     updateHistorialClinicoDto: UpdateHistorialClinicoDto,
-  ): Promise<HistorialClinico> {
+  ) {
     const historial = await this.findOne(id);
 
-    const { animalId, citaId, ...updateData } = updateHistorialClinicoDto;
+    const { animalId, citaId, detalles, ...updateData } =
+      updateHistorialClinicoDto;
 
     if (animalId && animalId !== historial.animal.id) {
       const animal = await this.animalFincaRepository.findOne({
@@ -195,9 +204,46 @@ export class HistorialClinicoService {
       historial.cita = cita;
     }
 
+    if (detalles !== undefined) {
+      await this.historialDetalleRepository.delete({ historial: { id } });
+
+      const nuevosDetalles: HistorialDetalle[] = [];
+
+      if (detalles && detalles.length > 0) {
+        for (const detalleData of detalles) {
+          const { subServicioId, ...detalleInfo } = detalleData;
+
+          let subServicio: SubServicio | undefined;
+          if (subServicioId) {
+            subServicio = await this.subServicioRepository.findOne({
+              where: { id: subServicioId },
+            });
+            if (!subServicio) {
+              throw new NotFoundException(
+                `Subservicio con ID ${subServicioId} no encontrado`,
+              );
+            }
+          }
+
+          const detalle = new HistorialDetalle();
+          Object.assign(detalle, {
+            ...detalleInfo,
+            subServicio,
+            historial,
+          });
+
+          nuevosDetalles.push(detalle);
+        }
+      }
+
+      historial.detalles = nuevosDetalles;
+    }
+
     Object.assign(historial, updateData);
 
-    return await this.historialClinicoRepository.save(historial);
+    await this.historialClinicoRepository.save(historial);
+
+    return 'Historial Actualizado con Exito';
   }
 
   async remove(id: string): Promise<void> {

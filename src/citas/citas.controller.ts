@@ -44,6 +44,11 @@ export class CitasController {
     return this.citasService.findAllByUser(id, paginationDto);
   }
 
+  @Get('animales/:id')
+  findAllAnimalesCita(@Param('id') id: string) {
+    return this.citasService.findAllAnimalesCita(id);
+  }
+
   @Get('medico/:id')
   findAllByMedico(
     @Param('id') id: string,
@@ -58,6 +63,11 @@ export class CitasController {
     @Query() paginationDto: PaginationDto,
   ) {
     return this.citasService.findConfirmedCitasByUser(id, paginationDto);
+  }
+
+  @Get('completadas/:id')
+  findAllByMedicoCitaCompletedNotPagination(@Param('id') id: string) {
+    return this.citasService.findAllByMedicoCitaCompletedNotPagination(id);
   }
 
   @Get('medico/completadas/:id')

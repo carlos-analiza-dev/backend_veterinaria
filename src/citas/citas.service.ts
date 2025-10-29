@@ -358,6 +358,25 @@ export class CitasService {
     }
   }
 
+  async findAllAnimalesCita(id: string) {
+    try {
+      const cita = await this.citas_repo.findOne({
+        where: { id },
+        relations: ['animales'],
+      });
+
+      if (!cita) {
+        throw new NotFoundException('No se encontró la cita seleccionada.');
+      }
+
+      const animales = cita.animales;
+
+      return instanceToPlain(animales);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findPendienteCitasByUser(userId: string, paginationDto: PaginationDto) {
     const { limit = 10, offset = 0 } = paginationDto;
 
@@ -548,6 +567,127 @@ export class CitasService {
     };
   }
 
+  async findAllByMedicoCitaCompletedNotPagination(userId: string) {
+    const medicoExists = await this.citas_repo
+      .createQueryBuilder('cita')
+      .innerJoin('cita.medico', 'medico')
+      .innerJoin('medico.usuario', 'usuario')
+      .select('1')
+      .where('usuario.id = :userId', { userId })
+      .limit(1)
+      .getRawOne();
+
+    if (!medicoExists) {
+      throw new NotFoundException(
+        'No se encontró un médico asociado a este usuario.',
+      );
+    }
+
+    const query = this.citas_repo
+      .createQueryBuilder('cita')
+      .innerJoinAndSelect('cita.medico', 'medico')
+      .innerJoinAndSelect('medico.usuario', 'medicoUsuario')
+      .leftJoinAndSelect('cita.animales', 'animales')
+      .leftJoinAndSelect('animales.especie', 'especie')
+      .leftJoinAndSelect('animales.razas', 'razas')
+      .leftJoinAndSelect('animales.propietario', 'propietario')
+      .leftJoinAndSelect('cita.finca', 'finca')
+      .leftJoinAndSelect('cita.subServicio', 'subServicio')
+      .leftJoinAndSelect('cita.insumosUsados', 'insumosUsados')
+      .leftJoinAndSelect('insumosUsados.insumo', 'insumo')
+      .leftJoinAndSelect('cita.productosUsados', 'productosUsados')
+      .leftJoinAndSelect('productosUsados.producto', 'producto')
+      .where('medicoUsuario.id = :userId', { userId })
+      .andWhere('cita.estado = :estado', { estado: EstadoCita.COMPLETADA })
+      .orderBy('cita.fecha', 'ASC')
+      .addOrderBy('cita.horaInicio', 'ASC');
+
+    const [citas] = await query.getManyAndCount();
+
+    if (citas.length === 0) {
+      throw new NotFoundException(
+        'No se encontraron citas completadas para este usuario médico',
+      );
+    }
+
+    return {
+      citas: citas.map((cita) => ({
+        id: cita.id,
+        fecha: cita.fecha,
+        horaInicio: cita.horaInicio,
+        horaFin: cita.horaFin,
+        codigo: cita.codigo,
+        duracion: cita.duracion,
+        estado: cita.estado,
+        totalPagar: cita.totalPagar,
+        totalFinal: cita.totalFinal,
+        cantidadAnimales: cita.cantidadAnimales,
+        medico: {
+          id: cita.medico.id,
+          nombre: cita.medico.usuario.name,
+          especialidad: cita.medico.especialidad,
+          telefono: cita.medico.usuario.telefono,
+        },
+        animales:
+          cita.animales?.map((animal) => ({
+            id: animal.id,
+            identificador: animal.identificador,
+            especie: animal.especie?.nombre || 'No especificada',
+            razas: animal.razas?.map((raza) => raza.nombre) || [],
+            propietario: animal.propietario
+              ? {
+                  nombre: animal.propietario.nombre || 'No especificado',
+                  telefono: animal.propietario.telefono || 'No especificado',
+                }
+              : null,
+          })) || [],
+        finca: cita.finca
+          ? {
+              id: cita.finca.id,
+              nombre_finca: cita.finca.nombre_finca,
+              ubicacion: cita.finca.ubicacion,
+              latitud: cita.finca.latitud,
+              longitud: cita.finca.longitud,
+            }
+          : null,
+        subServicio: cita.subServicio
+          ? {
+              id: cita.subServicio.id,
+              nombre: cita.subServicio.nombre,
+              descripcion: cita.subServicio.descripcion,
+            }
+          : null,
+
+        insumosUsados:
+          cita.insumosUsados?.map((insumoUsado) => ({
+            id: insumoUsado.id,
+            insumo: {
+              id: insumoUsado.insumo?.id,
+              nombre: insumoUsado.insumo?.nombre,
+              codigo: insumoUsado.insumo?.codigo,
+              unidad_venta: insumoUsado.insumo?.unidad_venta,
+            },
+            cantidad: insumoUsado.cantidad,
+            precioUnitario: insumoUsado.precioUnitario,
+            subtotal: insumoUsado.cantidad * insumoUsado.precioUnitario,
+          })) || [],
+        productosUsados:
+          cita.productosUsados?.map((productoUsado) => ({
+            id: productoUsado.id,
+            producto: {
+              id: productoUsado.producto?.id,
+              nombre: productoUsado.producto?.nombre,
+              descripcion: productoUsado.producto?.descripcion,
+              unidad_venta: productoUsado.producto?.unidad_venta,
+            },
+            cantidad: productoUsado.cantidad,
+            precioUnitario: productoUsado.precioUnitario,
+            subtotal: productoUsado.cantidad * productoUsado.precioUnitario,
+          })) || [],
+      })),
+    };
+  }
+
   async findAllByMedicoCitaCompleted(
     userId: string,
     paginationDto: PaginationDto,
@@ -605,6 +745,7 @@ export class CitasService {
         fecha: cita.fecha,
         horaInicio: cita.horaInicio,
         horaFin: cita.horaFin,
+        codigo: cita.codigo,
         duracion: cita.duracion,
         estado: cita.estado,
         totalPagar: cita.totalPagar,

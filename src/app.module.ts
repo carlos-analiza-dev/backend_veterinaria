@@ -68,6 +68,7 @@ import { PedidoDetallesModule } from './pedido_detalles/pedido_detalles.module';
 import { CitaInsumosModule } from './cita_insumos/cita_insumos.module';
 import { HistorialClinicoModule } from './historial_clinico/historial_clinico.module';
 import { HistorialDetallesModule } from './historial_detalles/historial_detalles.module';
+import { HistorialDocumentosModule } from './historial_documentos/historial_documentos.module';
 
 @Module({
   imports: [
@@ -192,6 +193,8 @@ import { HistorialDetallesModule } from './historial_detalles/historial_detalles
     HistorialClinicoModule,
 
     HistorialDetallesModule,
+
+    HistorialDocumentosModule,
   ],
   controllers: [],
   providers: [],
