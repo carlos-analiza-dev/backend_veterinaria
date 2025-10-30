@@ -69,6 +69,8 @@ import { CitaInsumosModule } from './cita_insumos/cita_insumos.module';
 import { HistorialClinicoModule } from './historial_clinico/historial_clinico.module';
 import { HistorialDetallesModule } from './historial_detalles/historial_detalles.module';
 import { HistorialDocumentosModule } from './historial_documentos/historial_documentos.module';
+import { NotaCreditoModule } from './nota_credito/nota_credito.module';
+import { DetallesNotaCreditoModule } from './detalles_nota_credito/detalles_nota_credito.module';
 
 @Module({
   imports: [
@@ -195,6 +197,10 @@ import { HistorialDocumentosModule } from './historial_documentos/historial_docu
     HistorialDetallesModule,
 
     HistorialDocumentosModule,
+
+    NotaCreditoModule,
+
+    DetallesNotaCreditoModule,
   ],
   controllers: [],
   providers: [],

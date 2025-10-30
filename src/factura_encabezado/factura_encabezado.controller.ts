@@ -40,6 +40,15 @@ export class FacturaEncabezadoController {
     return this.facturaEncabezadoService.findAll(user, paginationDto);
   }
 
+  @Get('/procesadas')
+  @Auth()
+  findAllProcesadas(
+    @GetUser() user: User,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.facturaEncabezadoService.findAllProcesadas(user, paginationDto);
+  }
+
   @Patch(':id')
   @Auth()
   update(

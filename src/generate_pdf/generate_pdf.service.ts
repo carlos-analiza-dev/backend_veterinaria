@@ -9,7 +9,6 @@ import * as path from 'path';
 
 @Injectable()
 export class GeneratePdfService {
-  private readonly TASA_IMPUESTO = 0.15;
   constructor(
     @InjectRepository(Cita)
     private readonly citaRepo: Repository<Cita>,
@@ -58,12 +57,7 @@ export class GeneratePdfService {
 
       doc.pipe(res);
 
-      const logoPath = path.join(
-        process.cwd(),
-        'src',
-        'images',
-        'logo-analiza.png',
-      );
+      const logoPath = path.join(process.cwd(), 'src', 'images', 'logo.png');
       doc.image(logoPath, 50, 40, { width: 100 });
 
       doc.fontSize(20).text('FACTURA VETERINARIA', { align: 'center' });

@@ -769,6 +769,48 @@ export class FacturaEncabezadoService {
     }
   }
 
+  async findAllProcesadas(user: User, paginationDto: PaginationDto) {
+    const { sucursal } = paginationDto;
+    const paisId = user.pais.id;
+
+    try {
+      const queryBuilder = this.facturaEncabezadoRepository
+        .createQueryBuilder('factura')
+        .leftJoinAndSelect('factura.cliente', 'cliente')
+        .leftJoinAndSelect('factura.rango_factura', 'rango')
+        .leftJoinAndSelect('factura.pais', 'pais')
+        .leftJoinAndSelect('factura.detalles', 'detalles')
+        .leftJoinAndSelect('factura.descuento', 'descuento')
+        .leftJoinAndSelect('factura.sucursal', 'sucursal')
+        .leftJoinAndSelect('factura.usuario', 'usuario')
+        .where('pais.id = :paisId', { paisId })
+        .andWhere('factura.estado = :estado', {
+          estado: EstadoFactura.PROCESADA,
+        })
+        .orderBy('factura.created_at', 'DESC');
+
+      if (sucursal) {
+        queryBuilder.andWhere('sucursal.id = :sucursalId', {
+          sucursalId: sucursal,
+        });
+      } else if (user.sucursal?.id) {
+        queryBuilder.andWhere('sucursal.id = :sucursalId', {
+          sucursalId: user.sucursal.id,
+        });
+      }
+
+      const [facturas] = await queryBuilder.getManyAndCount();
+
+      if (!facturas || facturas.length === 0) {
+        throw new NotFoundException('No se encontraron facturas disponibles');
+      }
+
+      return instanceToPlain(facturas);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   private async procesarDetallesFactura(
     detallesDto: CreateFacturaDetalleDto[],
     transactionalEntityManager: any,

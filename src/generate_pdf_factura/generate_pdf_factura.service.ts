@@ -69,15 +69,10 @@ export class FacturaPdfService {
 
       doc.pipe(res);
 
-      const logoPath = path.join(
-        process.cwd(),
-        'src',
-        'images',
-        'logo-analiza.png',
-      );
+      const logoPath = path.join(process.cwd(), 'src', 'images', 'logo.png');
 
       try {
-        doc.image(logoPath, 400, 40, { width: 120 });
+        doc.image(logoPath, 400, 0, { width: 120 });
       } catch (error) {
         throw error;
       }

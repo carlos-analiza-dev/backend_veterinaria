@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, StreamableFile } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 import { v4 as uuidv4 } from 'uuid';
@@ -48,13 +48,10 @@ export class HistorialDocumentosService {
       const fileName = `${uuidv4()}${fileExt}`;
       const filePath = path.join(uploadDir, fileName);
 
-      // Guardar el archivo en disco
       fs.writeFileSync(filePath, file.buffer as Uint8Array);
 
-      // Crear la URL accesible
       const fileUrl = `${baseUrl}/uploads/historial_docs/${fileName}`;
 
-      // Crear la entidad del documento
       const documento = this.documentoRepo.create({
         nombre: file.originalname,
         url: fileUrl,
@@ -63,7 +60,6 @@ export class HistorialDocumentosService {
         detalle,
       });
 
-      // Guardar en base de datos
       const saved = await this.documentoRepo.save(documento);
       documentosGuardados.push(saved);
     }
@@ -100,5 +96,36 @@ export class HistorialDocumentosService {
     if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
 
     await this.documentoRepo.delete(documentoId);
+  }
+
+  async downloadDocumento(documentoId: string): Promise<{
+    stream: StreamableFile;
+    filename: string;
+    mimeType: string;
+  }> {
+    const documento = await this.documentoRepo.findOne({
+      where: { id: documentoId },
+    });
+
+    if (!documento) throw new NotFoundException('Documento no encontrado');
+
+    const filePath = path.join(
+      __dirname,
+      '..',
+      '..',
+      'uploads',
+      'historial_docs',
+      documento.key,
+    );
+
+    if (!fs.existsSync(filePath))
+      throw new NotFoundException('El archivo físico no existe');
+
+    const fileStream = fs.createReadStream(filePath);
+    return {
+      stream: new StreamableFile(fileStream),
+      filename: documento.nombre,
+      mimeType: documento.mimeType,
+    };
   }
 }
