@@ -487,7 +487,6 @@ export class FacturaEncabezadoService {
         }
 
         this.validarCancelacionMismoDia(factura.created_at);
-
         this.validarAutorizacionCancelacion(factura, user);
 
         const movimientosOriginales = await transactionalEntityManager.find(
@@ -507,20 +506,24 @@ export class FacturaEncabezadoService {
           );
         }
 
-        const movimientosPorProducto = this.agruparMovimientosPorProducto(
-          movimientosOriginales,
-        );
-
-        await this.validarMovimientosConFactura(
-          movimientosPorProducto,
-          factura.detalles,
-        );
+        const cantidadesFactura = new Map<string, number>();
+        for (const detalle of factura.detalles) {
+          if (detalle.producto_servicio?.tipo === 'producto') {
+            cantidadesFactura.set(
+              detalle.id_producto_servicio,
+              detalle.cantidad,
+            );
+          }
+        }
 
         for (const movimiento of movimientosOriginales) {
+          const cantidadFactura = cantidadesFactura.get(movimiento.producto_id);
+
           await this.devolverProductoALoteOriginal(
             movimiento,
             transactionalEntityManager,
             factura.id,
+            cantidadFactura,
           );
         }
 
@@ -653,6 +656,7 @@ export class FacturaEncabezadoService {
     movimientoOriginal: MovimientosLote,
     transactionalEntityManager: any,
     facturaId: string,
+    cantidadFactura?: number,
   ): Promise<void> {
     const lote = await transactionalEntityManager.findOne(Lote, {
       where: { id: movimientoOriginal.lote_id },
@@ -664,7 +668,8 @@ export class FacturaEncabezadoService {
       );
     }
 
-    const cantidadADevolver = Math.abs(movimientoOriginal.cantidad);
+    const cantidadADevolver =
+      cantidadFactura || Math.abs(movimientoOriginal.cantidad);
     const cantidadAnterior = lote.cantidad;
 
     lote.cantidad = Number(lote.cantidad) + cantidadADevolver;
@@ -682,7 +687,6 @@ export class FacturaEncabezadoService {
       'Devolución por cancelación de factura',
     );
   }
-
   async obtenerHistorialMovimientosFactura(
     id: string,
   ): Promise<MovimientosLote[]> {
@@ -894,6 +898,8 @@ export class FacturaEncabezadoService {
 
   private convertirEnterosALetras(numero: number): string {
     if (numero === 0) return 'cero';
+    if (numero < 0)
+      return 'menos ' + this.convertirEnterosALetras(Math.abs(numero));
 
     const unidades = [
       '',
@@ -907,7 +913,6 @@ export class FacturaEncabezadoService {
       'ocho',
       'nueve',
     ];
-
     const decenas = [
       '',
       'diez',
@@ -920,7 +925,6 @@ export class FacturaEncabezadoService {
       'ochenta',
       'noventa',
     ];
-
     const especiales = [
       'diez',
       'once',
@@ -933,7 +937,6 @@ export class FacturaEncabezadoService {
       'dieciocho',
       'diecinueve',
     ];
-
     const centenas = [
       '',
       'ciento',
@@ -946,6 +949,11 @@ export class FacturaEncabezadoService {
       'ochocientos',
       'novecientos',
     ];
+
+    if (numero === 100) return 'cien';
+    if (numero === 1000) return 'mil';
+
+    let resultado = '';
 
     if (numero < 10) {
       return unidades[numero];
@@ -964,7 +972,18 @@ export class FacturaEncabezadoService {
       }
 
       if (decena === 2) {
-        return `veinti${unidades[unidad]}`;
+        switch (unidad) {
+          case 1:
+            return 'veintiuno';
+          case 2:
+            return 'veintidós';
+          case 3:
+            return 'veintitrés';
+          case 6:
+            return 'veintiséis';
+          default:
+            return `veinti${unidades[unidad]}`;
+        }
       }
 
       return `${decenas[decena]} y ${unidades[unidad]}`;
@@ -974,11 +993,8 @@ export class FacturaEncabezadoService {
       const centena = Math.floor(numero / 100);
       const resto = numero % 100;
 
-      if (numero === 100) return 'cien';
-
-      if (resto === 0) {
-        return centenas[centena];
-      }
+      if (centena === 1 && resto === 0) return 'cien';
+      if (resto === 0) return centenas[centena];
 
       return `${centenas[centena]} ${this.convertirEnterosALetras(resto)}`;
     }
@@ -987,17 +1003,10 @@ export class FacturaEncabezadoService {
       const miles = Math.floor(numero / 1000);
       const resto = numero % 1000;
 
-      let milesTexto;
-      if (miles === 1) {
-        milesTexto = 'mil';
-      } else {
-        milesTexto = `${this.convertirEnterosALetras(miles)} mil`;
-      }
+      const milesTexto =
+        miles === 1 ? 'mil' : `${this.convertirEnterosALetras(miles)} mil`;
 
-      if (resto === 0) {
-        return milesTexto;
-      }
-
+      if (resto === 0) return milesTexto;
       return `${milesTexto} ${this.convertirEnterosALetras(resto)}`;
     }
 
@@ -1005,17 +1014,12 @@ export class FacturaEncabezadoService {
       const millones = Math.floor(numero / 1000000);
       const resto = numero % 1000000;
 
-      let millonesTexto;
-      if (millones === 1) {
-        millonesTexto = 'un millón';
-      } else {
-        millonesTexto = `${this.convertirEnterosALetras(millones)} millones`;
-      }
+      const millonesTexto =
+        millones === 1
+          ? 'un millón'
+          : `${this.convertirEnterosALetras(millones)} millones`;
 
-      if (resto === 0) {
-        return millonesTexto;
-      }
-
+      if (resto === 0) return millonesTexto;
       return `${millonesTexto} ${this.convertirEnterosALetras(resto)}`;
     }
 

@@ -238,18 +238,9 @@ export class NotaCreditoService {
     descuentoFactura: DescuentosCliente | null,
   ) {
     const precioUnitario = Number(detalleFactura.precio);
-
     const subTotal = precioUnitario * cantidadDevolver;
-
-    let descuento = 0;
-    if (descuentoFactura) {
-      descuento = subTotal * (Number(descuentoFactura.porcentaje) / 100);
-    }
-
-    const subTotalConDescuento = subTotal - descuento;
-
-    const taxPorcentaje =
-      detalleFactura.producto_servicio?.tax?.porcentaje || 0;
+    const taxPorcentajeNum =
+      Number(detalleFactura.producto_servicio?.tax?.porcentaje) || 0;
 
     let importeExento = 0;
     let importeExonerado = 0;
@@ -257,34 +248,49 @@ export class NotaCreditoService {
     let importeGravado18 = 0;
     let isv15 = 0;
     let isv18 = 0;
+    let descuento = 0;
 
-    if (taxPorcentaje === 0) {
-      importeExento = subTotalConDescuento;
-    } else if (taxPorcentaje === 15) {
-      importeGravado15 = subTotalConDescuento / 1.15;
-      isv15 = subTotalConDescuento - importeGravado15;
-    } else if (taxPorcentaje === 18) {
-      importeGravado18 = subTotalConDescuento / 1.18;
-      isv18 = subTotalConDescuento - importeGravado18;
-    } else {
-      const baseImponible = subTotalConDescuento / (1 + taxPorcentaje / 100);
-      const impuesto = subTotalConDescuento - baseImponible;
+    const round = (n: number) => Math.round((n + Number.EPSILON) * 100) / 100;
 
-      importeGravado18 += baseImponible;
-      isv18 += impuesto;
+    if (Math.abs(taxPorcentajeNum - 0) < 0.001) {
+      importeExento = subTotal;
+    } else if (Math.abs(taxPorcentajeNum - 15) < 0.001) {
+      importeGravado15 = subTotal;
+      isv15 = subTotal * 0.15;
+    } else if (Math.abs(taxPorcentajeNum - 18) < 0.001) {
+      importeGravado18 = subTotal;
+      isv18 = subTotal * 0.18;
     }
 
-    const total = subTotalConDescuento;
+    if (descuentoFactura) {
+      const porcentajeDescuento = Number(descuentoFactura.porcentaje) / 100;
+      const baseParaDescuento = subTotal + isv15 + isv18;
+      descuento = baseParaDescuento * porcentajeDescuento;
+    }
+
+    const total = round(subTotal + isv15 + isv18 - descuento);
+
+    console.log('DATOS NOTA CREDITO FINAL', {
+      subTotal: round(subTotal),
+      descuento: round(descuento),
+      importeExento: round(importeExento),
+      importeGravado15: round(importeGravado15),
+      importeGravado18: round(importeGravado18),
+      isv15: round(isv15),
+      isv18: round(isv18),
+      total,
+      taxPorcentaje: taxPorcentajeNum,
+    });
 
     return {
-      subTotal,
-      descuento,
-      importeExento,
-      importeExonerado,
-      importeGravado15,
-      importeGravado18,
-      isv15,
-      isv18,
+      subTotal: round(subTotal),
+      descuento: round(descuento),
+      importeExento: round(importeExento),
+      importeExonerado: round(importeExonerado),
+      importeGravado15: round(importeGravado15),
+      importeGravado18: round(importeGravado18),
+      isv15: round(isv15),
+      isv18: round(isv18),
       total,
     };
   }

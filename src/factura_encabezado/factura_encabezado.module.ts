@@ -10,6 +10,7 @@ import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { Lote } from 'src/lotes/entities/lote.entity';
 import { MovimientosLote } from 'src/movimientos_lotes/entities/movimientos_lote.entity';
+import { NotaCredito } from 'src/nota_credito/entities/nota_credito.entity';
 
 @Module({
   controllers: [FacturaEncabezadoController],
@@ -22,6 +23,7 @@ import { MovimientosLote } from 'src/movimientos_lotes/entities/movimientos_lote
       SubServicio,
       Lote,
       MovimientosLote,
+      NotaCredito,
     ]),
     AuthModule,
   ],
