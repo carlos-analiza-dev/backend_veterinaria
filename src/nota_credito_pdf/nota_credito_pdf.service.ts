@@ -26,8 +26,8 @@ export class NotaCreditoPdfService {
   ) {
     const simbolo = user.pais.simbolo_moneda;
 
-    let notaCredito;
-    let datosEmpresa;
+    let notaCredito: NotaCredito;
+    let datosEmpresa: DatosEmpresa;
 
     try {
       notaCredito = await this.notaCreditoRepository.findOne({
@@ -36,8 +36,11 @@ export class NotaCreditoPdfService {
           'factura',
           'factura.cliente',
           'factura.rango_factura',
+          'factura.descuento',
           'detalles',
           'detalles.producto',
+          'detalles.producto.preciosPorPais',
+          'detalles.producto.tax',
           'usuario',
           'pais',
         ],
@@ -121,7 +124,14 @@ export class NotaCreditoPdfService {
       };
 
       const formatNumber = (num: number): string => {
-        return new Intl.NumberFormat('es-HN').format(num);
+        return new Intl.NumberFormat('es-HN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        }).format(num);
+      };
+
+      const formatCurrency = (amount: number): string => {
+        return `${simbolo} ${formatNumber(amount)}`;
       };
 
       const drawCell = (
@@ -134,6 +144,7 @@ export class NotaCreditoPdfService {
         textColor: string = '#000000',
         fontSize: number = 8,
         bold: boolean = false,
+        align: 'left' | 'center' | 'right' = 'left',
       ) => {
         try {
           doc.rect(x, y, width, height).fillColor(backgroundColor).fill();
@@ -150,7 +161,7 @@ export class NotaCreditoPdfService {
             .fillColor(textColor)
             .text(text, x + 5, y + (height - fontSize) / 2, {
               width: width - 10,
-              align: 'left',
+              align: align,
             });
         } catch (drawError) {
           console.error('Error dibujando celda:', drawError);
@@ -189,6 +200,37 @@ export class NotaCreditoPdfService {
           console.error('Error dibujando celda derecha:', drawError);
         }
       };
+
+      const calcularTotales = () => {
+        const monto_nota = Number(notaCredito.monto);
+
+        if (notaCredito.detalles && notaCredito.detalles.length > 0) {
+          const detalle = notaCredito.detalles[0];
+          const porcentaje_producto =
+            Number(detalle.producto?.tax?.porcentaje || 0) / 100;
+          const total_procentaje = monto_nota * porcentaje_producto;
+
+          const porcentaje_descuento =
+            Number(notaCredito.factura.descuento?.porcentaje || 0) / 100;
+          const descuento_final =
+            (monto_nota + total_procentaje) * porcentaje_descuento;
+          const total_final = monto_nota + total_procentaje - descuento_final;
+
+          return {
+            subTotal: monto_nota,
+            descuento: total_procentaje,
+            totalFinal: total_final,
+          };
+        } else {
+          return {
+            subTotal: monto_nota,
+            descuento: 0,
+            totalFinal: monto_nota,
+          };
+        }
+      };
+
+      const totales = calcularTotales();
 
       doc
         .fontSize(16)
@@ -303,7 +345,7 @@ export class NotaCreditoPdfService {
         detallesTop,
         colWidths[2],
         cellHeight,
-        'PRECIO UNITARIO',
+        'PRECIO',
         '#2E86AB',
         '#FFFFFF',
         9,
@@ -350,7 +392,7 @@ export class NotaCreditoPdfService {
           currentY,
           colWidths[2],
           cellHeight,
-          `${simbolo} ${formatNumber(Number(notaCredito.monto))}`,
+          formatCurrency(Number(notaCredito.monto)),
           backgroundColor,
           '#000000',
           8,
@@ -360,7 +402,7 @@ export class NotaCreditoPdfService {
           currentY,
           colWidths[3],
           cellHeight,
-          `${simbolo} ${formatNumber(Number(notaCredito.monto))}`,
+          formatCurrency(Number(notaCredito.monto)),
           backgroundColor,
           '#000000',
           8,
@@ -399,7 +441,7 @@ export class NotaCreditoPdfService {
               currentY,
               colWidths[2],
               cellHeight,
-              'PRECIO UNITARIO',
+              'PRECIO',
               '#2E86AB',
               '#FFFFFF',
               9,
@@ -421,13 +463,9 @@ export class NotaCreditoPdfService {
 
           const backgroundColor = index % 2 === 0 ? '#FFFFFF' : '#F8F9FA';
           const descripcion = detalle.producto?.nombre || 'Producto/Servicio';
+          const precio = detalle?.producto?.preciosPorPais?.[0]?.precio || 0;
 
-          let precioUnitario = notaCredito.monto;
-          if (detalle.producto?.preciosPorPais?.[0]?.precio) {
-            precioUnitario = Number(detalle.producto.preciosPorPais[0].precio);
-          } else if (detalle.cantidad > 0) {
-            precioUnitario = Number(detalle.montoDevuelto) / detalle.cantidad;
-          }
+          const totalDetalle = Number(precio) * detalle.cantidad;
 
           drawCell(
             50,
@@ -454,7 +492,7 @@ export class NotaCreditoPdfService {
             currentY,
             colWidths[2],
             cellHeight,
-            `${simbolo} ${formatNumber(precioUnitario)}`,
+            formatCurrency(Number(precio)),
             backgroundColor,
             '#000000',
             8,
@@ -464,7 +502,7 @@ export class NotaCreditoPdfService {
             currentY,
             colWidths[3],
             cellHeight,
-            `${simbolo} ${formatNumber(Number(detalle.montoDevuelto))}`,
+            formatCurrency(totalDetalle),
             backgroundColor,
             '#000000',
             8,
@@ -475,7 +513,77 @@ export class NotaCreditoPdfService {
       }
 
       const resumenTop = currentY + 20;
-      const resumenCellHeight = 15;
+      const resumenCellHeight = 18;
+
+      drawCell(
+        350,
+        resumenTop,
+        80,
+        resumenCellHeight,
+        'Sub Total:',
+        '#F8F9FA',
+        '#000000',
+        9,
+        true,
+        'right',
+      );
+      drawCellRight(
+        430,
+        resumenTop,
+        120,
+        resumenCellHeight,
+        formatCurrency(totales.subTotal),
+        '#F8F9FA',
+        '#000000',
+        9,
+      );
+
+      drawCell(
+        350,
+        resumenTop + resumenCellHeight,
+        80,
+        resumenCellHeight,
+        'Descuento:',
+        '#FFFFFF',
+        '#000000',
+        9,
+        true,
+        'right',
+      );
+      drawCellRight(
+        430,
+        resumenTop + resumenCellHeight,
+        120,
+        resumenCellHeight,
+        formatCurrency(totales.descuento),
+        '#FFFFFF',
+        '#000000',
+        9,
+      );
+
+      drawCell(
+        350,
+        resumenTop + resumenCellHeight * 2,
+        80,
+        resumenCellHeight + 5,
+        'Total Final:',
+        '#2E86AB',
+        '#FFFFFF',
+        10,
+        true,
+        'right',
+      );
+      drawCellRight(
+        430,
+        resumenTop + resumenCellHeight * 2,
+        120,
+        resumenCellHeight + 5,
+        formatCurrency(totales.totalFinal),
+        '#2E86AB',
+        '#FFFFFF',
+        10,
+        true,
+      );
 
       drawCell(
         50,
@@ -487,6 +595,7 @@ export class NotaCreditoPdfService {
         '#000000',
         9,
         true,
+        'center',
       );
       drawCell(
         50,
@@ -523,6 +632,7 @@ export class NotaCreditoPdfService {
         '#FFFFFF',
         6,
         true,
+        'center',
       );
       drawCell(
         185,
@@ -534,33 +644,10 @@ export class NotaCreditoPdfService {
         '#FFFFFF',
         6,
         true,
+        'center',
       );
 
-      const totalY = resumenTop;
-      drawCell(
-        350,
-        totalY,
-        80,
-        resumenCellHeight + 5,
-        'Total',
-        '#2E86AB',
-        '#FFFFFF',
-        9,
-        true,
-      );
-      drawCellRight(
-        430,
-        totalY,
-        120,
-        resumenCellHeight + 5,
-        `${simbolo} ${formatNumber(Number(notaCredito.monto))}`,
-        '#2E86AB',
-        '#FFFFFF',
-        9,
-        true,
-      );
-
-      const footerY = Math.max(totalY + resumenCellHeight + 30, 700);
+      const footerY = Math.max(resumenTop + resumenCellHeight * 6 + 30, 700);
       drawCell(
         50,
         footerY,
@@ -571,6 +658,7 @@ export class NotaCreditoPdfService {
         '#FFFFFF',
         10,
         true,
+        'center',
       );
 
       doc.end();
@@ -579,7 +667,6 @@ export class NotaCreditoPdfService {
 
       if (res.headersSent) {
         console.error('Headers ya enviados, no se puede enviar error JSON');
-
         res.end();
       } else {
         res.status(500).json({

@@ -109,6 +109,7 @@ export class NotaCreditoService {
       let isv15Nota = 0;
       let isv18Nota = 0;
       let subTotalNota = 0;
+      let totalNota = 0;
 
       for (const detalle of detalles) {
         const producto = await queryRunner.manager.findOne(SubServicio, {
@@ -171,6 +172,7 @@ export class NotaCreditoService {
         isv15Nota += montosDetalle.isv15;
         isv18Nota += montosDetalle.isv18;
         totalDescuentoNota += montosDetalle.descuento;
+        totalNota += montosDetalle.total;
 
         await this.actualizarDetalleFactura(
           queryRunner,
@@ -214,7 +216,7 @@ export class NotaCreditoService {
         importeGravado18: importeGravado18Nota,
         isv15: isv15Nota,
         isv18: isv18Nota,
-        total: monto,
+        total: totalNota,
       });
 
       await queryRunner.commitTransaction();
@@ -225,7 +227,7 @@ export class NotaCreditoService {
       });
     } catch (error) {
       await queryRunner.rollbackTransaction();
-      console.error('Error al crear nota de crédito:', error);
+
       throw error;
     } finally {
       await queryRunner.release();
@@ -269,18 +271,6 @@ export class NotaCreditoService {
     }
 
     const total = round(subTotal + isv15 + isv18 - descuento);
-
-    console.log('DATOS NOTA CREDITO FINAL', {
-      subTotal: round(subTotal),
-      descuento: round(descuento),
-      importeExento: round(importeExento),
-      importeGravado15: round(importeGravado15),
-      importeGravado18: round(importeGravado18),
-      isv15: round(isv15),
-      isv18: round(isv18),
-      total,
-      taxPorcentaje: taxPorcentajeNum,
-    });
 
     return {
       subTotal: round(subTotal),
@@ -354,6 +344,7 @@ export class NotaCreditoService {
       0,
       Number(factura.importe_gravado_18) - montosNota.importeGravado18,
     );
+
     factura.isv_15 = Math.max(0, Number(factura.isv_15) - montosNota.isv15);
     factura.isv_18 = Math.max(0, Number(factura.isv_18) - montosNota.isv18);
     factura.total = Math.max(0, Number(factura.total) - montosNota.total);
@@ -362,13 +353,34 @@ export class NotaCreditoService {
       factura.estado = EstadoFactura.CANCELADA;
     }
 
-    factura.total_letras = await this.convertirEnterosALetras(factura.total);
+    factura.total_letras = await this.convertirNumeroALetras(factura.total);
 
     await queryRunner.manager.save(factura);
   }
 
+  private convertirNumeroALetras(numero: number): string {
+    const enteros = Math.floor(numero);
+    const decimales = Math.round((numero - enteros) * 100);
+
+    if (enteros === 0) {
+      return `cero con ${decimales.toString().padStart(2, '0')}/100`;
+    }
+
+    let resultado = this.convertirEnterosALetras(enteros);
+
+    if (decimales > 0) {
+      resultado += ` con ${decimales.toString().padStart(2, '0')}/100`;
+    } else {
+      resultado += ' con 00/100';
+    }
+
+    return resultado;
+  }
+
   private convertirEnterosALetras(numero: number): string {
     if (numero === 0) return 'cero';
+    if (numero < 0)
+      return 'menos ' + this.convertirEnterosALetras(Math.abs(numero));
 
     const unidades = [
       '',
@@ -382,7 +394,6 @@ export class NotaCreditoService {
       'ocho',
       'nueve',
     ];
-
     const decenas = [
       '',
       'diez',
@@ -395,7 +406,6 @@ export class NotaCreditoService {
       'ochenta',
       'noventa',
     ];
-
     const especiales = [
       'diez',
       'once',
@@ -408,7 +418,6 @@ export class NotaCreditoService {
       'dieciocho',
       'diecinueve',
     ];
-
     const centenas = [
       '',
       'ciento',
@@ -421,6 +430,11 @@ export class NotaCreditoService {
       'ochocientos',
       'novecientos',
     ];
+
+    if (numero === 100) return 'cien';
+    if (numero === 1000) return 'mil';
+
+    let resultado = '';
 
     if (numero < 10) {
       return unidades[numero];
@@ -439,7 +453,18 @@ export class NotaCreditoService {
       }
 
       if (decena === 2) {
-        return `veinti${unidades[unidad]}`;
+        switch (unidad) {
+          case 1:
+            return 'veintiuno';
+          case 2:
+            return 'veintidós';
+          case 3:
+            return 'veintitrés';
+          case 6:
+            return 'veintiséis';
+          default:
+            return `veinti${unidades[unidad]}`;
+        }
       }
 
       return `${decenas[decena]} y ${unidades[unidad]}`;
@@ -449,11 +474,8 @@ export class NotaCreditoService {
       const centena = Math.floor(numero / 100);
       const resto = numero % 100;
 
-      if (numero === 100) return 'cien';
-
-      if (resto === 0) {
-        return centenas[centena];
-      }
+      if (centena === 1 && resto === 0) return 'cien';
+      if (resto === 0) return centenas[centena];
 
       return `${centenas[centena]} ${this.convertirEnterosALetras(resto)}`;
     }
@@ -462,17 +484,10 @@ export class NotaCreditoService {
       const miles = Math.floor(numero / 1000);
       const resto = numero % 1000;
 
-      let milesTexto;
-      if (miles === 1) {
-        milesTexto = 'mil';
-      } else {
-        milesTexto = `${this.convertirEnterosALetras(miles)} mil`;
-      }
+      const milesTexto =
+        miles === 1 ? 'mil' : `${this.convertirEnterosALetras(miles)} mil`;
 
-      if (resto === 0) {
-        return milesTexto;
-      }
-
+      if (resto === 0) return milesTexto;
       return `${milesTexto} ${this.convertirEnterosALetras(resto)}`;
     }
 
@@ -480,17 +495,12 @@ export class NotaCreditoService {
       const millones = Math.floor(numero / 1000000);
       const resto = numero % 1000000;
 
-      let millonesTexto;
-      if (millones === 1) {
-        millonesTexto = 'un millón';
-      } else {
-        millonesTexto = `${this.convertirEnterosALetras(millones)} millones`;
-      }
+      const millonesTexto =
+        millones === 1
+          ? 'un millón'
+          : `${this.convertirEnterosALetras(millones)} millones`;
 
-      if (resto === 0) {
-        return millonesTexto;
-      }
-
+      if (resto === 0) return millonesTexto;
       return `${millonesTexto} ${this.convertirEnterosALetras(resto)}`;
     }
 
