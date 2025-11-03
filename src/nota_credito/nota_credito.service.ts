@@ -508,11 +508,11 @@ export class NotaCreditoService {
   }
 
   async findAll(user: User, paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0 } = paginationDto;
+    const { limit = 10, offset = 0, fechaInicio, fechaFin } = paginationDto;
     const paisId = user.pais.id;
 
     try {
-      const [notas, total] = await this.notaCreditoRepository
+      const queryBuilder = this.notaCreditoRepository
         .createQueryBuilder('nota')
         .leftJoinAndSelect('nota.usuario', 'usuario')
         .leftJoinAndSelect('nota.pais', 'pais')
@@ -521,8 +521,24 @@ export class NotaCreditoService {
         .where('nota.pais_id = :paisId', { paisId })
         .orderBy('nota.createdAt', 'DESC')
         .skip(offset)
-        .take(limit)
-        .getManyAndCount();
+        .take(limit);
+
+      if (fechaInicio && fechaFin) {
+        queryBuilder.andWhere(
+          'DATE(nota.createdAt) BETWEEN DATE(:fechaInicio) AND DATE(:fechaFin)',
+          { fechaInicio, fechaFin },
+        );
+      } else if (fechaInicio) {
+        queryBuilder.andWhere('DATE(nota.createdAt) >= DATE(:fechaInicio)', {
+          fechaInicio,
+        });
+      } else if (fechaFin) {
+        queryBuilder.andWhere('DATE(nota.createdAt) <= DATE(:fechaFin)', {
+          fechaFin,
+        });
+      }
+
+      const [notas, total] = await queryBuilder.getManyAndCount();
 
       if (!notas || notas.length === 0) {
         throw new NotFoundException(
@@ -530,11 +546,9 @@ export class NotaCreditoService {
         );
       }
 
-      const notas_plain = instanceToPlain(notas);
-
       return {
         total,
-        notas: notas_plain,
+        notas: instanceToPlain(notas),
       };
     } catch (error) {
       throw error;

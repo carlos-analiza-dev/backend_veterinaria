@@ -202,34 +202,49 @@ export class NotaCreditoPdfService {
       };
 
       const calcularTotales = () => {
-        const monto_nota = Number(notaCredito.monto);
+        let subTotal = 0;
+        let totalImpuestos = 0;
+        let totalDescuentos = 0;
 
         if (notaCredito.detalles && notaCredito.detalles.length > 0) {
-          const detalle = notaCredito.detalles[0];
-          const porcentaje_producto =
-            Number(detalle.producto?.tax?.porcentaje || 0) / 100;
-          const total_procentaje = monto_nota * porcentaje_producto;
+          notaCredito.detalles.forEach((detalle) => {
+            const cantidad = detalle.cantidad;
+            const precioUnitario =
+              Number(detalle.producto.preciosPorPais[0].precio) ||
+              Number(detalle?.producto?.preciosPorPais?.[0]?.precio) ||
+              0;
 
-          const porcentaje_descuento =
-            Number(notaCredito.factura.descuento?.porcentaje || 0) / 100;
-          const descuento_final =
-            (monto_nota + total_procentaje) * porcentaje_descuento;
-          const total_final = monto_nota + total_procentaje - descuento_final;
+            const subtotalProducto = precioUnitario * cantidad;
+            subTotal += subtotalProducto;
 
-          return {
-            subTotal: monto_nota,
-            descuento: total_procentaje,
-            totalFinal: total_final,
-          };
+            const porcentajeImpuesto =
+              Number(detalle.producto?.tax?.porcentaje || 0) / 100;
+            const impuestosProducto = subtotalProducto * porcentajeImpuesto;
+            totalImpuestos += impuestosProducto;
+
+            const porcentajeDescuento =
+              Number(notaCredito.factura.descuento?.porcentaje || 0) / 100;
+            const descuentoProducto =
+              (subtotalProducto + impuestosProducto) * porcentajeDescuento;
+            totalDescuentos += descuentoProducto;
+          });
         } else {
-          return {
-            subTotal: monto_nota,
-            descuento: 0,
-            totalFinal: monto_nota,
-          };
-        }
-      };
+          subTotal = Number(notaCredito.monto);
 
+          const porcentajeDescuento =
+            Number(notaCredito.factura.descuento?.porcentaje || 0) / 100;
+          totalDescuentos = subTotal * porcentajeDescuento;
+        }
+
+        const totalFinal = subTotal + totalImpuestos - totalDescuentos;
+
+        return {
+          subTotal: subTotal,
+          impuestos: totalImpuestos,
+          descuento: totalDescuentos,
+          totalFinal: totalFinal,
+        };
+      };
       const totales = calcularTotales();
 
       doc
@@ -515,9 +530,11 @@ export class NotaCreditoPdfService {
       const resumenTop = currentY + 20;
       const resumenCellHeight = 18;
 
+      let currentResumenY = resumenTop;
+
       drawCell(
         350,
-        resumenTop,
+        currentResumenY,
         80,
         resumenCellHeight,
         'Sub Total:',
@@ -529,7 +546,7 @@ export class NotaCreditoPdfService {
       );
       drawCellRight(
         430,
-        resumenTop,
+        currentResumenY,
         120,
         resumenCellHeight,
         formatCurrency(totales.subTotal),
@@ -537,10 +554,37 @@ export class NotaCreditoPdfService {
         '#000000',
         9,
       );
+      currentResumenY += resumenCellHeight;
+
+      if (totales.impuestos > 0) {
+        drawCell(
+          350,
+          currentResumenY,
+          80,
+          resumenCellHeight,
+          'Impuestos:',
+          '#FFFFFF',
+          '#000000',
+          9,
+          true,
+          'right',
+        );
+        drawCellRight(
+          430,
+          currentResumenY,
+          120,
+          resumenCellHeight,
+          formatCurrency(totales.impuestos),
+          '#FFFFFF',
+          '#000000',
+          9,
+        );
+        currentResumenY += resumenCellHeight;
+      }
 
       drawCell(
         350,
-        resumenTop + resumenCellHeight,
+        currentResumenY,
         80,
         resumenCellHeight,
         'Descuento:',
@@ -552,7 +596,7 @@ export class NotaCreditoPdfService {
       );
       drawCellRight(
         430,
-        resumenTop + resumenCellHeight,
+        currentResumenY,
         120,
         resumenCellHeight,
         formatCurrency(totales.descuento),
@@ -560,10 +604,11 @@ export class NotaCreditoPdfService {
         '#000000',
         9,
       );
+      currentResumenY += resumenCellHeight;
 
       drawCell(
         350,
-        resumenTop + resumenCellHeight * 2,
+        currentResumenY,
         80,
         resumenCellHeight + 5,
         'Total Final:',
@@ -575,7 +620,7 @@ export class NotaCreditoPdfService {
       );
       drawCellRight(
         430,
-        resumenTop + resumenCellHeight * 2,
+        currentResumenY,
         120,
         resumenCellHeight + 5,
         formatCurrency(totales.totalFinal),

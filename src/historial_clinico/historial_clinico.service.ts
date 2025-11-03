@@ -118,10 +118,17 @@ export class HistorialClinicoService {
   }
 
   async findAll(user: User, paginationDto: PaginationDto) {
-    const veterinarioId = user.id;
-    const { limit = 10, offset = 0 } = paginationDto;
+    const veterinarioId = user.id || '';
+    const {
+      limit = 10,
+      offset = 0,
+      fechaInicio,
+      fechaFin,
+      identificador,
+    } = paginationDto;
+
     try {
-      const [historial, total] = await this.historialClinicoRepository
+      const queryBuilder = this.historialClinicoRepository
         .createQueryBuilder('historial')
         .leftJoinAndSelect('historial.cita', 'cita')
         .leftJoinAndSelect('cita.finca', 'finca')
@@ -137,16 +144,101 @@ export class HistorialClinicoService {
         .where('veterinario.id = :veterinarioId', { veterinarioId })
         .orderBy('historial.createdAt', 'DESC')
         .skip(offset)
-        .take(limit)
-        .getManyAndCount();
+        .take(limit);
+
+      if (identificador) {
+        queryBuilder.andWhere('(animal.identificador ILIKE :identificador )', {
+          identificador: `%${identificador}%`,
+        });
+      }
+
+      if (fechaInicio && fechaFin) {
+        queryBuilder.andWhere(
+          'DATE(historial.createdAt) BETWEEN DATE(:fechaInicio) AND DATE(:fechaFin)',
+          { fechaInicio, fechaFin },
+        );
+      } else if (fechaInicio) {
+        queryBuilder.andWhere(
+          'DATE(historial.createdAt) >= DATE(:fechaInicio)',
+          {
+            fechaInicio,
+          },
+        );
+      } else if (fechaFin) {
+        queryBuilder.andWhere('DATE(historial.createdAt) <= DATE(:fechaFin)', {
+          fechaFin,
+        });
+      }
+
+      const [historial, total] = await queryBuilder.getManyAndCount();
 
       if (!historial || historial.length === 0) {
         throw new NotFoundException(
           'No se encontraron historiales disponibles',
         );
       }
-      const historial_plain = instanceToPlain(historial);
-      return { historial: historial_plain, total };
+
+      return {
+        total,
+        historial: instanceToPlain(historial),
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAnimal(animalId: string, user: User, paginationDto: PaginationDto) {
+    const { limit = 10, offset = 0, fechaInicio, fechaFin } = paginationDto;
+
+    try {
+      const queryBuilder = this.historialClinicoRepository
+        .createQueryBuilder('historial')
+        .leftJoinAndSelect('historial.cita', 'cita')
+        .leftJoinAndSelect('cita.finca', 'finca')
+        .leftJoinAndSelect('cita.subServicio', 'subServicioCita')
+        .leftJoinAndSelect('historial.animal', 'animal')
+        .leftJoinAndSelect('animal.especie', 'especie')
+        .leftJoinAndSelect('animal.razas', 'razas')
+        .leftJoinAndSelect('animal.propietario', 'propietario')
+        .leftJoinAndSelect('historial.veterinario', 'veterinario')
+        .leftJoinAndSelect('historial.detalles', 'detalles')
+        .leftJoinAndSelect('detalles.subServicio', 'subServicio')
+        .leftJoinAndSelect('detalles.documentos', 'documentos')
+        .where('animal.id = :animalId', { animalId })
+        .orderBy('historial.createdAt', 'DESC')
+        .skip(offset)
+        .take(limit);
+
+      if (fechaInicio && fechaFin) {
+        queryBuilder.andWhere(
+          'DATE(historial.createdAt) BETWEEN DATE(:fechaInicio) AND DATE(:fechaFin)',
+          { fechaInicio, fechaFin },
+        );
+      } else if (fechaInicio) {
+        queryBuilder.andWhere(
+          'DATE(historial.createdAt) >= DATE(:fechaInicio)',
+          {
+            fechaInicio,
+          },
+        );
+      } else if (fechaFin) {
+        queryBuilder.andWhere('DATE(historial.createdAt) <= DATE(:fechaFin)', {
+          fechaFin,
+        });
+      }
+
+      const [historial, total] = await queryBuilder.getManyAndCount();
+
+      if (!historial || historial.length === 0) {
+        throw new NotFoundException(
+          'No se encontraron historiales disponibles',
+        );
+      }
+
+      return {
+        total,
+        historial: instanceToPlain(historial),
+      };
     } catch (error) {
       throw error;
     }

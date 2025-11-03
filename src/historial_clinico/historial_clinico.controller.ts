@@ -38,6 +38,20 @@ export class HistorialClinicoController {
     return this.historialClinicoService.findAll(user, paginationDto);
   }
 
+  @Get('/animales/:animalId')
+  @Auth()
+  findAnimal(
+    @Param('animalId') animalId: string,
+    @GetUser() user: User,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.historialClinicoService.findAnimal(
+      animalId,
+      user,
+      paginationDto,
+    );
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.historialClinicoService.findOne(id);
