@@ -122,16 +122,27 @@ export class ProduccionFincaService {
         produccion_venta: produccion_venta ?? false,
       });
 
+      const produccionGuardada = await this.produccion_finca_repo.save(
+        produccion,
+      );
+
       if (hasValidGanadera) {
-        produccion.ganadera = await this.produccion_ganadera_repo.save(
-          this.produccion_ganadera_repo.create(ganadera),
+        const ganaderaEntity = this.produccion_ganadera_repo.create({
+          ...ganadera,
+          produccionFinca: produccionGuardada,
+        });
+        produccionGuardada.ganadera = await this.produccion_ganadera_repo.save(
+          ganaderaEntity,
         );
       }
 
       if (hasValidApicultura) {
-        produccion.apicultura = await this.produccion_apicultura_rep.save(
-          this.produccion_apicultura_rep.create(apicultura),
-        );
+        const apiculturaEntity = this.produccion_apicultura_rep.create({
+          ...apicultura,
+          produccionFinca: produccionGuardada,
+        });
+        produccionGuardada.apicultura =
+          await this.produccion_apicultura_rep.save(apiculturaEntity);
       }
 
       if (hasValidAgricola) {
@@ -149,9 +160,12 @@ export class ProduccionFincaService {
           }));
 
         if (cultivos.length > 0) {
-          produccion.agricola = await this.produccion_agricola_repo.save(
-            this.produccion_agricola_repo.create({ cultivos }),
-          );
+          const agricolaEntity = this.produccion_agricola_repo.create({
+            cultivos,
+            produccionFinca: produccionGuardada,
+          });
+          produccionGuardada.agricola =
+            await this.produccion_agricola_repo.save(agricolaEntity);
         }
       }
 
@@ -169,9 +183,12 @@ export class ProduccionFincaService {
           }));
 
         if (insumos.length > 0) {
-          produccion.forrajesInsumo = await this.produccion_forrajes_rep.save(
-            this.produccion_forrajes_rep.create({ insumos }),
-          );
+          const forrajesEntity = this.produccion_forrajes_rep.create({
+            insumos,
+            produccionFinca: produccionGuardada,
+          });
+          produccionGuardada.forrajesInsumo =
+            await this.produccion_forrajes_rep.save(forrajesEntity);
         }
       }
 
@@ -180,20 +197,22 @@ export class ProduccionFincaService {
           .filter((a) => a.tipo && a.cantidad_producida)
           .map((a) => ({
             tipo: a.tipo,
-
             cantidad_producida: a.cantidad_producida,
             unidad_medida: a.unidad_medida,
             ingresos_anuales: a.ingresos_anuales,
           }));
 
         if (actividades.length > 0) {
-          produccion.alternativa = await this.produccion_alternativa_repo.save(
-            this.produccion_alternativa_repo.create({ actividades }),
-          );
+          const alternativaEntity = this.produccion_alternativa_repo.create({
+            actividades,
+            produccionFinca: produccionGuardada,
+          });
+          produccionGuardada.alternativa =
+            await this.produccion_alternativa_repo.save(alternativaEntity);
         }
       }
 
-      await this.produccion_finca_repo.save(produccion);
+      await this.produccion_finca_repo.save(produccionGuardada);
       return 'Producción creada exitosamente';
     } catch (error) {
       throw error;
@@ -210,6 +229,7 @@ export class ProduccionFincaService {
           'agricola',
           'forrajesInsumo',
           'alternativa',
+          'apicultura',
         ],
       });
     } catch (error) {
@@ -248,7 +268,15 @@ export class ProduccionFincaService {
 
       const producciones = await this.produccion_finca_repo.find({
         where: { propietario: { id } },
-        relations: ['finca', 'propietario'],
+        relations: [
+          'finca',
+          'propietario',
+          'ganadera',
+          'agricola',
+          'forrajesInsumo',
+          'alternativa',
+          'apicultura',
+        ],
       });
 
       if (!producciones || producciones.length === 0)
@@ -301,71 +329,49 @@ export class ProduccionFincaService {
       }
 
       if (updateProduccionFincaDto.agricola?.cultivos) {
-        const cultivos = updateProduccionFincaDto.agricola.cultivos.map(
-          (c) => ({
-            tipo: c.tipo,
-            descripcion: c.descripcion,
-            estacionalidad: c.estacionalidad,
-            tiempo_estimado_cultivo: c.tiempo_estimado_cultivo,
-            meses_produccion: c.meses_produccion,
-            cantidad_producida_hectareas: c.cantidad_producida_hectareas,
-          }),
-        );
-
         if (produccion.agricola) {
           await this.produccion_agricola_repo.update(produccion.agricola.id, {
-            cultivos,
+            cultivos: updateProduccionFincaDto.agricola.cultivos,
           });
         } else {
           produccion.agricola = await this.produccion_agricola_repo.save(
-            this.produccion_agricola_repo.create({ cultivos }),
+            this.produccion_agricola_repo.create({
+              cultivos: updateProduccionFincaDto.agricola.cultivos,
+            }),
           );
         }
       }
 
       if (updateProduccionFincaDto.forrajesInsumo?.insumos) {
-        const insumos = updateProduccionFincaDto.forrajesInsumo.insumos.map(
-          (i) => ({
-            tipo: i.tipo,
-            tipo_heno: i.tipo_heno,
-            estacionalidad_heno: i.estacionalidad_heno,
-            meses_produccion_heno: i.meses_produccion_heno,
-            tiempo_estimado_cultivo: i.tiempo_estimado_cultivo,
-            produccion_manzana: i.produccion_manzana,
-            descripcion_otro: i.descripcion_otro,
-          }),
-        );
-
         if (produccion.forrajesInsumo) {
           await this.produccion_forrajes_rep.update(
             produccion.forrajesInsumo.id,
-            { insumos },
+            {
+              insumos: updateProduccionFincaDto.forrajesInsumo.insumos,
+            },
           );
         } else {
           produccion.forrajesInsumo = await this.produccion_forrajes_rep.save(
-            this.produccion_forrajes_rep.create({ insumos }),
+            this.produccion_forrajes_rep.create({
+              insumos: updateProduccionFincaDto.forrajesInsumo.insumos,
+            }),
           );
         }
       }
 
       if (updateProduccionFincaDto.alternativa?.actividades) {
-        const actividades =
-          updateProduccionFincaDto.alternativa.actividades.map((a) => ({
-            tipo: a.tipo,
-
-            cantidad_producida: a.cantidad_producida,
-            unidad_medida: a.unidad_medida,
-            ingresos_anuales: a.ingresos_anuales,
-          }));
-
         if (produccion.alternativa) {
           await this.produccion_alternativa_repo.update(
             produccion.alternativa.id,
-            { actividades },
+            {
+              actividades: updateProduccionFincaDto.alternativa.actividades,
+            },
           );
         } else {
           produccion.alternativa = await this.produccion_alternativa_repo.save(
-            this.produccion_alternativa_repo.create({ actividades }),
+            this.produccion_alternativa_repo.create({
+              actividades: updateProduccionFincaDto.alternativa.actividades,
+            }),
           );
         }
       }
@@ -387,6 +393,7 @@ export class ProduccionFincaService {
       if (error instanceof NotFoundException) {
         throw error;
       }
+      console.error('Error detallado:', error);
       throw new InternalServerErrorException(
         'Error al actualizar la producción',
       );

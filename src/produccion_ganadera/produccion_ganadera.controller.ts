@@ -30,7 +30,7 @@ export class ProduccionGanaderaController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.produccionGanaderaService.findOne(+id);
+    return this.produccionGanaderaService.findOne(id);
   }
 
   @Patch(':id')
@@ -39,13 +39,13 @@ export class ProduccionGanaderaController {
     @Body() updateProduccionGanaderaDto: UpdateProduccionGanaderaDto,
   ) {
     return this.produccionGanaderaService.update(
-      +id,
+      id,
       updateProduccionGanaderaDto,
     );
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.produccionGanaderaService.remove(+id);
+    return this.produccionGanaderaService.remove(id);
   }
 }

@@ -3,6 +3,7 @@ import {
   IsEnum,
   IsOptional,
   IsString,
+  IsUUID,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -57,4 +58,7 @@ export class CreateProduccionForrajesInsumoDto {
   @ValidateNested({ each: true })
   @Type(() => InsumoForrajeDto)
   insumos: InsumoForrajeDto[];
+
+  @IsUUID('4', { message: 'Debe enviar un ID válido de la producción' })
+  produccionFincaId: string;
 }

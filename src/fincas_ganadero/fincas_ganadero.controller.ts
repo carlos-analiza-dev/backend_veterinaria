@@ -12,6 +12,9 @@ import { FincasGanaderoService } from './fincas_ganadero.service';
 import { CreateFincasGanaderoDto } from './dto/create-fincas_ganadero.dto';
 import { UpdateFincasGanaderoDto } from './dto/update-fincas_ganadero.dto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { Auth } from 'src/auth/decorators/auth.decorator';
+import { GetUser } from 'src/auth/decorators/get-user.decorator';
+import { User } from 'src/auth/entities/auth.entity';
 
 @Controller('fincas-ganadero')
 export class FincasGanaderoController {
@@ -20,6 +23,12 @@ export class FincasGanaderoController {
   @Post()
   create(@Body() createFincasGanaderoDto: CreateFincasGanaderoDto) {
     return this.fincasGanaderoService.create(createFincasGanaderoDto);
+  }
+
+  @Get('/pais')
+  @Auth()
+  findAllPais(@GetUser() user: User, @Query() paginationDto: PaginationDto) {
+    return this.fincasGanaderoService.findAllPais(user, paginationDto);
   }
 
   @Get('/fincas/:propietadrioId')

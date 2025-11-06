@@ -170,12 +170,12 @@ export class PedidosService {
   }
 
   async findByCliente(cliente: Cliente, paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0 } = paginationDto;
+    const { limit = 10, offset = 0, estado } = paginationDto;
     const clienteId = cliente.id;
 
     try {
       const [pedidos, total] = await this.pedido_repo.findAndCount({
-        where: { id_cliente: clienteId },
+        where: { id_cliente: clienteId, estado },
         relations: ['cliente', 'sucursal', 'detalles', 'detalles.producto'],
         order: { created_at: 'DESC' },
         take: limit,

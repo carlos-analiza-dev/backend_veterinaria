@@ -29,6 +29,7 @@ export class ProduccionFinca {
     cascade: true,
     nullable: true,
     eager: true,
+    onDelete: 'CASCADE',
   })
   @JoinColumn()
   ganadera?: ProduccionGanadera;
@@ -37,6 +38,7 @@ export class ProduccionFinca {
     cascade: true,
     nullable: true,
     eager: true,
+    onDelete: 'CASCADE',
   })
   @JoinColumn()
   agricola?: ProduccionAgricola;
@@ -45,6 +47,7 @@ export class ProduccionFinca {
     cascade: true,
     nullable: true,
     eager: true,
+    onDelete: 'CASCADE',
   })
   @JoinColumn()
   forrajesInsumo?: ProduccionForrajesInsumo;
@@ -53,6 +56,7 @@ export class ProduccionFinca {
     cascade: true,
     nullable: true,
     eager: true,
+    onDelete: 'CASCADE',
   })
   @JoinColumn()
   alternativa?: ProduccionAlternativa;
@@ -61,6 +65,7 @@ export class ProduccionFinca {
     cascade: true,
     nullable: true,
     eager: true,
+    onDelete: 'CASCADE',
   })
   @JoinColumn()
   apicultura?: ProduccionApicultura;

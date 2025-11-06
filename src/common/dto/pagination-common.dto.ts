@@ -79,6 +79,10 @@ export class PaginationDto {
 
   @IsOptional()
   @IsString()
+  fincaNombre?: string;
+
+  @IsOptional()
+  @IsString()
   especieId?: string;
 
   @IsOptional()

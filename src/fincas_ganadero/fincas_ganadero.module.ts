@@ -8,6 +8,7 @@ import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   controllers: [FincasGanaderoController],
@@ -19,7 +20,9 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
       MunicipiosDepartamentosPai,
       Pai,
       Cliente,
+      User,
     ]),
+    AuthModule,
   ],
   providers: [FincasGanaderoService],
 })

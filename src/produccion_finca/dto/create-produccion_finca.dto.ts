@@ -6,11 +6,13 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { CreateProduccionAgricolaDto } from 'src/produccion_agricola/dto/create-produccion_agricola.dto';
-import { CreateProduccionForrajesInsumoDto } from 'src/produccion_forrajes_insumos/dto/create-produccion_forrajes_insumo.dto';
-import { CreateProduccionAlternativaDto } from 'src/produccion_alternativa/dto/create-produccion_alternativa.dto';
-import { CreateProduccionApiculturaDto } from 'src/produccion_apicultura/dto/create-produccion_apicultura.dto';
-import { ProduccionGanaderaDto } from 'src/produccion_ganadera/dto/create-produccion_ganadera.dto';
+import {
+  CreateProduccionAgricolaDto,
+  CreateProduccionAlternativaDto,
+  CreateProduccionApiculturaDto,
+  CreateProduccionForrajesInsumoDto,
+  ProduccionGanaderaDto,
+} from './dtos.dto';
 
 export class CreateProduccionFincaDto {
   @IsUUID()

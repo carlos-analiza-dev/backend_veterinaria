@@ -12,6 +12,7 @@ import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { User } from 'src/auth/entities/auth.entity';
 import { instanceToPlain } from 'class-transformer';
 import { HistorialDocumento } from 'src/historial_documentos/entities/historial_documento.entity';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Injectable()
 export class HistorialClinicoService {
@@ -125,6 +126,7 @@ export class HistorialClinicoService {
       fechaInicio,
       fechaFin,
       identificador,
+      fincaNombre,
     } = paginationDto;
 
     try {
@@ -149,6 +151,12 @@ export class HistorialClinicoService {
       if (identificador) {
         queryBuilder.andWhere('(animal.identificador ILIKE :identificador )', {
           identificador: `%${identificador}%`,
+        });
+      }
+
+      if (fincaNombre) {
+        queryBuilder.andWhere('(finca.nombre_finca ILIKE :fincaNombre)', {
+          fincaNombre: `%${fincaNombre}`,
         });
       }
 
@@ -238,6 +246,154 @@ export class HistorialClinicoService {
       return {
         total,
         historial: instanceToPlain(historial),
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findByFinca(user: Cliente, paginationDto: PaginationDto) {
+    const {
+      limit = 10,
+      offset = 0,
+      fechaInicio,
+      fechaFin,
+      fincaNombre,
+      identificador,
+    } = paginationDto;
+
+    try {
+      const queryBuilder = this.historialClinicoRepository
+        .createQueryBuilder('historial')
+        .leftJoinAndSelect('historial.cita', 'cita')
+        .leftJoinAndSelect('cita.finca', 'finca')
+        .leftJoinAndSelect('cita.subServicio', 'subServicioCita')
+        .leftJoinAndSelect('historial.animal', 'animal')
+        .leftJoinAndSelect('animal.especie', 'especie')
+        .leftJoinAndSelect('animal.razas', 'razas')
+        .leftJoinAndSelect('animal.propietario', 'propietario')
+        .leftJoinAndSelect('historial.veterinario', 'veterinario')
+        .leftJoinAndSelect('historial.detalles', 'detalles')
+        .leftJoinAndSelect('detalles.subServicio', 'subServicio')
+        .leftJoinAndSelect('detalles.documentos', 'documentos')
+
+        .where('propietario.id = :propietarioId', { propietarioId: user.id })
+        .orderBy('historial.createdAt', 'DESC')
+        .skip(offset)
+        .take(limit);
+
+      if (fincaNombre) {
+        queryBuilder.andWhere('finca.nombre_finca ILIKE :fincaNombre', {
+          fincaNombre: `%${fincaNombre}%`,
+        });
+      }
+
+      if (identificador) {
+        queryBuilder.andWhere('animal.identificador ILIKE :identificador', {
+          identificador: `%${identificador}%`,
+        });
+      }
+
+      if (fechaInicio && fechaFin) {
+        queryBuilder.andWhere(
+          'DATE(historial.createdAt) BETWEEN DATE(:fechaInicio) AND DATE(:fechaFin)',
+          { fechaInicio, fechaFin },
+        );
+      } else if (fechaInicio) {
+        queryBuilder.andWhere(
+          'DATE(historial.createdAt) >= DATE(:fechaInicio)',
+          { fechaInicio },
+        );
+      } else if (fechaFin) {
+        queryBuilder.andWhere('DATE(historial.createdAt) <= DATE(:fechaFin)', {
+          fechaFin,
+        });
+      }
+
+      const [historial, total] = await queryBuilder.getManyAndCount();
+
+      if (!historial || historial.length === 0) {
+        throw new NotFoundException(
+          'No se encontraron historiales disponibles',
+        );
+      }
+
+      return {
+        total,
+        historial: instanceToPlain(historial),
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findTratamientos(user: Cliente, paginationDto: PaginationDto) {
+    const {
+      limit = 10,
+      offset = 0,
+      fechaInicio,
+      fechaFin,
+      fincaNombre,
+      identificador,
+    } = paginationDto;
+
+    try {
+      const queryBuilder = this.historialDetalleRepository
+        .createQueryBuilder('detalle')
+        .leftJoinAndSelect('detalle.historial', 'historial')
+        .leftJoinAndSelect('historial.animal', 'animal')
+        .leftJoinAndSelect('animal.especie', 'especie')
+        .leftJoinAndSelect('animal.razas', 'razas')
+        .leftJoinAndSelect('animal.propietario', 'propietario')
+        .leftJoinAndSelect('historial.veterinario', 'veterinario')
+        .leftJoinAndSelect('historial.cita', 'cita')
+        .leftJoinAndSelect('cita.finca', 'finca')
+        .leftJoinAndSelect('detalle.subServicio', 'subServicio')
+        .leftJoinAndSelect('detalle.documentos', 'documentos')
+        .where('propietario.id = :propietarioId', { propietarioId: user.id })
+        .andWhere('detalle.tratamiento IS NOT NULL')
+        .orderBy('detalle.createdAt', 'DESC')
+        .skip(offset)
+        .take(limit);
+
+      if (fincaNombre) {
+        queryBuilder.andWhere('finca.nombre_finca ILIKE :fincaNombre', {
+          fincaNombre: `%${fincaNombre}%`,
+        });
+      }
+
+      if (identificador) {
+        queryBuilder.andWhere('animal.identificador ILIKE :identificador', {
+          identificador: `%${identificador}%`,
+        });
+      }
+
+      if (fechaInicio && fechaFin) {
+        queryBuilder.andWhere(
+          'DATE(detalle.createdAt) BETWEEN DATE(:fechaInicio) AND DATE(:fechaFin)',
+          { fechaInicio, fechaFin },
+        );
+      } else if (fechaInicio) {
+        queryBuilder.andWhere('DATE(detalle.createdAt) >= DATE(:fechaInicio)', {
+          fechaInicio,
+        });
+      } else if (fechaFin) {
+        queryBuilder.andWhere('DATE(detalle.createdAt) <= DATE(:fechaFin)', {
+          fechaFin,
+        });
+      }
+
+      const [detalles, total] = await queryBuilder.getManyAndCount();
+
+      if (!detalles || detalles.length === 0) {
+        throw new NotFoundException(
+          'No se encontraron tratamientos registrados.',
+        );
+      }
+
+      return {
+        total,
+        tratamientos: instanceToPlain(detalles),
       };
     } catch (error) {
       throw error;

@@ -16,6 +16,9 @@ import { Auth } from 'src/auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
 import { ValidRoles } from 'src/interfaces/valid-roles.interface';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
+import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Controller('historial-clinico')
 export class HistorialClinicoController {
@@ -30,6 +33,24 @@ export class HistorialClinicoController {
     @Body() createHistorialClinicoDto: CreateHistorialClinicoDto,
   ) {
     return this.historialClinicoService.create(user, createHistorialClinicoDto);
+  }
+
+  @Get('/finca')
+  @AuthCliente()
+  findFinca(
+    @GetCliente() user: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.historialClinicoService.findByFinca(user, paginationDto);
+  }
+
+  @Get('/tratamientos')
+  @AuthCliente()
+  findTratamientos(
+    @GetCliente() user: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.historialClinicoService.findTratamientos(user, paginationDto);
   }
 
   @Get(':veterinarioId')

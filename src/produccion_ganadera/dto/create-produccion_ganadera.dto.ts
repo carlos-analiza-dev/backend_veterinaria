@@ -6,7 +6,9 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export enum TipoProduccionGanadera {
   LECHE = 'Leche',
@@ -32,12 +34,16 @@ export enum CalidadHuevo {
 }
 
 export class ProduccionGanaderaDto {
+  @IsUUID('4', { message: 'Debe enviar un ID válido de la producción' })
+  produccionFincaId: string;
+
   @IsArray()
   @IsEnum(TipoProduccionGanadera, { each: true })
   @IsOptional()
   tiposProduccion: TipoProduccionGanadera[];
 
-  // Campos para producción de leche
+  // Producción de leche
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   produccionLecheCantidad?: number;
@@ -46,14 +52,17 @@ export class ProduccionGanaderaDto {
   @IsOptional()
   produccionLecheUnidad?: UnidadProduccionLeche;
 
+  @Type(() => Number)
   @IsInt()
   @IsOptional()
   vacasOrdeño?: number;
 
+  @Type(() => Number)
   @IsInt()
   @IsOptional()
   vacasSecas?: number;
 
+  @Type(() => Number)
   @IsInt()
   @IsOptional()
   terneros?: number;
@@ -62,20 +71,24 @@ export class ProduccionGanaderaDto {
   @IsOptional()
   fechaPromedioSecado?: Date;
 
-  // Campos para carne bovina
+  // Carne bovina
+  @Type(() => Number)
   @IsInt()
   @IsOptional()
   cabezasEngordeBovino?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   kilosSacrificioBovino?: number;
 
-  // Campos para carne porcina
+  // Carne porcina
+  @Type(() => Number)
   @IsInt()
   @IsOptional()
   cerdosEngorde?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   pesoPromedioCerdo?: number;
@@ -84,16 +97,19 @@ export class ProduccionGanaderaDto {
   @IsOptional()
   edadSacrificioPorcino?: string;
 
-  // Campos para carne de ave
+  // Carne de ave
+  @Type(() => Number)
   @IsInt()
   @IsOptional()
   mortalidadLoteAves?: number;
 
-  // Campos para huevos
+  // Huevos
+  @Type(() => Number)
   @IsInt()
   @IsOptional()
   huevosPorDia?: number;
 
+  @Type(() => Number)
   @IsInt()
   @IsOptional()
   gallinasPonedoras?: number;
@@ -102,11 +118,13 @@ export class ProduccionGanaderaDto {
   @IsOptional()
   calidadHuevo?: CalidadHuevo;
 
-  // Campos para carne caprina
+  // Carne caprina
+  @Type(() => Number)
   @IsInt()
   @IsOptional()
   animalesEngordeCaprino?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   pesoPromedioCaprino?: number;
@@ -115,16 +133,18 @@ export class ProduccionGanaderaDto {
   @IsOptional()
   edadSacrificioCaprino?: string;
 
-  // Campos para ganado en pie
+  // Ganado en pie
+  @Type(() => Number)
   @IsInt()
   @IsOptional()
   animalesDisponibles?: number;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
   pesoPromedioCabeza?: number;
 
-  //Otro
+  // Otro
   @IsString()
   @IsOptional()
   otroProductoNombre?: string;
@@ -133,7 +153,8 @@ export class ProduccionGanaderaDto {
   @IsOptional()
   otroProductoUnidadMedida?: string;
 
+  @Type(() => Number)
   @IsNumber()
   @IsOptional()
-  otroProductoProduccionMensual: number;
+  otroProductoProduccionMensual?: number;
 }

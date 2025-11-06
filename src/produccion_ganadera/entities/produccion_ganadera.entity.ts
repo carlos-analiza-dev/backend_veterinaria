@@ -123,5 +123,5 @@ export class ProduccionGanadera {
   // Relación con producción finca
   @OneToOne(() => ProduccionFinca, (produccion) => produccion.ganadera)
   @JoinColumn({ name: 'produccionFincaId' })
-  produccionFinca: ProduccionFinca;
+  produccionFinca?: ProduccionFinca;
 }

@@ -5,8 +5,6 @@ import {
   IsString,
   IsIn,
   IsOptional,
-  IsBoolean,
-  IsDateString,
   IsNumber,
 } from 'class-validator';
 
@@ -31,4 +29,7 @@ export class CreateProduccionApiculturaDto {
   })
   @IsOptional()
   calidad_miel?: 'Oscura' | 'Clara' | 'Multifloral';
+
+  @IsUUID('4', { message: 'Debe enviar un ID válido de la producción' })
+  produccionFincaId: string;
 }

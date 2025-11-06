@@ -1,5 +1,11 @@
 import { ProduccionFinca } from 'src/produccion_finca/entities/produccion_finca.entity';
-import { Entity, PrimaryGeneratedColumn, Column, OneToOne } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  OneToOne,
+  JoinColumn,
+} from 'typeorm';
 
 @Entity('produccion_forrajes_insumo')
 export class ProduccionForrajesInsumo {
@@ -31,5 +37,6 @@ export class ProduccionForrajesInsumo {
     descripcion_otro?: string;
   }>;
   @OneToOne(() => ProduccionFinca, (produccion) => produccion.forrajesInsumo)
+  @JoinColumn()
   produccionFinca: ProduccionFinca;
 }

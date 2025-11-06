@@ -101,6 +101,43 @@ export class FincasGanaderoService {
     }
   }
 
+  async findAllPais(user: User, paginationDto: PaginationDto) {
+    const paisId = user.pais.id || '';
+    const { name } = paginationDto;
+    try {
+      const pais = await this.paisRepo.findOneBy({
+        id: paisId,
+      });
+      if (!pais) {
+        throw new NotFoundException('El pais no existe');
+      }
+
+      const query = this.fincasRepo
+        .createQueryBuilder('finca')
+        .leftJoinAndSelect('finca.departamento', 'departamento')
+        .leftJoinAndSelect('finca.municipio', 'municipio')
+        .leftJoinAndSelect('finca.propietario', 'propietario')
+        .leftJoinAndSelect('finca.pais_id', 'pais_id')
+        .where('finca.pais_id = :pais_id', { pais_id: paisId })
+        .andWhere('finca.isActive = true');
+
+      if (name) {
+        query.andWhere('LOWER(finca.nombre_finca) LIKE LOWER(:name)', {
+          name: `%${name}%`,
+        });
+      }
+
+      const [fincas] = await query.getManyAndCount();
+      const fincasPlain = instanceToPlain(fincas);
+
+      return {
+        fincas: fincasPlain,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findAll(propietarioId: string, paginationDto: PaginationDto) {
     const { limit = 10, offset = 0, name } = paginationDto;
     try {
