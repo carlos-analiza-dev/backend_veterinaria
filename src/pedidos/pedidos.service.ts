@@ -15,6 +15,7 @@ import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { instanceToPlain } from 'class-transformer';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { Lote } from 'src/lotes/entities/lote.entity';
 
 @Injectable()
 export class PedidosService {
@@ -29,6 +30,8 @@ export class PedidosService {
     private readonly sucursal_repo: Repository<Sucursal>,
     @InjectRepository(SubServicio)
     private readonly subServicio_repo: Repository<SubServicio>,
+    @InjectRepository(Lote)
+    private readonly lote_repo: Repository<Lote>,
     private dataSource: DataSource,
   ) {}
 
@@ -88,6 +91,29 @@ export class PedidosService {
           throw new NotFoundException(
             `Producto con ID ${detalleDto.id_producto} no encontrado`,
           );
+        }
+
+        if (createPedidoDto.id_sucursal) {
+          const lotes = await queryRunner.manager.find(Lote, {
+            where: {
+              id_producto: detalleDto.id_producto,
+              id_sucursal: createPedidoDto.id_sucursal,
+            },
+          });
+
+          const cantidadDisponible = lotes.reduce(
+            (sum, lote) => sum + Number(lote.cantidad),
+            0,
+          );
+
+          if (detalleDto.cantidad > cantidadDisponible) {
+            throw new BadRequestException(
+              `No hay suficiente stock en la sucursal. 
+        Producto: ${producto.nombre} 
+        Disponible: ${cantidadDisponible} 
+        Solicitado: ${detalleDto.cantidad}`,
+            );
+          }
         }
 
         const detalle = this.pedido_detalle_repo.create({

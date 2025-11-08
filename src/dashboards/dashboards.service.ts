@@ -20,6 +20,20 @@ import { TipoSubServicio } from 'src/sub_servicios/entities/sub_servicio.entity'
 import { Compra } from 'src/compras/entities/compra.entity';
 import { CompraInsumo } from 'src/compra-insumos/entities/compra-insumo.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
+import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
+import { Cita } from 'src/citas/entities/cita.entity';
+import { EstadoCita } from 'src/interfaces/estados_citas';
+import { EspeciesFincaDto } from 'src/fincas_ganadero/dto/especies-finca.dto';
+import { ProduccionFinca } from 'src/produccion_finca/entities/produccion_finca.entity';
+import {
+  ProduccionGanadera,
+  TipoProduccionGanadera,
+} from 'src/produccion_ganadera/entities/produccion_ganadera.entity';
+import {
+  ProduccionGanaderaFincaDto,
+  ResumenProduccionGanadera,
+} from './interfaces/produccion-ganadera.interface';
 
 @Injectable()
 export class DashboardService {
@@ -36,6 +50,16 @@ export class DashboardService {
     private readonly compraRepository: Repository<Compra>,
     @InjectRepository(CompraInsumo)
     private readonly compraInsumoRepository: Repository<CompraInsumo>,
+    @InjectRepository(AnimalFinca)
+    private readonly animalRepository: Repository<AnimalFinca>,
+    @InjectRepository(FincasGanadero)
+    private readonly fincaRepository: Repository<FincasGanadero>,
+    @InjectRepository(Cita)
+    private readonly citasRepository: Repository<Cita>,
+    @InjectRepository(ProduccionFinca)
+    private readonly produccionFincaRepository: Repository<ProduccionFinca>,
+    @InjectRepository(ProduccionGanadera)
+    private readonly produccionGanaderaRepository: Repository<ProduccionGanadera>,
   ) {}
 
   async getIngresosTotales(paginationDto: PaginationDto) {
@@ -391,5 +415,194 @@ export class DashboardService {
     }
 
     return await query.getRawMany();
+  }
+
+  //ANIMALES
+  async getTotalAnimales(cliente: Cliente) {
+    return await this.animalRepository.count({
+      where: {
+        propietario: { id: cliente.id, animales: { animal_muerte: false } },
+      },
+    });
+  }
+
+  async getAnimalesPorSexo(cliente: Cliente) {
+    const result = await this.animalRepository
+      .createQueryBuilder('animal')
+      .innerJoin('animal.propietario', 'propietario')
+      .select('animal.sexo', 'sexo')
+      .addSelect('COUNT(*)', 'total')
+      .where('propietario.id = :id', { id: cliente.id })
+      .groupBy('animal.sexo')
+      .getRawMany();
+
+    return result;
+  }
+
+  async getVivosVsMuertos(cliente: Cliente) {
+    const result = await this.animalRepository
+      .createQueryBuilder('animal')
+      .innerJoin('animal.propietario', 'propietario')
+      .select(
+        `SUM(CASE WHEN animal.animal_muerte = true THEN 1 ELSE 0 END)`,
+        'muertos',
+      )
+      .addSelect(
+        `SUM(CASE WHEN animal.animal_muerte = false THEN 1 ELSE 0 END)`,
+        'vivos',
+      )
+      .where('propietario.id = :id', { id: cliente.id })
+      .getRawOne();
+
+    return result;
+  }
+
+  async getCompradosVsNacidos(cliente: Cliente) {
+    const result = await this.animalRepository
+      .createQueryBuilder('animal')
+      .innerJoin('animal.propietario', 'propietario')
+      .select(
+        `SUM(CASE WHEN animal.compra_animal = true THEN 1 ELSE 0 END)`,
+        'comprados',
+      )
+      .addSelect(
+        `SUM(CASE WHEN animal.compra_animal = false THEN 1 ELSE 0 END)`,
+        'nacidos',
+      )
+      .where('propietario.id = :id', { id: cliente.id })
+      .getRawOne();
+
+    return result;
+  }
+
+  //FINCA
+  async getTotalFincas(cliente: Cliente) {
+    return await this.fincaRepository.count({
+      where: {
+        propietario: { id: cliente.id },
+      },
+    });
+  }
+
+  async getFincasPorTipoExplotacion(cliente: Cliente) {
+    return await this.fincaRepository
+      .createQueryBuilder('f')
+      .select(
+        "jsonb_array_elements(f.tipo_explotacion)->>'tipo_explotacion'",
+        'tipo',
+      )
+      .addSelect('COUNT(*)', 'total')
+      .where('f.propietario = :clienteId', { clienteId: cliente.id })
+      .groupBy("jsonb_array_elements(f.tipo_explotacion)->>'tipo_explotacion'")
+      .getRawMany();
+  }
+
+  async getFincasPorEspecie(cliente: Cliente): Promise<EspeciesFincaDto[]> {
+    const fincas = await this.fincaRepository.find({
+      where: { isActive: true, propietario: { id: cliente.id } },
+      relations: ['propietario'],
+      select: {
+        id: true,
+        nombre_finca: true,
+        especies_maneja: true,
+      },
+    });
+
+    return fincas.map((finca) => ({
+      id: finca.id,
+      nombre_finca: finca.nombre_finca,
+      especies: finca.especies_maneja || [],
+      cantidad_total_especies: this.calcularTotalEspecies(
+        finca.especies_maneja,
+      ),
+    }));
+  }
+
+  private calcularTotalEspecies(
+    especies: { especie: string; cantidad: number }[] | null,
+  ): number {
+    if (!especies) return 0;
+
+    return especies.reduce((total, especie) => total + especie.cantidad, 0);
+  }
+
+  async getProduccionGanaderaPorFinca(
+    cliente: Cliente,
+  ): Promise<ResumenProduccionGanadera> {
+    const fincasConProduccion = await this.produccionFincaRepository
+      .createQueryBuilder('produccionFinca')
+      .innerJoinAndSelect('produccionFinca.finca', 'finca')
+      .leftJoinAndSelect('produccionFinca.ganadera', 'ganadera')
+      .where('finca.propietario = :clienteId', { clienteId: cliente.id })
+      .andWhere('finca.isActive = :isActive', { isActive: true })
+      .getMany();
+
+    const fincasData: ProduccionGanaderaFincaDto[] = fincasConProduccion.map(
+      (produccion) => {
+        const ganadera = produccion.ganadera;
+
+        const vacasOrdeño = ganadera?.vacasOrdeño
+          ? Number(ganadera.vacasOrdeño)
+          : 0;
+        const vacasSecas = ganadera?.vacasSecas
+          ? Number(ganadera.vacasSecas)
+          : 0;
+        const terneros = ganadera?.terneros ? Number(ganadera.terneros) : 0;
+        const totalBovinos = vacasOrdeño + vacasSecas + terneros;
+
+        const tieneProduccionLeche =
+          ganadera?.tiposProduccion?.includes(TipoProduccionGanadera.LECHE) ||
+          false;
+
+        return {
+          id: produccion.finca.id,
+          nombre_finca: produccion.finca.nombre_finca,
+          vacas_ordeño: vacasOrdeño,
+          vacas_secas: vacasSecas,
+          terneros: terneros,
+          total_bovinos: totalBovinos,
+          tiene_produccion_leche: tieneProduccionLeche,
+        };
+      },
+    );
+
+    const totalVacasOrdeño = fincasData.reduce(
+      (sum, finca) => sum + finca.vacas_ordeño,
+      0,
+    );
+    const totalVacasSecas = fincasData.reduce(
+      (sum, finca) => sum + finca.vacas_secas,
+      0,
+    );
+    const totalTerneros = fincasData.reduce(
+      (sum, finca) => sum + finca.terneros,
+      0,
+    );
+    const totalBovinos = fincasData.reduce(
+      (sum, finca) => sum + finca.total_bovinos,
+      0,
+    );
+    const fincasConProduccionLeche = fincasData.filter(
+      (finca) => finca.tiene_produccion_leche,
+    ).length;
+
+    return {
+      total_vacas_ordeño: totalVacasOrdeño,
+      total_vacas_secas: totalVacasSecas,
+      total_terneros: totalTerneros,
+      total_bovinos: totalBovinos,
+      fincas_con_produccion_leche: fincasConProduccionLeche,
+      fincas: fincasData,
+    };
+  }
+
+  //CITAS
+  async getTotalCitas(cliente: Cliente) {
+    return await this.citasRepository.count({
+      where: {
+        cliente: { id: cliente.id },
+        estado: EstadoCita.COMPLETADA,
+      },
+    });
   }
 }

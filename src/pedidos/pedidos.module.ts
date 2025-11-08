@@ -9,6 +9,7 @@ import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { AuthModule } from 'src/auth/auth.module';
+import { Lote } from 'src/lotes/entities/lote.entity';
 
 @Module({
   controllers: [PedidosController],
@@ -19,6 +20,7 @@ import { AuthModule } from 'src/auth/auth.module';
       Cliente,
       Sucursal,
       SubServicio,
+      Lote,
     ]),
     AuthClientesModule,
     AuthModule,

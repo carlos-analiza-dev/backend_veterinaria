@@ -6,6 +6,9 @@ import { Auth } from '../auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
 
 @Controller('dashboards')
 export class DashboardsController {
@@ -71,5 +74,63 @@ export class DashboardsController {
     @Query() paginationDto: PaginationDto,
   ) {
     return await this.dashboardService.getTopSucursales(user, paginationDto);
+  }
+
+  //ANIMALES
+  @Get('total-animales')
+  @AuthCliente()
+  async getTotalAnimales(@GetCliente() cliente: Cliente) {
+    return await this.dashboardService.getTotalAnimales(cliente);
+  }
+
+  @Get('animales-sexo')
+  @AuthCliente()
+  async getAnimalesPorSexo(@GetCliente() cliente: Cliente) {
+    return await this.dashboardService.getAnimalesPorSexo(cliente);
+  }
+
+  @Get('animales-muerte')
+  @AuthCliente()
+  async getVivosVsMuertos(@GetCliente() cliente: Cliente) {
+    return await this.dashboardService.getVivosVsMuertos(cliente);
+  }
+
+  @Get('animales-comprados-nacidos')
+  @AuthCliente()
+  async getCompradosVsNacidos(@GetCliente() cliente: Cliente) {
+    return await this.dashboardService.getCompradosVsNacidos(cliente);
+  }
+
+  //FINCAS
+  @Get('total-fincas')
+  @AuthCliente()
+  async getTotalFincas(@GetCliente() cliente: Cliente) {
+    return await this.dashboardService.getTotalFincas(cliente);
+  }
+
+  @Get('fincas-tipo-explotacion')
+  @AuthCliente()
+  async getFincasPorTipoExplotacion(@GetCliente() cliente: Cliente) {
+    return await this.dashboardService.getFincasPorTipoExplotacion(cliente);
+  }
+
+  @Get('fincas-especies')
+  @AuthCliente()
+  async getFincasPorEspecie(@GetCliente() cliente: Cliente) {
+    return await this.dashboardService.getFincasPorEspecie(cliente);
+  }
+
+  //PRODUCCION
+  @Get('produccion-ganadera')
+  @AuthCliente()
+  async getProduccionGanadera(@GetCliente() cliente: Cliente) {
+    return await this.dashboardService.getProduccionGanaderaPorFinca(cliente);
+  }
+
+  //CITAS
+  @Get('total-citas')
+  @AuthCliente()
+  async getTotalCitas(@GetCliente() cliente: Cliente) {
+    return await this.dashboardService.getTotalCitas(cliente);
   }
 }
