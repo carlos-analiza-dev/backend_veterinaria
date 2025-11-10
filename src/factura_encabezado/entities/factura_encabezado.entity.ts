@@ -133,6 +133,9 @@ export class FacturaEncabezado {
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   isv_18: number;
 
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  cargos_extra: number;
+
   @Column({ type: 'decimal', precision: 10, scale: 2 })
   total: number;
 

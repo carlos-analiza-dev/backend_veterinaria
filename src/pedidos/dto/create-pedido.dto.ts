@@ -40,6 +40,50 @@ export class CreatePedidoDto {
   @IsOptional()
   id_sucursal?: string;
 
+  // ---------------------------
+  // CAMPOS CONTABLES NUEVOS
+  // ---------------------------
+
+  @IsNumber({}, { message: 'El subtotal debe ser un número válido.' })
+  @Min(0, { message: 'El subtotal no puede ser negativo.' })
+  sub_total: number;
+
+  @IsNumber({}, { message: 'El importe exento debe ser un número válido.' })
+  @Min(0, { message: 'El importe exento no puede ser negativo.' })
+  @IsOptional()
+  importe_exento?: number;
+
+  @IsNumber({}, { message: 'El importe exonerado debe ser un número válido.' })
+  @Min(0, { message: 'El importe exonerado no puede ser negativo.' })
+  @IsOptional()
+  importe_exonerado?: number;
+
+  @IsNumber(
+    {},
+    { message: 'El importe gravado 15% debe ser un número válido.' },
+  )
+  @Min(0, { message: 'El importe gravado 15% no puede ser negativo.' })
+  @IsOptional()
+  importe_gravado_15?: number;
+
+  @IsNumber(
+    {},
+    { message: 'El importe gravado 18% debe ser un número válido.' },
+  )
+  @Min(0, { message: 'El importe gravado 18% no puede ser negativo.' })
+  @IsOptional()
+  importe_gravado_18?: number;
+
+  @IsNumber({}, { message: 'El ISV 15% debe ser un número válido.' })
+  @Min(0, { message: 'El ISV 15% no puede ser negativo.' })
+  @IsOptional()
+  isv_15?: number;
+
+  @IsNumber({}, { message: 'El ISV 18% debe ser un número válido.' })
+  @Min(0, { message: 'El ISV 18% no puede ser negativo.' })
+  @IsOptional()
+  isv_18?: number;
+
   @IsNumber({}, { message: 'El total del pedido debe ser un número válido.' })
   @IsPositive({ message: 'El total del pedido debe ser mayor que cero.' })
   total: number;

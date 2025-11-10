@@ -64,27 +64,21 @@ export class PedidosService {
         }
       }
 
-      const pedido = this.pedido_repo.create({
-        id_cliente: createPedidoDto.id_cliente,
-        id_sucursal: createPedidoDto.id_sucursal,
-        total: createPedidoDto.total,
-        estado: createPedidoDto.estado ?? EstadoPedido.PENDIENTE,
-        direccion_entrega: createPedidoDto.direccion_entrega,
-        latitud: createPedidoDto.latitud,
-        longitud: createPedidoDto.longitud,
-        tipo_entrega: createPedidoDto.tipo_entrega ?? TipoEntrega.RECOGER,
-        costo_delivery: createPedidoDto.costo_delivery,
-        nombre_finca: createPedidoDto.nombre_finca,
-      });
-
-      const savedPedido = await queryRunner.manager.save(pedido);
+      // ---- Inicializar acumuladores ----
+      let sub_total = 0;
+      let importe_exento = 0;
+      let importe_exonerado = 0;
+      let importe_gravado_15 = 0;
+      let importe_gravado_18 = 0;
+      let isv_15 = 0;
+      let isv_18 = 0;
 
       const detalles: PedidoDetalle[] = [];
-      let totalCalculado = 0;
 
       for (const detalleDto of createPedidoDto.detalles) {
         const producto = await this.subServicio_repo.findOne({
           where: { id: detalleDto.id_producto },
+          relations: ['tax'],
         });
 
         if (!producto) {
@@ -108,44 +102,91 @@ export class PedidosService {
 
           if (detalleDto.cantidad > cantidadDisponible) {
             throw new BadRequestException(
-              `No hay suficiente stock en la sucursal. 
-        Producto: ${producto.nombre} 
-        Disponible: ${cantidadDisponible} 
-        Solicitado: ${detalleDto.cantidad}`,
+              `No hay suficiente stock para el producto "${producto.nombre}". Disponible: ${cantidadDisponible}, Solicitado: ${detalleDto.cantidad}`,
             );
           }
         }
 
+        const totalLinea = detalleDto.precio * detalleDto.cantidad;
+        sub_total += totalLinea;
+
+        let impuesto = 0;
+
+        if (producto.tax && producto.tax.porcentaje) {
+          const porcentaje = Number(producto.tax.porcentaje);
+
+          if (porcentaje === 0 || isNaN(porcentaje)) {
+            importe_exento += totalLinea;
+          } else if (porcentaje === 15) {
+            importe_gravado_15 += totalLinea;
+            isv_15 += totalLinea * 0.15;
+          } else if (porcentaje === 18) {
+            importe_gravado_18 += totalLinea;
+            isv_18 += totalLinea * 0.18;
+          } else {
+            impuesto = totalLinea * (porcentaje / 100);
+          }
+        } else {
+          importe_exento += totalLinea;
+        }
+
         const detalle = this.pedido_detalle_repo.create({
-          id_pedido: savedPedido.id,
           id_producto: detalleDto.id_producto,
           precio: detalleDto.precio,
           cantidad: detalleDto.cantidad,
-          total: detalleDto.precio * detalleDto.cantidad,
+          total: totalLinea,
         });
 
-        totalCalculado += detalle.total;
         detalles.push(detalle);
       }
 
-      const totalEsperado =
-        totalCalculado + (createPedidoDto.costo_delivery ?? 0);
+      const totalCalculado =
+        sub_total + isv_15 + isv_18 + (createPedidoDto.costo_delivery ?? 0);
 
-      if (Math.abs(totalEsperado - createPedidoDto.total) > 0.01) {
+      if (Math.abs(totalCalculado - createPedidoDto.total) > 0.01) {
         throw new BadRequestException(
-          `El total proporcionado (${
+          `El total enviado (${
             createPedidoDto.total
-          }) no coincide con la suma de los detalles (${totalCalculado}) más el costo de delivery (${
-            createPedidoDto.costo_delivery ?? 0
-          }).`,
+          }) no coincide con el total calculado (${totalCalculado.toFixed(
+            2,
+          )}).`,
         );
+      }
+
+      const pedido = this.pedido_repo.create({
+        id_cliente: createPedidoDto.id_cliente,
+        id_sucursal: createPedidoDto.id_sucursal,
+        sub_total,
+        importe_exento,
+        importe_exonerado,
+        importe_gravado_15,
+        importe_gravado_18,
+        isv_15,
+        isv_18,
+        total: totalCalculado,
+        estado: createPedidoDto.estado ?? EstadoPedido.PENDIENTE,
+        direccion_entrega: createPedidoDto.direccion_entrega,
+        latitud: createPedidoDto.latitud,
+        longitud: createPedidoDto.longitud,
+        tipo_entrega: createPedidoDto.tipo_entrega ?? TipoEntrega.RECOGER,
+        costo_delivery: createPedidoDto.costo_delivery,
+        nombre_finca: createPedidoDto.nombre_finca,
+      });
+
+      const savedPedido = await queryRunner.manager.save(pedido);
+
+      for (const detalle of detalles) {
+        detalle.id_pedido = savedPedido.id;
       }
 
       await queryRunner.manager.save(PedidoDetalle, detalles);
 
       await queryRunner.commitTransaction();
 
-      return 'Pedido Creado Exitosamente';
+      return {
+        message: 'Pedido creado exitosamente',
+        pedido: savedPedido,
+      };
     } catch (error) {
       await queryRunner.rollbackTransaction();
 
@@ -156,6 +197,7 @@ export class PedidosService {
         throw error;
       }
 
+      console.error(error);
       throw new InternalServerErrorException('Error al crear el pedido');
     } finally {
       await queryRunner.release();

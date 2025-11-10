@@ -105,4 +105,11 @@ export class CreateFacturaEncabezadoDto {
   @IsNumber({}, { message: 'El campo "isv_18" debe ser un número válido.' })
   @IsOptional()
   isv_18?: number;
+
+  @IsNumber(
+    {},
+    { message: 'El campo "cargo extra" debe ser un número válido.' },
+  )
+  @IsOptional()
+  cargos_extra?: number;
 }

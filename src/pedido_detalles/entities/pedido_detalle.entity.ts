@@ -36,4 +36,8 @@ export class PedidoDetalle {
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   total: number;
+
+  calcularTotal() {
+    this.total = this.cantidad * this.precio;
+  }
 }

@@ -43,6 +43,28 @@ export class Pedido {
   @Column({ type: 'uuid', nullable: true })
   id_sucursal?: string;
 
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  sub_total: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  importe_exento: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  importe_exonerado: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  importe_gravado_15: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  importe_gravado_18: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  isv_15: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
+  isv_18: number;
+
+  // total general del pedido
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   total: number;
 

@@ -1088,6 +1088,10 @@ export class FacturaEncabezadoService {
           factura.estado = updateFacturaEncabezadoDto.estado;
         }
 
+        if (updateFacturaEncabezadoDto.cargos_extra !== undefined) {
+          factura.cargos_extra = updateFacturaEncabezadoDto.cargos_extra;
+        }
+
         const descuentoAnterior = factura.descuentos_rebajas || 0;
         const nuevoDescuento =
           updateFacturaEncabezadoDto.descuentos_rebajas || 0;
@@ -1110,6 +1114,7 @@ export class FacturaEncabezadoService {
           factura.sub_total = totales.subTotal;
           factura.importe_gravado_15 = totales.importeGravado15;
           factura.importe_gravado_18 = totales.importeGravado18;
+
           factura.isv_15 = totales.isv15;
           factura.isv_18 = totales.isv18;
 
