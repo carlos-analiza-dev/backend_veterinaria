@@ -30,6 +30,7 @@ import {
   TipoMovimiento,
 } from 'src/movimientos_lotes/entities/movimientos_lote.entity';
 import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
+import { ValidRoles } from 'src/interfaces/valid-roles.interface';
 
 @Injectable()
 export class FacturaEncabezadoService {
@@ -714,6 +715,7 @@ export class FacturaEncabezadoService {
       fechaFin,
     } = paginationDto;
     const paisId = user.pais.id;
+    const esVeterinario = user.role.name === ValidRoles.Veterinario;
 
     try {
       const queryBuilder = this.facturaEncabezadoRepository
@@ -729,6 +731,10 @@ export class FacturaEncabezadoService {
         .orderBy('factura.created_at', 'DESC')
         .skip(offset)
         .take(limit);
+
+      if (esVeterinario) {
+        queryBuilder.andWhere('usuario.id = :userId', { userId: user.id });
+      }
 
       if (sucursal) {
         queryBuilder.andWhere('sucursal.id = :sucursalId', {
