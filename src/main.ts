@@ -20,7 +20,7 @@ async function bootstrap() {
     credentials: true,
   });
   const port = process.env.PORT || 5000;
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
 
   logger.log(`Servidor Corriendo en el puerto ${port}`);
 }
