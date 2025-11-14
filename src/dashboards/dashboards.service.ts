@@ -62,13 +62,15 @@ export class DashboardService {
     private readonly produccionGanaderaRepository: Repository<ProduccionGanadera>,
   ) {}
 
-  async getIngresosTotales(paginationDto: PaginationDto) {
+  async getIngresosTotales(user: User, paginationDto: PaginationDto) {
+    const paisId = user.pais.id || '';
     const { year, fechaInicio, fechaFin } = paginationDto;
 
     const query = this.facturaEncabezadoRepo
       .createQueryBuilder('factura')
       .select('SUM(factura.total)', 'ingresosTotales')
-      .where('factura.estado = :estado', { estado: EstadoFactura.PROCESADA });
+      .where('factura.estado = :estado', { estado: EstadoFactura.PROCESADA })
+      .andWhere('factura.pais_id = :paisId', { paisId });
 
     if (year) {
       query.andWhere('EXTRACT(YEAR FROM factura.created_at) = :year', { year });
@@ -127,6 +129,7 @@ export class DashboardService {
   }
 
   private async obtenerVentasPorMes(year: number, user: User): Promise<any[]> {
+    const paisId = user.pais.id || '';
     const meses = Array.from({ length: 12 }, (_, i) => i + 1);
 
     const ventasPromises = meses.map(async (mes) => {
@@ -144,7 +147,7 @@ export class DashboardService {
         .andWhere('factura.estado = :estado', {
           estado: EstadoFactura.PROCESADA,
         })
-
+        .andWhere('factura.pais_id = :paisId', { paisId })
         .getRawOne();
 
       return {
@@ -160,6 +163,7 @@ export class DashboardService {
   }
 
   private async obtenerCostosPorMes(year: number, user: User): Promise<any[]> {
+    const paisId = user.pais.id || '';
     const meses = Array.from({ length: 12 }, (_, i) => i + 1);
 
     const costosPromises = meses.map(async (mes) => {
@@ -173,6 +177,7 @@ export class DashboardService {
           start: startDate,
           end: endDate,
         })
+        .andWhere('compra.paisId = :paisId', { paisId })
         .getRawOne();
 
       const comprasInsumos = await this.compraInsumoRepository
@@ -182,6 +187,7 @@ export class DashboardService {
           start: startDate,
           end: endDate,
         })
+        .andWhere('compra.paisId = :paisId', { paisId })
         .getRawOne();
 
       const totalComprasProductos = parseFloat(

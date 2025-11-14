@@ -27,6 +27,8 @@ import { UpdateCitaDto } from './dto/update-cita.dto';
 import { EstadoCita } from 'src/interfaces/estados_citas';
 import { MailService } from 'src/mail/mail.service';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { parseISO } from 'date-fns';
+import { toZonedTime, format } from 'date-fns-tz';
 
 @Injectable()
 export class CitasService {
@@ -193,18 +195,17 @@ export class CitasService {
     fecha: string,
     duracionServicioHoras: number,
   ) {
-    const fechaActual = new Date();
-    const fechaSolicitud = new Date(fecha);
+    const timeZone = 'America/Tegucigalpa';
 
-    const fechaActualUTC = new Date(
-      Date.UTC(
-        fechaActual.getFullYear(),
-        fechaActual.getMonth(),
-        fechaActual.getDate(),
-      ),
-    );
+    const fechaSolicitud = toZonedTime(parseISO(fecha), timeZone);
+    const fechaActual = toZonedTime(new Date(), timeZone);
 
-    if (fechaSolicitud <= fechaActualUTC) {
+    const shoyStr = format(fechaActual, 'yyyy-MM-dd', { timeZone });
+    const fechaSolicitadaStr = format(fechaSolicitud, 'yyyy-MM-dd', {
+      timeZone,
+    });
+
+    if (fechaSolicitadaStr <= shoyStr) {
       return [];
     }
 

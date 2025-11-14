@@ -15,8 +15,12 @@ export class DashboardsController {
   constructor(private readonly dashboardService: DashboardService) {}
 
   @Get('ingresos-totales')
-  async getIngresosTotales(@Query() paginationDto: PaginationDto) {
-    return this.dashboardService.getIngresosTotales(paginationDto);
+  @Auth()
+  async getIngresosTotales(
+    @GetUser() user: User,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.dashboardService.getIngresosTotales(user, paginationDto);
   }
 
   @Get('clientes-activos')

@@ -34,6 +34,7 @@ services:
       - vet-network
 
     environment:
+      TZ: America/Tegucigalpa
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
       DB_HOST: db
