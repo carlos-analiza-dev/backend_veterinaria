@@ -13,6 +13,7 @@ import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.ent
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { ImagesClient } from 'src/images_client/entities/images_client.entity';
 import { ProduccionFinca } from 'src/produccion_finca/entities/produccion_finca.entity';
+import { ClientePermiso } from 'src/cliente_permisos/entities/cliente_permiso.entity';
 
 @Entity('clientes')
 export class Cliente {
@@ -69,6 +70,9 @@ export class Cliente {
     eager: true,
   })
   profileImages: ImagesClient[];
+
+  @OneToMany(() => ClientePermiso, (cp) => cp.cliente)
+  clientePermisos: ClientePermiso[];
 
   get currentProfileImage(): ImagesClient | null {
     if (!this.profileImages || this.profileImages.length === 0) return null;

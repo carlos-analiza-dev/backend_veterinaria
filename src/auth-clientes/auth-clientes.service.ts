@@ -143,6 +143,8 @@ export class AuthClientesService {
         .leftJoinAndSelect('departamento.municipios', 'dpt_municipios')
         .leftJoinAndSelect('cliente.municipio', 'municipio')
         .leftJoinAndSelect('cliente.profileImages', 'profileImages')
+        .leftJoinAndSelect('cliente.clientePermisos', 'clientePermisos')
+        .leftJoinAndSelect('clientePermisos.permiso', 'permiso')
         .where('cliente.email = :email', { email })
         .orderBy('profileImages.createdAt', 'DESC')
         .getOne();

@@ -72,6 +72,8 @@ import { HistorialDocumentosModule } from './historial_documentos/historial_docu
 import { NotaCreditoModule } from './nota_credito/nota_credito.module';
 import { DetallesNotaCreditoModule } from './detalles_nota_credito/detalles_nota_credito.module';
 import { NotaCreditoPdfModule } from './nota_credito_pdf/nota_credito_pdf.module';
+import { PermisosClientesModule } from './permisos_clientes/permisos_clientes.module';
+import { ClientePermisosModule } from './cliente_permisos/cliente_permisos.module';
 
 @Module({
   imports: [
@@ -204,6 +206,10 @@ import { NotaCreditoPdfModule } from './nota_credito_pdf/nota_credito_pdf.module
     DetallesNotaCreditoModule,
 
     NotaCreditoPdfModule,
+
+    PermisosClientesModule,
+
+    ClientePermisosModule,
   ],
   controllers: [],
   providers: [],
