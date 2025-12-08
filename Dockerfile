@@ -1,5 +1,8 @@
 FROM node:20-alpine AS build
 
+# Instala herramientas de compilación necesarias
+RUN apk add --no-cache python3 make g++ gcc
+
 WORKDIR /app
 
 COPY package.json yarn.lock ./
@@ -17,8 +20,6 @@ WORKDIR /app
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/package.json /app/yarn.lock ./
 COPY --from=build /app/node_modules ./node_modules
-
-RUN yarn install --production
 
 EXPOSE 4000
 
