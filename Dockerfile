@@ -1,7 +1,7 @@
 FROM node:20-alpine AS build
 
-# Instala herramientas de compilación necesarias
-RUN apk add --no-cache python3 make g++ gcc
+# Instala herramientas de compilación + headers
+RUN apk add --no-cache python3 make g++ linux-headers
 
 WORKDIR /app
 
