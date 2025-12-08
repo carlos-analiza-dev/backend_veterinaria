@@ -1,21 +1,36 @@
-FROM node:20-alpine
+
+FROM node:18 AS build
+
 
 WORKDIR /app
 
-# Copiar package.json y package-lock.json
-COPY package*.json ./
 
-# Instalar dependencias de producción y dev
-RUN npm install --legacy-peer-deps
+COPY package.json yarn.lock ./
 
-# Copiar todo el código fuente
+
+RUN yarn install --frozen-lockfile
+
+
 COPY . .
 
-# Compilar NestJS
-RUN npm run build
 
-# Exponer puerto
-EXPOSE 5000
+RUN yarn build
 
-# Ejecutar la app
-CMD ["node", "dist/main.js"]
+
+FROM node:18 AS production
+
+WORKDIR /app
+
+
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/package.json /app/yarn.lock ./
+COPY --from=build /app/node_modules ./node_modules
+
+
+RUN yarn install --production
+
+
+EXPOSE 4000
+
+
+CMD ["node", "dist/main"]
