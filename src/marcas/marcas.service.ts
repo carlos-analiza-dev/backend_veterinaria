@@ -86,7 +86,7 @@ export class MarcasService {
       if (search && search.trim() !== '') {
         whereConditions.push(
           '(LOWER(marca.nombre) LIKE LOWER(:search) OR ' +
-          'LOWER(marca.pais_origen) LIKE LOWER(:search))'
+            'LOWER(marca.pais_origen) LIKE LOWER(:search))',
         );
         parameters.search = `%${search}%`;
       }
@@ -116,17 +116,12 @@ export class MarcasService {
   }
 
   async findAllActive() {
-    try {
-      const marcas = await this.marcaRepo.find({
-        where: { is_active: true },
-        select: ['id', 'nombre', 'pais_origen'],
-        order: { nombre: 'ASC' },
-      });
-
-      return marcas;
-    } catch (error) {
-      throw error;
-    }
+    return await this.marcaRepo
+      .createQueryBuilder('marca')
+      .select(['marca.id', 'marca.nombre', 'marca.pais_origen'])
+      .where('marca.is_active = :active', { active: true })
+      .orderBy('marca.nombre', 'ASC')
+      .getMany();
   }
 
   async findOne(id: string) {

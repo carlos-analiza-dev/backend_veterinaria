@@ -196,11 +196,27 @@ export class SubServiciosService {
         throw new ConflictException('El taxe o impuesto no está disponible');
       }
 
-      const marca = await this.marcaRepo.findOne({
-        where: { id: marcaId, is_active: true },
-      });
-      if (!marca) {
-        throw new NotFoundException('Marca no encontrada o inactiva');
+      let marca;
+
+      if (marcaId) {
+        marca = await this.marcaRepo.findOne({
+          where: { id: marcaId, is_active: true },
+        });
+
+        if (!marca) {
+          throw new NotFoundException('Marca no encontrada o inactiva');
+        }
+      } else {
+        marca = await this.marcaRepo.findOne({
+          where: { is_active: true },
+          order: { created_at: 'ASC' },
+        });
+
+        if (!marca) {
+          throw new NotFoundException(
+            'No existe ninguna marca activa para asignar al producto',
+          );
+        }
       }
 
       const proveedor = await this.proveedorRepo.findOne({

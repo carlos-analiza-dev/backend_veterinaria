@@ -58,8 +58,9 @@ export class CreateProductoDto {
   @MaxLength(20, { message: 'El código no debe superar los 20 caracteres.' })
   codigo: string;
 
-  @IsUUID('4', { message: 'El marcaId debe ser un UUID válido.' })
-  @IsNotEmpty({ message: 'La marca es obligatoria para los productos.' })
+  /* @IsUUID('4', { message: 'El marcaId debe ser un UUID válido.' })
+  @IsNotEmpty({ message: 'La marca es obligatoria para los productos.' }) */
+  @IsOptional()
   marcaId?: string;
 
   @IsUUID('4', { message: 'El proveedorId debe ser un UUID válido.' })

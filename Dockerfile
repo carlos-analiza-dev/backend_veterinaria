@@ -1,36 +1,12 @@
-
-FROM node:20 AS build
-
+FROM node:20-alpine
 
 WORKDIR /app
 
+COPY package*.json ./
+RUN npm install --omit=dev --legacy-peer-deps
 
-COPY package.json yarn.lock ./
+COPY dist ./dist
 
+EXPOSE 5000
 
-RUN yarn install --frozen-lockfile
-
-
-COPY . .
-
-
-RUN yarn build
-
-
-FROM node:20 AS production
-
-WORKDIR /app
-
-
-COPY --from=build /app/dist ./dist
-COPY --from=build /app/package.json /app/yarn.lock ./
-COPY --from=build /app/node_modules ./node_modules
-
-
-RUN yarn install --production
-
-
-EXPOSE 4000
-
-
-CMD ["node", "dist/main"]
+CMD ["node", "dist/main.js"]
