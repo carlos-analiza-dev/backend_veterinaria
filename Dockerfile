@@ -1,17 +1,26 @@
-FROM node:20-alpine
+FROM node:20-alpine AS build
+
+# Instala herramientas de compilación + headers
+RUN apk add --no-cache python3 make g++ linux-headers
 
 WORKDIR /app
 
-RUN apk add --no-cache python3 g++ make git
+COPY package.json yarn.lock ./
 
-
-COPY package*.json ./
-
-RUN npm install --legacy-peer-deps
+RUN yarn install --frozen-lockfile
 
 COPY . .
 
-RUN npm run build
+RUN yarn build
 
-EXPOSE 5000
+FROM node:20-alpine AS production
+
+WORKDIR /app
+
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/package.json /app/yarn.lock ./
+COPY --from=build /app/node_modules ./node_modules
+
+EXPOSE 4000
+
 CMD ["node", "dist/main.js"]
