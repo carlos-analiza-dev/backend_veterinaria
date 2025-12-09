@@ -84,8 +84,11 @@ import { ClientePermisosModule } from './cliente_permisos/cliente_permisos.modul
     }),
     TypeOrmModule.forRoot({
       type: 'postgres',
-      url: process.env.DATABASE_URL,
-      ssl: { rejectUnauthorized: false },
+      database: process.env.DB_NAME,
+      password: process.env.DB_PASSWORD,
+      port: +process.env.DB_PORT,
+      host: process.env.DB_HOST,
+      username: process.env.DB_USERNAME,
       synchronize: true,
       autoLoadEntities: true,
     }),
