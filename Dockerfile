@@ -1,7 +1,7 @@
 FROM node:20-alpine AS build
 
-# Instalar herramientas de compilación + headers + libusb/libudev
-RUN apk add --no-cache python3 make g++ linux-headers libusb-dev libudev-dev git
+# Herramientas de compilación + headers + libusb
+RUN apk add --no-cache python3 make g++ linux-headers libusb-dev git
 
 WORKDIR /app
 
