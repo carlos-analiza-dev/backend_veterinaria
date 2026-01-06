@@ -14,6 +14,7 @@ import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { ImagesClient } from 'src/images_client/entities/images_client.entity';
 import { ProduccionFinca } from 'src/produccion_finca/entities/produccion_finca.entity';
 import { ClientePermiso } from 'src/cliente_permisos/entities/cliente_permiso.entity';
+import { ProductoOpinione } from 'src/producto_opiniones/entities/producto_opinione.entity';
 
 @Entity('clientes')
 export class Cliente {
@@ -41,6 +42,9 @@ export class Cliente {
 
   @Column('text')
   sexo: string;
+
+  @Column({ type: 'boolean', default: false })
+  verified: boolean;
 
   @ManyToOne(() => Pai, (pais) => pais.cliente, { eager: true })
   pais: Pai;
@@ -73,6 +77,9 @@ export class Cliente {
 
   @OneToMany(() => ClientePermiso, (cp) => cp.cliente)
   clientePermisos: ClientePermiso[];
+
+  @OneToMany(() => ProductoOpinione, (opinion) => opinion.cliente)
+  opiniones: ProductoOpinione[];
 
   get currentProfileImage(): ImagesClient | null {
     if (!this.profileImages || this.profileImages.length === 0) return null;

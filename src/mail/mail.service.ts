@@ -25,6 +25,26 @@ export class MailService {
     }
   }
 
+  async verifyAccount(email: string, name: string, verifyLink: string) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: 'Verifica tu cuenta - Agroservicios',
+        template: './verify-account',
+        context: {
+          name,
+          verifyLink,
+        },
+      });
+
+      return { message: 'Correo de confirmación enviado' };
+    } catch (error) {
+      throw new Error('Failed to send email');
+    }
+  }
+
   async sendEmailCrearCita(
     email_veterinario: string,
     nombre_veterinario: string,
@@ -54,7 +74,6 @@ export class MailService {
 
       return { message: 'Cita enviada correctamente' };
     } catch (error) {
-      console.error('ERROR ENVIANDO EMAIL:', error);
       throw new Error(`Failed to send cita: ${error.message}`);
     }
   }

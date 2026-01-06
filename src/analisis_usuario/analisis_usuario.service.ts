@@ -162,7 +162,7 @@ export class AnalisisUsuarioService {
     ) {
       throw error;
     }
-    console.error(error);
+
     throw new InternalServerErrorException(
       'Error inesperado, verifique los logs del servidor',
     );

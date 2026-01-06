@@ -135,16 +135,21 @@ export class FacturaEncabezadoService {
           transactionalEntityManager,
         );
 
-        const totalSinDescuento =
+        const cargosExtra = createFacturaEncabezadoDto.cargos_extra || 0;
+
+        const totalProductosServicios =
           totales.subTotal + totales.isv15 + totales.isv18;
 
-        let totalConDescuento = totalSinDescuento;
+        let totalConDescuento = totalProductosServicios;
         let montoDescuento = 0;
 
         if (descuento) {
-          montoDescuento = totalSinDescuento * (descuento.porcentaje / 100);
-          totalConDescuento = totalSinDescuento - montoDescuento;
+          montoDescuento =
+            totalProductosServicios * (descuento.porcentaje / 100);
+          totalConDescuento = totalProductosServicios - montoDescuento;
         }
+
+        const totalFinal = totalConDescuento + cargosExtra;
 
         const facturaData: any = {
           ...createFacturaEncabezadoDto,
@@ -165,7 +170,7 @@ export class FacturaEncabezadoService {
           isv_18: totales.isv18,
 
           descuentos_rebajas: montoDescuento,
-          total: totalConDescuento,
+          total: totalFinal,
           total_letras: this.convertirNumeroALetras(totalConDescuento),
         };
 
@@ -1120,7 +1125,6 @@ export class FacturaEncabezadoService {
           factura.sub_total = totales.subTotal;
           factura.importe_gravado_15 = totales.importeGravado15;
           factura.importe_gravado_18 = totales.importeGravado18;
-
           factura.isv_15 = totales.isv15;
           factura.isv_18 = totales.isv18;
 
@@ -1148,7 +1152,14 @@ export class FacturaEncabezadoService {
 
         const totalBruto = subtotal + factura.isv_15 + factura.isv_18;
         const totalConDescuento = totalBruto - nuevoDescuento;
-        const totalFinal = totalConDescuento + importeExento + importeExonerado;
+
+        const cargosExtra =
+          updateFacturaEncabezadoDto.cargos_extra !== undefined
+            ? updateFacturaEncabezadoDto.cargos_extra
+            : factura.cargos_extra;
+
+        const totalFinal =
+          totalConDescuento + importeExento + importeExonerado + cargosExtra;
 
         factura.total = totalFinal;
         factura.total_letras = this.convertirNumeroALetras(totalFinal);

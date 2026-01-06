@@ -1,7 +1,4 @@
+dist
 node_modules
-src
-test
-.git
-.gitignore
-Dockerfile
-*.log
+.postgres
+.env

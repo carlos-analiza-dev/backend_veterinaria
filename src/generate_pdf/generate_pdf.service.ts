@@ -49,7 +49,6 @@ export class GeneratePdfService {
       const doc = new PDFDocument({ margin: 50 });
 
       doc.on('error', (err) => {
-        console.error('Error al generar PDF:', err);
         if (!res.headersSent) {
           res.status(500).json({ message: 'Error al generar el PDF' });
         }
@@ -268,7 +267,6 @@ export class GeneratePdfService {
 
       doc.end();
     } catch (error) {
-      console.error('Error en generarFactura:', error);
       if (!res.headersSent) {
         res.status(500).json({
           message: 'Error al generar la factura',

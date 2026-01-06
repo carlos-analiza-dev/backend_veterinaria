@@ -62,7 +62,6 @@ export class NotaCreditoPdfService {
           .json({ message: 'Datos de la empresa no configurados' });
       }
     } catch (validationError) {
-      console.error('Error en validación inicial:', validationError);
       return res.status(500).json({
         message: 'Error al validar datos',
         error: validationError.message,
@@ -81,7 +80,6 @@ export class NotaCreditoPdfService {
       const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
       doc.on('error', (pdfError) => {
-        console.error('Error en generación de PDF:', pdfError);
         if (!res.headersSent) {
           res.status(500).json({ message: 'Error al generar el PDF' });
         }
@@ -708,10 +706,7 @@ export class NotaCreditoPdfService {
 
       doc.end();
     } catch (pdfError) {
-      console.error('Error durante generación de PDF:', pdfError);
-
       if (res.headersSent) {
-        console.error('Headers ya enviados, no se puede enviar error JSON');
         res.end();
       } else {
         res.status(500).json({

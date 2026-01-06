@@ -393,7 +393,7 @@ export class ProduccionFincaService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      console.error('Error detallado:', error);
+
       throw new InternalServerErrorException(
         'Error al actualizar la producción',
       );

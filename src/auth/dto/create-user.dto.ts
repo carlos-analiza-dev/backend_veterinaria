@@ -83,4 +83,8 @@ export class CreateUserDto {
   @IsOptional()
   @IsBoolean()
   isAuthorized?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  verified?: boolean;
 }

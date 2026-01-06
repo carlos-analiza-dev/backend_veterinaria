@@ -54,6 +54,9 @@ export class User {
   @Column({ type: 'boolean', default: true })
   isAuthorized: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  verified: boolean;
+
   @ManyToOne(() => Pai, (pais) => pais.usuario, { eager: true })
   pais: Pai;
 

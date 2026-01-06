@@ -61,7 +61,6 @@ import { DescuentosClientesModule } from './descuentos_clientes/descuentos_clien
 import { MovimientosLotesModule } from './movimientos_lotes/movimientos_lotes.module';
 import { ProductosNoVendidosModule } from './productos_no_vendidos/productos_no_vendidos.module';
 import { DashboardsModule } from './dashboards/dashboards.module';
-import { GenerateFacturaTermicaModule } from './generate_factura_termica/generate_factura_termica.module';
 import { GoogleMapsModule } from './google-maps/google-maps.module';
 import { PedidosModule } from './pedidos/pedidos.module';
 import { PedidoDetallesModule } from './pedido_detalles/pedido_detalles.module';
@@ -74,6 +73,8 @@ import { DetallesNotaCreditoModule } from './detalles_nota_credito/detalles_nota
 import { NotaCreditoPdfModule } from './nota_credito_pdf/nota_credito_pdf.module';
 import { PermisosClientesModule } from './permisos_clientes/permisos_clientes.module';
 import { ClientePermisosModule } from './cliente_permisos/cliente_permisos.module';
+import { ProductoOpinionesModule } from './producto_opiniones/producto_opiniones.module';
+import { ProductoRatingResumenModule } from './producto_rating_resumen/producto_rating_resumen.module';
 
 @Module({
   imports: [
@@ -187,8 +188,6 @@ import { ClientePermisosModule } from './cliente_permisos/cliente_permisos.modul
 
     DashboardsModule,
 
-    GenerateFacturaTermicaModule,
-
     GoogleMapsModule,
 
     PedidosModule,
@@ -210,6 +209,10 @@ import { ClientePermisosModule } from './cliente_permisos/cliente_permisos.modul
     PermisosClientesModule,
 
     ClientePermisosModule,
+
+    ProductoOpinionesModule,
+
+    ProductoRatingResumenModule,
   ],
   controllers: [],
   providers: [],

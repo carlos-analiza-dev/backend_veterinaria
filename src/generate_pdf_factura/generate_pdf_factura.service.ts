@@ -3,7 +3,6 @@ import { Repository } from 'typeorm';
 import { Injectable, Res } from '@nestjs/common';
 import * as PDFDocument from 'pdfkit';
 import { Response } from 'express';
-
 import * as path from 'path';
 import { FacturaEncabezado } from 'src/factura_encabezado/entities/factura_encabezado.entity';
 import { DatosEmpresa } from 'src/datos-empresa/entities/datos-empresa.entity';
@@ -61,7 +60,6 @@ export class FacturaPdfService {
       const doc = new PDFDocument({ margin: 50, size: 'A4' });
 
       doc.on('error', (err) => {
-        console.error('Error al generar PDF:', err);
         if (!res.headersSent) {
           res.status(500).json({ message: 'Error al generar el PDF' });
         }
@@ -74,7 +72,7 @@ export class FacturaPdfService {
       try {
         doc.image(logoPath, 400, 0, { width: 120 });
       } catch (error) {
-        throw error;
+        console.warn('No se pudo cargar el logo:', error.message);
       }
 
       const formatDate = (date: any): string => {
@@ -427,6 +425,73 @@ export class FacturaPdfService {
         currentY += cellHeight;
       });
 
+      if (factura.cargos_extra && factura.cargos_extra > 0) {
+        if (currentY > 650) {
+          doc.addPage();
+          currentY = 50;
+        }
+
+        currentY += 10;
+
+        drawCell(
+          50,
+          currentY,
+          500,
+          cellHeight,
+          'CARGOS ADICIONALES',
+          '#E9ECEF',
+          '#000000',
+          9,
+          true,
+        );
+        currentY += cellHeight;
+
+        const backgroundColor = '#F8F9FA';
+        drawCell(
+          50,
+          currentY,
+          colWidths[0],
+          cellHeight,
+          '1',
+          backgroundColor,
+          '#000000',
+          8,
+        );
+        drawCell(
+          130,
+          currentY,
+          colWidths[1],
+          cellHeight,
+          'Cargo Extra (delivery)',
+          backgroundColor,
+          '#000000',
+          8,
+          true,
+        );
+        drawCellRight(
+          350,
+          currentY,
+          colWidths[2],
+          cellHeight,
+          `${simbolo} ${formatNumber(Number(factura.cargos_extra))}`,
+          backgroundColor,
+          '#000000',
+          8,
+        );
+        drawCellRight(
+          450,
+          currentY,
+          colWidths[3],
+          cellHeight,
+          `${simbolo} ${formatNumber(Number(factura.cargos_extra))}`,
+          backgroundColor,
+          '#000000',
+          8,
+        );
+
+        currentY += cellHeight;
+      }
+
       const resumenTop = currentY + 20;
       const resumenLeft = 350;
       const resumenCellHeight = 15;
@@ -530,6 +595,13 @@ export class FacturaPdfService {
         },
         { label: 'ISV 15%', value: factura.isv_15, color: '#FFFFFF' },
         { label: 'ISV 18%', value: factura.isv_18, color: '#F8F9FA' },
+
+        {
+          label: 'Cargos Extra (delivery)',
+          value: factura.cargos_extra,
+          color: '#FFFFFF',
+          bold: true,
+        },
       ];
 
       totales.forEach((item, index) => {
@@ -543,6 +615,7 @@ export class FacturaPdfService {
           item.color,
           '#000000',
           6,
+          (item as any).bold || false,
         );
         drawCellRight(
           430,
@@ -553,6 +626,7 @@ export class FacturaPdfService {
           item.color,
           '#000000',
           8,
+          (item as any).bold || false,
         );
       });
 

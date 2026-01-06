@@ -20,6 +20,7 @@ import { Auth } from 'src/auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { VerifiedAccountDto } from 'src/auth/dto/verify-account';
 
 @Controller('auth-clientes')
 export class AuthClientesController {
@@ -38,6 +39,11 @@ export class AuthClientesController {
   @Post('change-password')
   actualizarContrasena(@Body() updatePassword: UpdatePasswordDto) {
     return this.authClientesService.actualizarContrasena(updatePassword);
+  }
+
+  @Post('verify-account')
+  verificarCuenta(@Body() verifiedAccount: VerifiedAccountDto) {
+    return this.authClientesService.verificarCuenta(verifiedAccount);
   }
 
   @AuthCliente()

@@ -24,11 +24,15 @@ import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_
 import { Role } from 'src/roles/entities/role.entity';
 import { ValidRoles } from 'src/interfaces/valid-roles.interface';
 import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
+import { VerifiedAccountDto } from './dto/verify-account';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
+    @InjectRepository(Cliente)
+    private readonly clienteRepository: Repository<Cliente>,
     @InjectRepository(Pai) private readonly paisRepo: Repository<Pai>,
     @InjectRepository(MunicipiosDepartamentosPai)
     private readonly municipioRepo: Repository<MunicipiosDepartamentosPai>,
@@ -61,6 +65,14 @@ export class AuthService {
       where: { email },
     });
     if (correo_existe)
+      throw new NotFoundException(
+        'Ya existe un usuario registrado con este correo electronico',
+      );
+
+    const cliente_existe = await this.clienteRepository.findOne({
+      where: { email },
+    });
+    if (cliente_existe)
       throw new NotFoundException(
         'Ya existe un usuario registrado con este correo electronico',
       );
@@ -138,10 +150,17 @@ export class AuthService {
         sexo,
         isActive: true,
         isAuthorized: false,
+        verified: false,
       });
 
       await this.userRepository.save(user);
       delete user.password;
+
+      await this.mailService.verifyAccount(
+        user.email,
+        user.name,
+        `${process.env.FRONTEND_URL}/verify-account/${user.email}`,
+      );
 
       return user;
     } catch (error) {
@@ -186,6 +205,11 @@ export class AuthService {
           'Credenciales incorrectas, usario no autorizado.',
         );
 
+      if (user.verified === false)
+        throw new UnauthorizedException(
+          'El usuario no ha sido verificado, revisa tu correo electronico.',
+        );
+
       const token = this.getJwtToken({ id: user.id });
 
       delete user.password;
@@ -214,6 +238,63 @@ export class AuthService {
       return 'Contraseña actualizada exitosamente';
     } catch (error) {
       throw error;
+    }
+  }
+
+  async verificarCuenta(verifiedAccount: VerifiedAccountDto) {
+    const { email } = verifiedAccount;
+    try {
+      const user = await this.userRepository.findOne({
+        where: { email },
+        relations: ['role', 'pais', 'departamento', 'municipio', 'sucursal'],
+      });
+
+      if (!user) {
+        throw new NotFoundException(
+          'Usuario no encontrado con este correo electrónico',
+        );
+      }
+
+      if (user.verified === true) {
+        throw new BadRequestException('La cuenta ya está verificada');
+      }
+
+      if (user.isActive === false) {
+        throw new BadRequestException('La cuenta está desactivada');
+      }
+
+      if (user.isAuthorized === false) {
+        throw new BadRequestException(
+          'La cuenta no está autorizada por el administrador',
+        );
+      }
+
+      user.verified = true;
+
+      await this.userRepository.save(user);
+
+      return {
+        message: 'Cuenta verificada exitosamente',
+        verified: true,
+        user: {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          verified: user.verified,
+          role: user.role?.name,
+        },
+      };
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      throw new BadRequestException(
+        'Error al verificar la cuenta: ' + error.message,
+      );
     }
   }
 
@@ -414,7 +495,6 @@ export class AuthService {
 
       return usuarioActualizado;
     } catch (error) {
-      console.error('Error actualizando usuario:', error);
       if (
         error instanceof BadRequestException ||
         error instanceof NotFoundException

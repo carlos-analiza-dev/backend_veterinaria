@@ -71,4 +71,8 @@ export class CreateAuthClienteDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  verified?: boolean;
 }

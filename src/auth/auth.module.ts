@@ -14,6 +14,7 @@ import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/en
 import { Role } from 'src/roles/entities/role.entity';
 import { ProfileImage } from 'src/profile_images/entities/profile_image.entity';
 import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Module({
   controllers: [AuthController],
@@ -29,6 +30,7 @@ import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
       Role,
       ProfileImage,
       Sucursal,
+      Cliente,
     ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({

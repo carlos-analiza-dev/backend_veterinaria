@@ -145,10 +145,6 @@ export class ServiciosPaisService {
         );
         insumosCreados.push(servicioInsumoGuardado);
       } catch (error) {
-        console.error(
-          `Error procesando insumo ${insumoDto.insumoId}:`,
-          error.message,
-        );
         throw new BadRequestException(
           `Error al procesar insumos: ${error.message}`,
         );

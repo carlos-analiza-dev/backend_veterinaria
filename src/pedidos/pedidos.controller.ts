@@ -60,6 +60,15 @@ export class PedidosController {
     return this.pedidosService.findBySucursal(sucursalId, paginationDto);
   }
 
+  @Get('verificar-compra/:productoId')
+  @AuthCliente()
+  verificarCompraProducto(
+    @GetCliente() cliente: Cliente,
+    @Param('productoId', ParseUUIDPipe) productoId: string,
+  ) {
+    return this.pedidosService.verificarCompraProducto(cliente, productoId);
+  }
+
   @Get('estado/:estado')
   findByEstado(@Param('estado') estado: EstadoPedido) {
     return this.pedidosService.findByEstado(estado);

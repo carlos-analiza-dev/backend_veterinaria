@@ -22,6 +22,7 @@ import { UpdatePasswordDto } from './dto/update-password-cliente.dto';
 import { User } from 'src/auth/entities/auth.entity';
 import { instanceToPlain } from 'class-transformer';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { VerifiedAccountDto } from 'src/auth/dto/verify-account';
 
 @Injectable()
 export class AuthClientesService {
@@ -119,10 +120,17 @@ export class AuthClientesService {
         municipio: municipio_existe,
         sexo,
         isActive: true,
+        verified: false,
       });
 
       await this.clienteRepository.save(user);
       delete user.password;
+
+      await this.mailService.verifyAccount(
+        user.email,
+        user.nombre,
+        `${process.env.FRONTEND_URL_CLIENT}/verify-account/${user.email}`,
+      );
 
       return user;
     } catch (error) {
@@ -160,6 +168,11 @@ export class AuthClientesService {
       if (cliente.isActive === false)
         throw new UnauthorizedException(
           'Credenciales incorrectas, usario desactivado.',
+        );
+
+      if (cliente.verified === false)
+        throw new UnauthorizedException(
+          'El usuario no ha sido verificado, revisa tu correo electronico.',
         );
 
       const token = this.getJwtToken({ id: cliente.id });
@@ -201,6 +214,56 @@ export class AuthClientesService {
       ...cliente,
       token: this.getJwtToken({ id: cliente.id }),
     };
+  }
+
+  async verificarCuenta(verifiedAccount: VerifiedAccountDto) {
+    const { email } = verifiedAccount;
+    try {
+      const cliente = await this.clienteRepository.findOne({
+        where: { email },
+        relations: ['pais', 'departamento', 'municipio'],
+      });
+
+      if (!cliente) {
+        throw new NotFoundException(
+          'Usuario no encontrado con este correo electrónico',
+        );
+      }
+
+      if (cliente.verified === true) {
+        throw new BadRequestException('La cuenta ya está verificada');
+      }
+
+      if (cliente.isActive === false) {
+        throw new BadRequestException('La cuenta está desactivada');
+      }
+
+      cliente.verified = true;
+
+      await this.clienteRepository.save(cliente);
+
+      return {
+        message: 'Cuenta verificada exitosamente',
+        verified: true,
+        user: {
+          id: cliente.id,
+          email: cliente.email,
+          name: cliente.nombre,
+          verified: cliente.verified,
+        },
+      };
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+
+      throw new BadRequestException(
+        'Error al verificar la cuenta: ' + error.message,
+      );
+    }
   }
 
   async getClientesAdmin(user: User) {

@@ -55,7 +55,7 @@ export class SucursalesService {
       if (!municipio) {
         throw new NotFoundException('Municipio seleccionado no encontrado');
       }
-      // Verificar si ya existe una sucursal con el mismo nombre
+
       const existingSucursal = await this.sucursalRepository.findOne({
         where: { nombre: createSucursalDto.nombre },
       });
@@ -66,7 +66,6 @@ export class SucursalesService {
         );
       }
 
-      // Verificar que el gerente existe
       const gerente = await this.userRepository.findOne({
         where: { id: createSucursalDto.gerenteId },
       });
@@ -109,7 +108,6 @@ export class SucursalesService {
         .leftJoinAndSelect('sucursal.municipio', 'municipio')
         .leftJoinAndSelect('sucursal.gerente', 'gerente');
 
-      // Aplicar filtros opcionales
       if (tipo) {
         queryBuilder.andWhere('sucursal.tipo = :tipo', { tipo });
       }
@@ -166,7 +164,6 @@ export class SucursalesService {
     }
   }
 
-  // Obtener solo sucursales activas
   async findAllActive(paginationDto: PaginationDto) {
     return this.findAll({ ...paginationDto, isActive: true });
   }
@@ -180,7 +177,6 @@ export class SucursalesService {
     });
   }
 
-  // Obtener sucursales por país
   async findByPais(paisId: string, filterDto?: FilterSucursalDto) {
     return this.findAll({ ...filterDto, paisId });
   }
@@ -209,7 +205,6 @@ export class SucursalesService {
     try {
       const sucursal = await this.findOne(id);
 
-      // Si se está actualizando el nombre, verificar que no exista otra sucursal con ese nombre
       if (
         updateSucursalDto.nombre &&
         updateSucursalDto.nombre !== sucursal.nombre
@@ -225,20 +220,31 @@ export class SucursalesService {
         }
       }
 
-      // Si se está actualizando el gerente, verificar que existe
-      if (updateSucursalDto.gerenteId) {
-        const gerente = await this.userRepository.findOne({
-          where: { id: updateSucursalDto.gerenteId },
-        });
+      if (updateSucursalDto.gerenteId !== undefined) {
+        if (
+          updateSucursalDto.gerenteId === null ||
+          updateSucursalDto.gerenteId === ''
+        ) {
+          sucursal.gerente = null;
+        } else {
+          const gerente = await this.userRepository.findOne({
+            where: { id: updateSucursalDto.gerenteId },
+          });
 
-        if (!gerente) {
-          throw new NotFoundException(
-            `Gerente con ID ${updateSucursalDto.gerenteId} no encontrado`,
-          );
+          if (!gerente) {
+            throw new NotFoundException(
+              `Gerente con ID ${updateSucursalDto.gerenteId} no encontrado`,
+            );
+          }
+
+          sucursal.gerente = gerente;
         }
+
+        delete updateSucursalDto.gerenteId;
       }
 
       Object.assign(sucursal, updateSucursalDto);
+
       return await this.sucursalRepository.save(sucursal);
     } catch (error) {
       this.handleDBExceptions(error);
@@ -249,7 +255,6 @@ export class SucursalesService {
     try {
       const sucursal = await this.findOne(id);
 
-      // Soft delete - solo marcar como inactivo
       sucursal.isActive = false;
       await this.sucursalRepository.save(sucursal);
 
@@ -259,7 +264,6 @@ export class SucursalesService {
     }
   }
 
-  // Método para obtener estadísticas
   async getStats(paisId?: string) {
     try {
       const queryBase = { isActive: true };
@@ -310,7 +314,6 @@ export class SucursalesService {
     }
   }
 
-  // Método para obtener sucursales agrupadas por gerente
   async findByGerente(gerenteId: string, paginationDto?: PaginationDto) {
     return this.findAll({ ...paginationDto, search: undefined });
   }

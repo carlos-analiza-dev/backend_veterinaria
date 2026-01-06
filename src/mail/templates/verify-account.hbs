@@ -2,7 +2,7 @@
   <head>
     <meta charset='UTF-8' />
     <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-    <title>Bienvenido a Agroservicios Analiza</title>
+    <title>Verifica tu cuenta</title>
     <style>
       body { font-family: Arial, sans-serif; color: #333; background-color:
       #f4f4f4; margin: 0; padding: 0; } .container { max-width: 600px; margin:
@@ -23,16 +23,14 @@
       <tr>
         <td align='center'>
           <div class='container'>
-            <h1>Has actualizado tu contraseña</h1>
+            <h1>Bienvenido a Agroservicios Analiza</h1>
             <div class='highlight'>
-              <p>Tu correo es: {{email}}</p>
-              <p>Y tu nueva contraseña es: {{newPassword}}</p>
+              <p>Hola {{name}}, gracias por registrarte.</p>
             </div>
-            <p>Tu contraseña ha sido actualizada exitosamente. Puedes iniciar
-              sesión nuevamente.</p>
+            <p>Haz clic en el siguiente botón para verificar tu cuenta:</p>
+            <a href='{{verifyLink}}'>Verificar cuenta</a>
             <div class='footer'>
-              <p>Si no realizaste este cambio, por favor contacta a nuestro
-                soporte.</p>
+              <p>Si no te registraste, ignora este correo.</p>
               <p>Gracias por usar nuestro servicio.</p>
             </div>
           </div>

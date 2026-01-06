@@ -18,6 +18,7 @@ import { UpdatePasswordDto } from './dto/update-password.dto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ValidRoles } from 'src/interfaces/valid-roles.interface';
+import { VerifiedAccountDto } from './dto/verify-account';
 
 @Controller('auth')
 export class AuthController {
@@ -36,6 +37,11 @@ export class AuthController {
   @Post('change-password')
   actualizarContrasena(@Body() updatePassword: UpdatePasswordDto) {
     return this.authService.actualizarContrasena(updatePassword);
+  }
+
+  @Post('verify-account')
+  verificarCuenta(@Body() verifiedAccount: VerifiedAccountDto) {
+    return this.authService.verificarCuenta(verifiedAccount);
   }
 
   @Auth()

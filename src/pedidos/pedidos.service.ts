@@ -197,7 +197,6 @@ export class PedidosService {
         throw error;
       }
 
-      console.error(error);
       throw new InternalServerErrorException('Error al crear el pedido');
     } finally {
       await queryRunner.release();
@@ -294,6 +293,22 @@ export class PedidosService {
         'Error al obtener los pedidos de la sucursal',
       );
     }
+  }
+
+  async verificarCompraProducto(
+    cliente: Cliente,
+    productoId: string,
+  ): Promise<boolean> {
+    const clienteId = cliente.id;
+    const compra = await this.pedido_detalle_repo
+      .createQueryBuilder('detalle')
+      .innerJoinAndSelect('detalle.pedido', 'pedido')
+      .where('detalle.id_producto = :productoId', { productoId })
+      .andWhere('pedido.id_cliente = :clienteId', { clienteId })
+      .andWhere('pedido.estado = :facturado', { facturado: 'facturado' })
+      .getOne();
+
+    return !!compra;
   }
 
   async findByEstado(estado: EstadoPedido): Promise<Pedido[]> {
