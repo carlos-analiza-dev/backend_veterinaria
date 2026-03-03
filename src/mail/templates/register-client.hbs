@@ -2,7 +2,7 @@
   <head>
     <meta charset='UTF-8' />
     <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-    <title>Verifica tu cuenta</title>
+    <title>Nuevo cliente registrado</title>
     <style>
       body {
         font-family: Arial, sans-serif;
@@ -27,7 +27,7 @@
       }
       .highlight {
         background-color: #eaf2f8;
-        border-left: 4px solid #3498db;
+        border-left: 4px solid #27ae60;
         padding: 10px;
         border-radius: 4px;
         margin-bottom: 20px;
@@ -37,19 +37,15 @@
         line-height: 1.5;
         margin: 10px 0;
       }
-      a {
-        display: inline-block;
-        font-size: 16px;
-        color: #ffffff;
-        background-color: #3498db;
-        padding: 12px 20px;
-        text-decoration: none;
-        border-radius: 4px;
-        text-align: center;
-        margin-top: 20px;
+      .info-box {
+        background-color: #f8f9f9;
+        border-radius: 6px;
+        padding: 15px;
+        margin-top: 15px;
       }
-      a:hover {
-        background-color: #2980b9;
+      .info-box p {
+        margin: 5px 0;
+        font-size: 15px;
       }
       .footer {
         font-size: 14px;
@@ -64,15 +60,21 @@
       <tr>
         <td align='center'>
           <div class='container'>
-            <h1>Bienvenido a El Sembrador</h1>
+            <h1>Nuevo Cliente Registrado</h1>
+
             <div class='highlight'>
-              <p>Hola {{name}}, gracias por registrarte.</p>
+              <p>Se ha registrado un nuevo cliente en el sistema.</p>
             </div>
-            <p>Haz clic en el siguiente botón para verificar tu cuenta:</p>
-            <a href='{{verifyLink}}'>Verificar cuenta</a>
+
+            <div class='info-box'>
+              <p><strong>Nombre:</strong> {{name}}</p>
+              <p><strong>Correo:</strong> {{email_user}}</p>
+              <p><strong>Teléfono:</strong> {{phone}}</p>
+            </div>
+
             <div class='footer'>
-              <p>Si no te registraste, ignora este correo.</p>
-              <p>Gracias por usar nuestro servicio.</p>
+              <p>Este es un mensaje automático del sistema.</p>
+              <p>El Sembrador © {{year}}</p>
             </div>
           </div>
         </td>

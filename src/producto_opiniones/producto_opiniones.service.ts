@@ -69,7 +69,11 @@ export class ProductoOpinionesService {
     }
   }
 
-  private async actualizarResumenRating(producto: SubServicio, rating: number) {
+  private async actualizarResumenRating(
+    producto: SubServicio,
+    rating: number,
+    ratingAnterior?: number,
+  ) {
     let resumen = await this.productoResumenRatingRepository.findOne({
       where: { producto: { id: producto.id } },
     });
@@ -87,24 +91,62 @@ export class ProductoOpinionesService {
       });
     }
 
-    resumen.total_opiniones += 1;
+    if (ratingAnterior !== undefined) {
+      switch (ratingAnterior) {
+        case 1:
+          resumen.estrellas_1 = Math.max(0, resumen.estrellas_1 - 1);
+          break;
+        case 2:
+          resumen.estrellas_2 = Math.max(0, resumen.estrellas_2 - 1);
+          break;
+        case 3:
+          resumen.estrellas_3 = Math.max(0, resumen.estrellas_3 - 1);
+          break;
+        case 4:
+          resumen.estrellas_4 = Math.max(0, resumen.estrellas_4 - 1);
+          break;
+        case 5:
+          resumen.estrellas_5 = Math.max(0, resumen.estrellas_5 - 1);
+          break;
+      }
 
-    switch (rating) {
-      case 1:
-        resumen.estrellas_1 += 1;
-        break;
-      case 2:
-        resumen.estrellas_2 += 1;
-        break;
-      case 3:
-        resumen.estrellas_3 += 1;
-        break;
-      case 4:
-        resumen.estrellas_4 += 1;
-        break;
-      case 5:
-        resumen.estrellas_5 += 1;
-        break;
+      switch (rating) {
+        case 1:
+          resumen.estrellas_1 += 1;
+          break;
+        case 2:
+          resumen.estrellas_2 += 1;
+          break;
+        case 3:
+          resumen.estrellas_3 += 1;
+          break;
+        case 4:
+          resumen.estrellas_4 += 1;
+          break;
+        case 5:
+          resumen.estrellas_5 += 1;
+          break;
+      }
+    } else {
+      resumen.total_opiniones += 1;
+
+      switch (rating) {
+        case 1:
+          resumen.estrellas_1 += 1;
+          break;
+        case 2:
+          resumen.estrellas_2 += 1;
+          break;
+        case 3:
+          resumen.estrellas_3 += 1;
+          break;
+        case 4:
+          resumen.estrellas_4 += 1;
+          break;
+        case 5:
+          resumen.estrellas_5 += 1;
+          break;
+      }
     }
 
     const totalPuntos =
@@ -114,9 +156,14 @@ export class ProductoOpinionesService {
       resumen.estrellas_4 * 4 +
       resumen.estrellas_5 * 5;
 
+    const totalOpiniones =
+      ratingAnterior !== undefined
+        ? resumen.total_opiniones
+        : resumen.total_opiniones;
+
     resumen.promedio =
-      resumen.total_opiniones > 0
-        ? Number((totalPuntos / resumen.total_opiniones).toFixed(1))
+      totalOpiniones > 0
+        ? Number((totalPuntos / totalOpiniones).toFixed(1))
         : 0;
 
     await this.productoResumenRatingRepository.save(resumen);
@@ -134,7 +181,9 @@ export class ProductoOpinionesService {
         'opinion.rating',
         'opinion.titulo',
         'opinion.comentario',
+        'opinion.compra_verificada',
         'opinion.createdAt',
+        'opinion.updatedAt',
         'cliente.id',
         'cliente.nombre',
         'profileImage.id',
@@ -187,7 +236,58 @@ export class ProductoOpinionesService {
     return !!opinionExistente;
   }
 
-  update(id: number, updateProductoOpinioneDto: UpdateProductoOpinioneDto) {
-    return `This action updates a #${id} productoOpinione`;
+  async update(
+    id: string,
+    cliente: Cliente,
+    updateProductoOpinioneDto: UpdateProductoOpinioneDto,
+  ) {
+    try {
+      const opinionExistente = await this.opinionRepository.findOne({
+        where: { id },
+        relations: ['cliente', 'producto'],
+      });
+
+      if (!opinionExistente) {
+        throw new NotFoundException('Opinión no encontrada');
+      }
+
+      if (opinionExistente.cliente.id !== cliente.id) {
+        throw new BadRequestException('No puedes editar esta opinión');
+      }
+
+      const { productoId, ...datosActualizables } = updateProductoOpinioneDto;
+
+      if (productoId && productoId !== opinionExistente.producto.id) {
+        throw new BadRequestException(
+          'No puedes cambiar el producto de la opinión',
+        );
+      }
+
+      const ratingAnterior = opinionExistente.rating;
+      const ratingNuevo = updateProductoOpinioneDto.rating || ratingAnterior;
+
+      Object.assign(opinionExistente, datosActualizables);
+      opinionExistente.updatedAt = new Date();
+
+      await this.opinionRepository.save(opinionExistente);
+
+      if (
+        updateProductoOpinioneDto.rating !== undefined &&
+        updateProductoOpinioneDto.rating !== ratingAnterior
+      ) {
+        await this.actualizarResumenRating(
+          opinionExistente.producto,
+          ratingNuevo,
+          ratingAnterior,
+        );
+      }
+
+      return {
+        message: 'Opinión actualizada correctamente',
+        opinion: opinionExistente,
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 }

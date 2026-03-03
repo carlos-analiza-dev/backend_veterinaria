@@ -2,6 +2,7 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { ImagesAminale } from 'src/images_aminales/entities/images_aminale.entity';
+import { PesoHistorial } from 'src/peso_historial/entities/peso_historial.entity';
 import { RazaAnimal } from 'src/raza_animal/entities/raza_animal.entity';
 import {
   Column,
@@ -188,6 +189,11 @@ export class AnimalFinca {
     eager: true,
   })
   profileImages: ImagesAminale[];
+
+  @OneToMany(() => PesoHistorial, (peso) => peso.animal, {
+    cascade: true,
+  })
+  pesos: PesoHistorial[];
 
   get currentProfileImage(): ImagesAminale | null {
     if (!this.profileImages || this.profileImages.length === 0) return null;

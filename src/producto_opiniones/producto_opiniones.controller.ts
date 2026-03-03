@@ -58,10 +58,16 @@ export class ProductoOpinionesController {
   }
 
   @Patch(':id')
+  @AuthCliente()
   update(
     @Param('id') id: string,
+    @GetCliente() cliente: Cliente,
     @Body() updateProductoOpinioneDto: UpdateProductoOpinioneDto,
   ) {
-    return this.productoOpinionesService.update(+id, updateProductoOpinioneDto);
+    return this.productoOpinionesService.update(
+      id,
+      cliente,
+      updateProductoOpinioneDto,
+    );
   }
 }

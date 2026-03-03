@@ -126,6 +126,39 @@ export class AuthClientesService {
       await this.clienteRepository.save(user);
       delete user.password;
 
+      const administradores = await this.userRepository.find({
+        where: { role: { name: 'Administrador' } },
+        relations: ['role'],
+      });
+
+      if (administradores && administradores.length > 0) {
+        const year = new Date().getFullYear().toString();
+
+        await Promise.all(
+          administradores.map(async (admin) => {
+            try {
+              await this.mailService.verifyCreateClient(
+                admin.email,
+                user.nombre,
+                user.email,
+                user.telefono,
+                year,
+              );
+            } catch (emailError) {
+              console.error(
+                `Error enviando email a admin ${admin.email}:`,
+                emailError,
+              );
+            }
+          }),
+        );
+      } else {
+        console.log(
+          'No se encontraron administradores para notificar en el país:',
+          user.pais.nombre,
+        );
+      }
+
       await this.mailService.verifyAccount(
         user.email,
         user.nombre,

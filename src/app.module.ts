@@ -75,6 +75,10 @@ import { PermisosClientesModule } from './permisos_clientes/permisos_clientes.mo
 import { ClientePermisosModule } from './cliente_permisos/cliente_permisos.module';
 import { ProductoOpinionesModule } from './producto_opiniones/producto_opiniones.module';
 import { ProductoRatingResumenModule } from './producto_rating_resumen/producto_rating_resumen.module';
+import { PesoEsperadoRazaModule } from './peso_esperado_raza/peso_esperado_raza.module';
+import { PesoHistorialModule } from './peso_historial/peso_historial.module';
+import { ProductosGanaderiaModule } from './productos_ganaderia/productos_ganaderia.module';
+import { ProductoVentasModule } from './producto_ventas/producto_ventas.module';
 
 @Module({
   imports: [
@@ -213,6 +217,14 @@ import { ProductoRatingResumenModule } from './producto_rating_resumen/producto_
     ProductoOpinionesModule,
 
     ProductoRatingResumenModule,
+
+    PesoEsperadoRazaModule,
+
+    PesoHistorialModule,
+
+    ProductosGanaderiaModule,
+
+    ProductoVentasModule,
   ],
   controllers: [],
   providers: [],
