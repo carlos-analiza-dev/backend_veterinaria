@@ -14,6 +14,7 @@ import { MailService } from 'src/mail/mail.service';
 import { JwtClienteStrategy } from './strategies-client/jwt.strtategy';
 import { User } from 'src/auth/entities/auth.entity';
 import { AuthModule } from 'src/auth/auth.module';
+import { NotificacionesAdminsModule } from 'src/notificaciones_admins/notificaciones_admins.module';
 
 @Module({
   controllers: [AuthClientesController],
@@ -28,6 +29,7 @@ import { AuthModule } from 'src/auth/auth.module';
       User,
     ]),
     AuthModule,
+    NotificacionesAdminsModule,
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],

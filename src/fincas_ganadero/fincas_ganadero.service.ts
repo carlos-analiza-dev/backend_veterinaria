@@ -11,6 +11,8 @@ import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/en
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { NotificacionesAdminsService } from 'src/notificaciones_admins/notificaciones_admins.service';
+import { NotificationType } from 'src/interfaces/nptificaciones.type';
 
 @Injectable()
 export class FincasGanaderoService {
@@ -25,6 +27,7 @@ export class FincasGanaderoService {
     private readonly deptoRepo: Repository<DepartamentosPai>,
     @InjectRepository(MunicipiosDepartamentosPai)
     private readonly municipioRepo: Repository<MunicipiosDepartamentosPai>,
+    private readonly notificacionesService: NotificacionesAdminsService,
   ) {}
   async create(createFincasGanaderoDto: CreateFincasGanaderoDto) {
     const {
@@ -91,6 +94,11 @@ export class FincasGanaderoService {
       await this.fincasRepo.save(finca);
 
       delete finca.propietario.password;
+      await this.notificacionesService.notifyAdmins(
+        NotificationType.NEW_FARM,
+        'Nueva Finca Registrada',
+        `El ganadero ${propietario.nombre}, ha creado una nueva finca llamada: ${finca.nombre_finca}`,
+      );
 
       return {
         message: 'Finca creada exitosamente',
@@ -263,8 +271,8 @@ export class FincasGanaderoService {
       finca.ubicacion = ubicacion ?? finca.ubicacion;
       finca.especies_maneja = especies_maneja ?? finca.especies_maneja;
       finca.medida_finca = medida_finca ?? finca.medida_finca;
-      (finca.latitud = latitud ?? finca.latitud),
-        (finca.longitud = longitud ?? finca.longitud);
+      ((finca.latitud = latitud ?? finca.latitud),
+        (finca.longitud = longitud ?? finca.longitud));
 
       await this.fincasRepo.save(finca);
 

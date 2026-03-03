@@ -23,6 +23,8 @@ import { User } from 'src/auth/entities/auth.entity';
 import { instanceToPlain } from 'class-transformer';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { VerifiedAccountDto } from 'src/auth/dto/verify-account';
+import { NotificacionesAdminsService } from 'src/notificaciones_admins/notificaciones_admins.service';
+import { NotificationType } from 'src/interfaces/nptificaciones.type';
 
 @Injectable()
 export class AuthClientesService {
@@ -37,6 +39,7 @@ export class AuthClientesService {
     private readonly departamentoRepo: Repository<DepartamentosPai>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
+    private readonly notificacionService: NotificacionesAdminsService,
   ) {}
   async create(createClienteDto: CreateAuthClienteDto) {
     const {
@@ -158,6 +161,12 @@ export class AuthClientesService {
           user.pais.nombre,
         );
       }
+
+      await this.notificacionService.notifyAdmins(
+        NotificationType.NEW_CLIENT,
+        'Nuevo Cliente Registrado',
+        `Se registro el cliente ${user.nombre}`,
+      );
 
       await this.mailService.verifyAccount(
         user.email,

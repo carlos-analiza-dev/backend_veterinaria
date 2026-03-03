@@ -7,6 +7,7 @@ import { AnimalFinca } from './entities/animal_finca.entity';
 import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity';
 import { RazaAnimal } from 'src/raza_animal/entities/raza_animal.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { NotificacionesAdminsModule } from 'src/notificaciones_admins/notificaciones_admins.module';
 
 @Module({
   controllers: [AnimalFincaController],
@@ -18,6 +19,7 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
       RazaAnimal,
       Cliente,
     ]),
+    NotificacionesAdminsModule,
   ],
   providers: [AnimalFincaService],
 })

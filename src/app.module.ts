@@ -79,6 +79,7 @@ import { PesoEsperadoRazaModule } from './peso_esperado_raza/peso_esperado_raza.
 import { PesoHistorialModule } from './peso_historial/peso_historial.module';
 import { ProductosGanaderiaModule } from './productos_ganaderia/productos_ganaderia.module';
 import { ProductoVentasModule } from './producto_ventas/producto_ventas.module';
+import { NotificacionesAdminsModule } from './notificaciones_admins/notificaciones_admins.module';
 
 @Module({
   imports: [
@@ -225,6 +226,8 @@ import { ProductoVentasModule } from './producto_ventas/producto_ventas.module';
     ProductosGanaderiaModule,
 
     ProductoVentasModule,
+
+    NotificacionesAdminsModule,
   ],
   controllers: [],
   providers: [],

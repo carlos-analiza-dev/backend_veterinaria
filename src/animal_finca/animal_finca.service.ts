@@ -16,6 +16,8 @@ import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity
 import { RazaAnimal } from 'src/raza_animal/entities/raza_animal.entity';
 import { UpdateDeathStatusDto } from './dto/update-death-status.dto';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { NotificacionesAdminsService } from 'src/notificaciones_admins/notificaciones_admins.service';
+import { NotificationType } from 'src/interfaces/nptificaciones.type';
 
 @Injectable()
 export class AnimalFincaService {
@@ -30,6 +32,7 @@ export class AnimalFincaService {
     private readonly especieAnimal: Repository<EspecieAnimal>,
     @InjectRepository(RazaAnimal)
     private readonly razaAnimal: Repository<RazaAnimal>,
+    private readonly notificacionesService: NotificacionesAdminsService,
   ) {}
   async create(createAnimalFincaDto: CreateAnimalFincaDto) {
     const {
@@ -228,6 +231,11 @@ export class AnimalFincaService {
       });
 
       await this.animalRepo.save(nuevoAnimal);
+      await this.notificacionesService.notifyAdmins(
+        NotificationType.NEW_ANIMAL,
+        'Nuevo Animal Registrado',
+        `Se ha ingresado un nuevo animal con el arete: ${nuevoAnimal.identificador} , en la finca ${nuevoAnimal.finca.nombre_finca}, del ganadero ${nuevoAnimal.propietario.nombre}`,
+      );
 
       return 'Animal creado exitosamente';
     } catch (error) {
