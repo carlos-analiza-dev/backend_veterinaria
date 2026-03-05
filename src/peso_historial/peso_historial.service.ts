@@ -58,7 +58,7 @@ export class PesoHistorialService {
         animal,
         peso,
         observaciones,
-        fecha: new Date(fecha),
+        fecha,
       });
 
       await this.pesoHistorialRepo.save(nuevo);

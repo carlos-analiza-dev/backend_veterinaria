@@ -1,5 +1,6 @@
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity';
+import { GananciaPesoRaza } from 'src/ganancia_peso_raza/entities/ganancia_peso_raza.entity';
 import { PesoEsperadoRaza } from 'src/peso_esperado_raza/entities/peso_esperado_raza.entity';
 import {
   Column,
@@ -32,4 +33,7 @@ export class RazaAnimal {
 
   @OneToMany(() => PesoEsperadoRaza, (peso) => peso.raza)
   pesosEsperados: PesoEsperadoRaza;
+
+  @OneToMany(() => GananciaPesoRaza, (ganancia) => ganancia.raza)
+  gananciasPesoRaza: GananciaPesoRaza[];
 }

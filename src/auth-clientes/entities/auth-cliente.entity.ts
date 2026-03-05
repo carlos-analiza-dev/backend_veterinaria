@@ -16,6 +16,7 @@ import { ProduccionFinca } from 'src/produccion_finca/entities/produccion_finca.
 import { ClientePermiso } from 'src/cliente_permisos/entities/cliente_permiso.entity';
 import { ProductoOpinione } from 'src/producto_opiniones/entities/producto_opinione.entity';
 import { ProductosGanaderia } from 'src/productos_ganaderia/entities/productos_ganaderia.entity';
+import { GananciaPesoRaza } from 'src/ganancia_peso_raza/entities/ganancia_peso_raza.entity';
 
 @Entity('clientes')
 export class Cliente {
@@ -84,6 +85,9 @@ export class Cliente {
 
   @OneToMany(() => ProductosGanaderia, (producto) => producto.propietario)
   productos: ProductosGanaderia[];
+
+  @OneToMany(() => GananciaPesoRaza, (ganancia) => ganancia.cliente)
+  gananciasPesoRaza: GananciaPesoRaza[];
 
   get currentProfileImage(): ImagesClient | null {
     if (!this.profileImages || this.profileImages.length === 0) return null;

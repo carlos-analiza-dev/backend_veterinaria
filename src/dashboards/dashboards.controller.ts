@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 
 import { DashboardService } from './dashboards.service';
 import { DashboardData } from './interfaces/dashboard-data.interface';
@@ -103,6 +103,21 @@ export class DashboardsController {
   @AuthCliente()
   async getCompradosVsNacidos(@GetCliente() cliente: Cliente) {
     return await this.dashboardService.getCompradosVsNacidos(cliente);
+  }
+
+  @Get('ganancia-mensual/:animalId/:year')
+  getGananciaMensual(
+    @Param('animalId') animalId: string,
+    @Param('year') year: number,
+  ) {
+    return this.dashboardService.getGananciaPesoMensual(animalId, year);
+  }
+  @Get('ganancia-mensual-finca/:fincaId/:year')
+  getGananciaPesoMensualPorFinca(
+    @Param('fincaId') fincaId: string,
+    @Param('year') year: number,
+  ) {
+    return this.dashboardService.getGananciaPesoMensualPorFinca(fincaId, year);
   }
 
   //FINCAS

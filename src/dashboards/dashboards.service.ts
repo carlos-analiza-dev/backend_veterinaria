@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 
@@ -34,6 +34,7 @@ import {
   ProduccionGanaderaFincaDto,
   ResumenProduccionGanadera,
 } from './interfaces/produccion-ganadera.interface';
+import { PesoHistorial } from 'src/peso_historial/entities/peso_historial.entity';
 
 @Injectable()
 export class DashboardService {
@@ -60,6 +61,8 @@ export class DashboardService {
     private readonly produccionFincaRepository: Repository<ProduccionFinca>,
     @InjectRepository(ProduccionGanadera)
     private readonly produccionGanaderaRepository: Repository<ProduccionGanadera>,
+    @InjectRepository(PesoHistorial)
+    private readonly pesoHistorialRepo: Repository<PesoHistorial>,
   ) {}
 
   async getIngresosTotales(user: User, paginationDto: PaginationDto) {
@@ -479,6 +482,81 @@ export class DashboardService {
       .getRawOne();
 
     return result;
+  }
+
+  async getGananciaPesoMensual(animalId: string, year: number) {
+    try {
+      const animal_existe = await this.animalRepository.findOne({
+        where: { id: animalId },
+      });
+
+      if (!animal_existe)
+        throw new NotFoundException('El animal seleccionado no existe');
+
+      const pesos = await this.pesoHistorialRepo
+        .createQueryBuilder('peso')
+        .select([
+          'EXTRACT(MONTH FROM peso.fecha) as mes',
+          'MIN(peso.peso) as peso_inicial',
+          'MAX(peso.peso) as peso_final',
+          '(MAX(peso.peso) - MIN(peso.peso)) as ganancia',
+        ])
+        .where('peso.animalId = :animalId', { animalId })
+        .andWhere('EXTRACT(YEAR FROM peso.fecha) = :year', { year })
+        .groupBy('EXTRACT(MONTH FROM peso.fecha)')
+        .orderBy('EXTRACT(MONTH FROM peso.fecha)', 'ASC')
+        .getRawMany();
+
+      return pesos.map((p) => ({
+        mes: Number(p.mes),
+        pesoInicial: Number(p.peso_inicial),
+        pesoFinal: Number(p.peso_final),
+        ganancia: Number(p.ganancia),
+      }));
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getGananciaPesoMensualPorFinca(fincaId: string, year: number) {
+    try {
+      const finca = await this.fincaRepository.findOne({
+        where: { id: fincaId },
+      });
+
+      if (!finca)
+        throw new NotFoundException('La finca seleccionada no existe');
+
+      const subQuery = this.pesoHistorialRepo
+        .createQueryBuilder('peso')
+        .innerJoin('peso.animal', 'animal')
+        .innerJoin('animal.finca', 'finca')
+        .select([
+          'animal.id as animal_id',
+          'EXTRACT(MONTH FROM peso.fecha) as mes',
+          'MAX(peso.peso) - MIN(peso.peso) as ganancia',
+        ])
+        .where('finca.id = :fincaId', { fincaId })
+        .andWhere('EXTRACT(YEAR FROM peso.fecha) = :year', { year })
+        .groupBy('animal.id')
+        .addGroupBy('EXTRACT(MONTH FROM peso.fecha)');
+
+      const pesos = await this.pesoHistorialRepo.manager
+        .createQueryBuilder()
+        .select(['sub.mes as mes', 'AVG(sub.ganancia) as ganancia_promedio'])
+        .from(`(${subQuery.getQuery()})`, 'sub')
+        .setParameters(subQuery.getParameters())
+        .groupBy('sub.mes')
+        .orderBy('sub.mes', 'ASC')
+        .getRawMany();
+
+      return pesos.map((p) => ({
+        mes: Number(p.mes),
+        gananciaPromedio: Number(p.ganancia_promedio),
+      }));
+    } catch (error) {
+      throw error;
+    }
   }
 
   //FINCA

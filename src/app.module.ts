@@ -80,6 +80,7 @@ import { PesoHistorialModule } from './peso_historial/peso_historial.module';
 import { ProductosGanaderiaModule } from './productos_ganaderia/productos_ganaderia.module';
 import { ProductoVentasModule } from './producto_ventas/producto_ventas.module';
 import { NotificacionesAdminsModule } from './notificaciones_admins/notificaciones_admins.module';
+import { GananciaPesoRazaModule } from './ganancia_peso_raza/ganancia_peso_raza.module';
 
 @Module({
   imports: [
@@ -228,6 +229,8 @@ import { NotificacionesAdminsModule } from './notificaciones_admins/notificacion
     ProductoVentasModule,
 
     NotificacionesAdminsModule,
+
+    GananciaPesoRazaModule,
   ],
   controllers: [],
   providers: [],
