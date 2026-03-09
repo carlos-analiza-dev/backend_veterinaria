@@ -189,6 +189,15 @@ export class SubServiciosService {
         throw new ConflictException('Ya existe un producto con este código');
       }
 
+      const codigoExistente = await this.sub_servicio_repo.findOne({
+        where: { codigo_barra },
+      });
+      if (codigoExistente) {
+        throw new ConflictException(
+          'Ya existe un producto con este código de barra',
+        );
+      }
+
       const taxeExistente = await this.taxesPaiRepo.findOne({
         where: { id: taxId },
       });

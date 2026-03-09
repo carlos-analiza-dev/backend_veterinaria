@@ -81,6 +81,7 @@ import { ProductosGanaderiaModule } from './productos_ganaderia/productos_ganade
 import { ProductoVentasModule } from './producto_ventas/producto_ventas.module';
 import { NotificacionesAdminsModule } from './notificaciones_admins/notificaciones_admins.module';
 import { GananciaPesoRazaModule } from './ganancia_peso_raza/ganancia_peso_raza.module';
+import { InventarioProductosGanaderiaModule } from './inventario_productos_ganaderia/inventario_productos_ganaderia.module';
 
 @Module({
   imports: [
@@ -231,6 +232,8 @@ import { GananciaPesoRazaModule } from './ganancia_peso_raza/ganancia_peso_raza.
     NotificacionesAdminsModule,
 
     GananciaPesoRazaModule,
+
+    InventarioProductosGanaderiaModule,
   ],
   controllers: [],
   providers: [],
