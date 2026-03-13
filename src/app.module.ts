@@ -82,6 +82,8 @@ import { ProductoVentasModule } from './producto_ventas/producto_ventas.module';
 import { NotificacionesAdminsModule } from './notificaciones_admins/notificaciones_admins.module';
 import { GananciaPesoRazaModule } from './ganancia_peso_raza/ganancia_peso_raza.module';
 import { InventarioProductosGanaderiaModule } from './inventario_productos_ganaderia/inventario_productos_ganaderia.module';
+import { DiagnosticoModule } from './diagnostico/diagnostico.module';
+import { AlimentacionAnimalModule } from './alimentacion_animal/alimentacion_animal.module';
 
 @Module({
   imports: [
@@ -234,6 +236,10 @@ import { InventarioProductosGanaderiaModule } from './inventario_productos_ganad
     GananciaPesoRazaModule,
 
     InventarioProductosGanaderiaModule,
+
+    DiagnosticoModule,
+
+    AlimentacionAnimalModule,
   ],
   controllers: [],
   providers: [],
