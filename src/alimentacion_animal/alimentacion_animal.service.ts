@@ -135,11 +135,66 @@ export class AlimentacionAnimalService {
   }
 
   async update(id: string, dto: UpdateAlimentacionAnimalDto) {
-    const alimentacion = await this.findOne(id);
+    try {
+      const alimentacion = await this.findOne(id);
 
-    Object.assign(alimentacion, dto);
+      if (dto.animalId) {
+        const animal = await this.animalRepository.findOne({
+          where: { id: dto.animalId },
+        });
 
-    return this.alimentacionRepository.save(alimentacion);
+        if (!animal) {
+          throw new NotFoundException('Animal no encontrado');
+        }
+      }
+
+      const animalId = dto.animalId || alimentacion.animal.id;
+
+      if (dto.tipoAlimento || dto.animalId) {
+        const tipoAlimento = dto.tipoAlimento || alimentacion.tipoAlimento;
+
+        const alimentoExistente = await this.alimentacionRepository
+          .createQueryBuilder('alimentacion')
+          .where('alimentacion.animalId = :animalId', { animalId })
+          .andWhere('alimentacion.tipoAlimento = :tipoAlimento', {
+            tipoAlimento,
+          })
+          .andWhere('alimentacion.id != :id', { id })
+          .getOne();
+
+        if (alimentoExistente) {
+          throw new BadRequestException(
+            `Este animal ya tiene el alimento de tipo ${tipoAlimento} asociado a su alimentación`,
+          );
+        }
+      }
+
+      if (dto.animalId) {
+        const animal = await this.animalRepository.findOne({
+          where: { id: dto.animalId },
+        });
+        alimentacion.animal = animal;
+      }
+
+      Object.assign(alimentacion, {
+        ...(dto.tipoAlimento && { tipoAlimento: dto.tipoAlimento }),
+        ...(dto.origen && { origen: dto.origen }),
+        ...(dto.cantidad && { cantidad: dto.cantidad }),
+        ...(dto.unidad && { unidad: dto.unidad }),
+        ...(dto.costo_diario && { costo_diario: dto.costo_diario }),
+        ...(dto.fecha && { fecha: dto.fecha }),
+      });
+
+      const alimentacionActualizada =
+        await this.alimentacionRepository.save(alimentacion);
+
+      return {
+        message: 'Registro de alimentación actualizado con éxito',
+        data: instanceToPlain(alimentacionActualizada),
+      };
+    } catch (error) {
+      throw error;
+    }
   }
 
   async remove(id: string) {

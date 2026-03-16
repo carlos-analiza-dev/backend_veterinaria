@@ -1,26 +1,44 @@
 import { Injectable } from '@nestjs/common';
 import { CreateDiagnosticoDto } from './dto/create-diagnostico.dto';
-import { UpdateDiagnosticoDto } from './dto/update-diagnostico.dto';
 
 @Injectable()
 export class DiagnosticoService {
-  create(createDiagnosticoDto: CreateDiagnosticoDto) {
-    return 'This action adds a new diagnostico';
-  }
+  async create(dto: CreateDiagnosticoDto) {
+    const prompt = `
+Eres un veterinario experto.
 
-  findAll() {
-    return `This action returns all diagnostico`;
-  }
+Animal:
+Especie: ${dto.especie}
+Raza: ${dto.raza}
+Edad: ${dto.edad} años
 
-  findOne(id: number) {
-    return `This action returns a #${id} diagnostico`;
-  }
+Síntomas:
+${dto.sintomas.join(', ')}
 
-  update(id: number, updateDiagnosticoDto: UpdateDiagnosticoDto) {
-    return `This action updates a #${id} diagnostico`;
-  }
+Devuelve posibles diagnósticos veterinarios.
+`;
 
-  remove(id: number) {
-    return `This action removes a #${id} diagnostico`;
+    const response = await fetch(`${process.env.URL_API_IA}`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'deepseek/deepseek-chat',
+        messages: [
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+      }),
+    });
+
+    const data = await response.json();
+
+    return {
+      diagnostico: data.choices[0].message.content,
+    };
   }
 }
