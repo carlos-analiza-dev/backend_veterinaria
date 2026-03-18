@@ -7,7 +7,7 @@ import { CreatePesoHistorialDto } from './dto/create-peso_historial.dto';
 import { UpdatePesoHistorialDto } from './dto/update-peso_historial.dto';
 import { PesoHistorial } from './entities/peso_historial.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { LessThan, MoreThan, Repository } from 'typeorm';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 
 @Injectable()
@@ -83,16 +83,22 @@ export class PesoHistorialService {
   async findAllPesoByAnimal(id: string) {
     try {
       const animalExiste = await this.animalRepo.findOne({ where: { id } });
-      if (!animalExiste)
+
+      if (!animalExiste) {
         throw new NotFoundException('No existe el animal seleccionado');
+      }
+
       const pesoAnimal = await this.pesoHistorialRepo.find({
         where: { animal: { id } },
+        order: { fecha: 'ASC' },
       });
+
       if (!pesoAnimal || pesoAnimal.length === 0) {
         throw new NotFoundException(
           'No se obtuvo historial de peso para este animal',
         );
       }
+
       return pesoAnimal;
     } catch (error) {
       throw error;
@@ -128,17 +134,84 @@ export class PesoHistorialService {
   }
 
   async update(id: string, dto: UpdatePesoHistorialDto) {
-    const registro = await this.findOne(id);
+    const registro = await this.pesoHistorialRepo.findOne({
+      where: { id },
+      relations: ['animal'],
+    });
+
+    if (!registro) {
+      throw new NotFoundException('Registro no encontrado');
+    }
+
+    const fechaNueva: Date = dto.fecha
+      ? new Date(dto.fecha + 'T00:00:00')
+      : registro.fecha;
+    const pesoNuevo = dto.peso ?? registro.peso;
+
+    const anterior = await this.pesoHistorialRepo.findOne({
+      where: {
+        animal: { id: registro.animal.id },
+        fecha: LessThan(registro.fecha),
+      },
+      order: { fecha: 'DESC' },
+    });
+
+    const siguiente = await this.pesoHistorialRepo.findOne({
+      where: {
+        animal: { id: registro.animal.id },
+        fecha: MoreThan(registro.fecha),
+      },
+      order: { fecha: 'ASC' },
+    });
+
+    let gananciaDiaria = 0;
+
+    if (anterior) {
+      const dias =
+        (fechaNueva.getTime() - new Date(anterior.fecha).getTime()) /
+        (1000 * 60 * 60 * 24);
+
+      if (dias <= 0) {
+        throw new BadRequestException(
+          'La fecha debe ser mayor al registro anterior',
+        );
+      }
+
+      gananciaDiaria = (pesoNuevo - Number(anterior.peso)) / dias;
+    }
+
+    if (siguiente) {
+      const dias =
+        (new Date(siguiente.fecha).getTime() - fechaNueva.getTime()) /
+        (1000 * 60 * 60 * 24);
+
+      if (dias <= 0) {
+        throw new BadRequestException(
+          'La fecha debe ser menor al siguiente registro',
+        );
+      }
+    }
 
     Object.assign(registro, {
       ...dto,
-      fecha: dto.fecha ? new Date(dto.fecha) : registro.fecha,
+      fecha: fechaNueva,
+      peso: pesoNuevo,
     });
 
     await this.pesoHistorialRepo.save(registro);
 
+    if (siguiente) {
+      const dias =
+        (new Date(siguiente.fecha).getTime() - fechaNueva.getTime()) /
+        (1000 * 60 * 60 * 24);
+
+      const nuevaGanancia = (Number(siguiente.peso) - pesoNuevo) / dias;
+      await this.pesoHistorialRepo.save(siguiente);
+    }
+
     return {
       message: 'Registro actualizado correctamente',
+      gananciaDiaria: Number(gananciaDiaria.toFixed(2)),
       data: registro,
     };
   }

@@ -1,5 +1,6 @@
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsDateString,
   IsOptional,
   IsPositive,
@@ -100,4 +101,20 @@ export class PaginationDto {
   @IsOptional()
   @IsDateString()
   year?: number;
+
+  @IsOptional()
+  @IsString()
+  animalId?: string;
+
+  @IsOptional()
+  @IsString()
+  especie?: string;
+
+  @IsOptional()
+  @IsString()
+  intensidad?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  activos?: boolean;
 }

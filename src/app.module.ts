@@ -84,6 +84,7 @@ import { GananciaPesoRazaModule } from './ganancia_peso_raza/ganancia_peso_raza.
 import { InventarioProductosGanaderiaModule } from './inventario_productos_ganaderia/inventario_productos_ganaderia.module';
 import { DiagnosticoModule } from './diagnostico/diagnostico.module';
 import { AlimentacionAnimalModule } from './alimentacion_animal/alimentacion_animal.module';
+import { CelosAnimalModule } from './celos_animal/celos_animal.module';
 
 @Module({
   imports: [
@@ -240,6 +241,8 @@ import { AlimentacionAnimalModule } from './alimentacion_animal/alimentacion_ani
     DiagnosticoModule,
 
     AlimentacionAnimalModule,
+
+    CelosAnimalModule,
   ],
   controllers: [],
   providers: [],

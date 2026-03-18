@@ -1,0 +1,15 @@
+export enum IntensidadCelosAnimal {
+  BAJO = 'BAJO',
+  MEDIO = 'MEDIO',
+  ALTO = 'ALTO',
+  MUY_ALTO = 'MUY_ALTO',
+}
+
+export enum DeteccionCelo {
+  VISUAL = 'VISUAL',
+  PARCHE = 'PARCHE',
+  PODOMETRO = 'PODOMETRO',
+  COLLAR_ACTIVIDAD = 'COLLAR_ACTIVIDAD',
+  ULTRASONIDO = 'ULTRASONIDO',
+  MONTA_NATURAL = 'MONTA_NATURAL',
+}

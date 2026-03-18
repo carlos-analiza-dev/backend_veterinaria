@@ -1,4 +1,5 @@
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { CelosAnimal } from 'src/celos_animal/entities/celos_animal.entity';
 import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { ImagesAminale } from 'src/images_aminales/entities/images_aminale.entity';
@@ -194,6 +195,11 @@ export class AnimalFinca {
     cascade: true,
   })
   pesos: PesoHistorial[];
+
+  @OneToMany(() => CelosAnimal, (celo) => celo.animal, {
+    cascade: true,
+  })
+  celos: CelosAnimal[];
 
   get currentProfileImage(): ImagesAminale | null {
     if (!this.profileImages || this.profileImages.length === 0) return null;
