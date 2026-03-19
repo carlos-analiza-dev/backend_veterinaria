@@ -1,0 +1,118 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  HttpStatus,
+  Query,
+  ParseUUIDPipe,
+} from '@nestjs/common';
+import { ServiciosReproductivosService } from './servicios_reproductivos.service';
+import { CreateServiciosReproductivoDto } from './dto/create-servicios_reproductivo.dto';
+import { UpdateServiciosReproductivoDto } from './dto/update-servicios_reproductivo.dto';
+import { FilterServiciosDto } from './dto/filter-servicios.dto';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
+
+@Controller('servicios-reproductivos')
+export class ServiciosReproductivosController {
+  constructor(
+    private readonly serviciosReproductivosService: ServiciosReproductivosService,
+  ) {}
+
+  @Post()
+  @AuthCliente()
+  async create(@Body() createDto: CreateServiciosReproductivoDto) {
+    const servicio = await this.serviciosReproductivosService.create(createDto);
+    return {
+      statusCode: HttpStatus.CREATED,
+      message: 'Servicio reproductivo creado exitosamente',
+      data: servicio,
+    };
+  }
+
+  @Get()
+  @AuthCliente()
+  async findAll(@Query() filters: FilterServiciosDto) {
+    const result = await this.serviciosReproductivosService.findAll(filters);
+    return result;
+  }
+
+  @Get(':id')
+  @AuthCliente()
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    const servicio = await this.serviciosReproductivosService.findOne(id);
+    return {
+      statusCode: HttpStatus.OK,
+      data: servicio,
+    };
+  }
+
+  @Patch(':id')
+  @AuthCliente()
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateDto: UpdateServiciosReproductivoDto,
+  ) {
+    const servicio = await this.serviciosReproductivosService.update(
+      id,
+      updateDto,
+    );
+    return {
+      statusCode: HttpStatus.OK,
+      message: 'Servicio reproductivo actualizado exitosamente',
+      data: servicio,
+    };
+  }
+
+  @Delete(':id')
+  @AuthCliente()
+  async remove(@Param('id', ParseUUIDPipe) id: string) {
+    const result = await this.serviciosReproductivosService.remove(id);
+    return {
+      statusCode: HttpStatus.OK,
+      ...result,
+    };
+  }
+
+  @Get('hembra/:hembraId')
+  @AuthCliente()
+  async getPorHembra(@Param('hembraId', ParseUUIDPipe) hembraId: string) {
+    const servicios =
+      await this.serviciosReproductivosService.getServiciosPorHembra(hembraId);
+    return {
+      statusCode: HttpStatus.OK,
+      data: servicios,
+    };
+  }
+
+  @Get('pendientes/finca/:fincaId')
+  @AuthCliente()
+  async getPendientes(@Param('fincaId', ParseUUIDPipe) fincaId: string) {
+    const servicios =
+      await this.serviciosReproductivosService.getServiciosPendientes(fincaId);
+    return {
+      statusCode: HttpStatus.OK,
+      data: servicios,
+    };
+  }
+
+  @Get('estadisticas/finca/:fincaId')
+  @AuthCliente()
+  async getEstadisticas(
+    @Param('fincaId', ParseUUIDPipe) fincaId: string,
+    @Query('periodo') periodo: 'semana' | 'mes' | 'año' = 'mes',
+  ) {
+    const estadisticas =
+      await this.serviciosReproductivosService.getEstadisticasPorFinca(
+        fincaId,
+        periodo,
+      );
+    return {
+      statusCode: HttpStatus.OK,
+      data: estadisticas,
+    };
+  }
+}

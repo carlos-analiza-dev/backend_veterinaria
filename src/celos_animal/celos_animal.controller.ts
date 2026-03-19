@@ -42,6 +42,12 @@ export class CelosAnimalController {
     return this.celosAnimalService.getAnimalesEnCeloActivo(fincaId);
   }
 
+  @Get('proximo-celo/:fincaId')
+  @AuthCliente()
+  getAlertasProximosCelos(@Param('fincaId', ParseUUIDPipe) fincaId: string) {
+    return this.celosAnimalService.getAlertasProximosCelos(fincaId);
+  }
+
   @Get('estadisticas/:fincaId')
   @AuthCliente()
   getEstadisticas(

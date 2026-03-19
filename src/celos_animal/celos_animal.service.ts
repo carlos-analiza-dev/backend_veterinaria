@@ -1,4 +1,3 @@
-// celos_animal.service.ts
 import {
   Injectable,
   NotFoundException,
@@ -77,15 +76,7 @@ export class CelosAnimalService {
 
     await this.validarSinCeloActivo(animal.id, fechaInicio, fechaFin);
 
-    if (fechaFin && fechaFin <= fechaInicio) {
-      throw new BadRequestException(
-        'La fecha fin no puede ser menor o igual a la fecha de inicio',
-      );
-    }
-
-    if (fechaInicio > new Date()) {
-      throw new BadRequestException('No puedes registrar un celo en el futuro');
-    }
+    this.validarFechas(fechaInicio, fechaFin);
 
     if (!createCelosAnimalDto.numeroCelo) {
       createCelosAnimalDto.numeroCelo = await this.calcularNumeroCelo(
@@ -186,6 +177,59 @@ export class CelosAnimalService {
       offset,
       limit,
       totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  async getAlertasProximosCelos(fincaId?: string): Promise<{
+    proximos: Array<{
+      animalId: string;
+      identificador: string;
+      fechaProbable: Date;
+      diasRestantes: number;
+      nivelConfianza: number;
+    }>;
+    total: number;
+  }> {
+    const query = this.animalRepository
+      .createQueryBuilder('animal')
+      .leftJoinAndSelect('animal.especie', 'especie')
+      .leftJoinAndSelect('animal.finca', 'finca')
+      .where('animal.sexo = :sexo', { sexo: 'HEMBRA' })
+      .andWhere('animal.castrado = :castrado', { castrado: false });
+
+    if (fincaId) {
+      query.andWhere('finca.id = :fincaId', { fincaId });
+    }
+
+    const animales = await query.getMany();
+    const proximos = [];
+
+    for (const animal of animales) {
+      try {
+        const prediccion = await this.predecirProximoCelo(animal.id);
+        const hoy = new Date();
+        const diasRestantes = Math.ceil(
+          (prediccion.fechaProbable.getTime() - hoy.getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
+
+        if (diasRestantes >= 0 && diasRestantes <= 7) {
+          proximos.push({
+            animalId: animal.id,
+            identificador: animal.identificador,
+            fechaProbable: prediccion.fechaProbable,
+            diasRestantes,
+            nivelConfianza: prediccion.nivelConfianza,
+          });
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    return {
+      proximos: proximos.sort((a, b) => a.diasRestantes - b.diasRestantes),
+      total: proximos.length,
     };
   }
 
@@ -502,6 +546,34 @@ export class CelosAnimalService {
         `La actualización causaría solapamiento con otro celo existente. ` +
           `ID del celo conflictivo: ${celo.id}`,
       );
+    }
+  }
+
+  private validarFechas(fechaInicio: Date, fechaFin?: Date): void {
+    const ahora = new Date();
+
+    if (fechaInicio > ahora) {
+      throw new BadRequestException('No puedes registrar un celo en el futuro');
+    }
+
+    if (fechaFin) {
+      if (fechaFin <= fechaInicio) {
+        throw new BadRequestException(
+          'La fecha fin debe ser posterior a la fecha de inicio',
+        );
+      }
+
+      if (fechaFin > ahora) {
+        throw new BadRequestException('La fecha fin no puede ser futura');
+      }
+
+      const diasDiferencia =
+        (fechaFin.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24);
+      if (diasDiferencia > 30) {
+        throw new BadRequestException(
+          'El período de celo no puede durar más de 30 días',
+        );
+      }
     }
   }
 }

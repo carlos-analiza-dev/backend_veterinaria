@@ -85,6 +85,8 @@ import { InventarioProductosGanaderiaModule } from './inventario_productos_ganad
 import { DiagnosticoModule } from './diagnostico/diagnostico.module';
 import { AlimentacionAnimalModule } from './alimentacion_animal/alimentacion_animal.module';
 import { CelosAnimalModule } from './celos_animal/celos_animal.module';
+import { ServiciosReproductivosModule } from './servicios_reproductivos/servicios_reproductivos.module';
+import { DetallesServicioReproductivoModule } from './detalles_servicio_reproductivo/detalles_servicio_reproductivo.module';
 
 @Module({
   imports: [
@@ -243,6 +245,10 @@ import { CelosAnimalModule } from './celos_animal/celos_animal.module';
     AlimentacionAnimalModule,
 
     CelosAnimalModule,
+
+    ServiciosReproductivosModule,
+
+    DetallesServicioReproductivoModule,
   ],
   controllers: [],
   providers: [],
