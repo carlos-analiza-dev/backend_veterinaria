@@ -5,13 +5,15 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CelosAnimal } from './entities/celos_animal.entity';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
+import { ServicioReproductivo } from 'src/servicios_reproductivos/entities/servicios_reproductivo.entity';
+import { CelosRegularService } from './celos-regular.service';
 
 @Module({
   controllers: [CelosAnimalController],
   imports: [
-    TypeOrmModule.forFeature([CelosAnimal, AnimalFinca]),
+    TypeOrmModule.forFeature([CelosAnimal, AnimalFinca, ServicioReproductivo]),
     AuthClientesModule,
   ],
-  providers: [CelosAnimalService],
+  providers: [CelosAnimalService, CelosRegularService],
 })
 export class CelosAnimalModule {}

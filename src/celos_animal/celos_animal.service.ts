@@ -2,9 +2,16 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, LessThanOrEqual, MoreThanOrEqual } from 'typeorm';
+import {
+  Repository,
+  Between,
+  LessThanOrEqual,
+  MoreThanOrEqual,
+  Not,
+} from 'typeorm';
 import { CreateCelosAnimalDto } from './dto/create-celos_animal.dto';
 import { UpdateCelosAnimalDto } from './dto/update-celos_animal.dto';
 import { CelosAnimal } from './entities/celos_animal.entity';
@@ -12,6 +19,9 @@ import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { instanceToPlain } from 'class-transformer';
+import { ServicioReproductivo } from 'src/servicios_reproductivos/entities/servicios_reproductivo.entity';
+import { EstadoCeloAnimal } from 'src/interfaces/celos.animal.enum';
+import { EstadoServicio } from 'src/interfaces/servicios-reproductivos.enum';
 
 @Injectable()
 export class CelosAnimalService {
@@ -20,6 +30,8 @@ export class CelosAnimalService {
     private celosAnimalRepository: Repository<CelosAnimal>,
     @InjectRepository(AnimalFinca)
     private animalRepository: Repository<AnimalFinca>,
+    @InjectRepository(ServicioReproductivo)
+    private servicioRepository: Repository<ServicioReproductivo>,
   ) {}
 
   private readonly ESPECIE_CONFIG = {
@@ -194,7 +206,7 @@ export class CelosAnimalService {
       .createQueryBuilder('animal')
       .leftJoinAndSelect('animal.especie', 'especie')
       .leftJoinAndSelect('animal.finca', 'finca')
-      .where('animal.sexo = :sexo', { sexo: 'HEMBRA' })
+      .where('animal.sexo = :sexo', { sexo: 'Hembra' })
       .andWhere('animal.castrado = :castrado', { castrado: false });
 
     if (fincaId) {
@@ -213,13 +225,20 @@ export class CelosAnimalService {
             (1000 * 60 * 60 * 24),
         );
 
-        if (diasRestantes >= 0 && diasRestantes <= 7) {
+        let nivel = 'BAJO';
+
+        if (diasRestantes <= 7) nivel = 'ALTO';
+        else if (diasRestantes <= 15) nivel = 'MEDIO';
+        else if (diasRestantes <= 30) nivel = 'BAJO';
+
+        if (diasRestantes >= 0 && diasRestantes <= 30) {
           proximos.push({
             animalId: animal.id,
             identificador: animal.identificador,
             fechaProbable: prediccion.fechaProbable,
             diasRestantes,
             nivelConfianza: prediccion.nivelConfianza,
+            alerta: nivel,
           });
         }
       } catch (error) {
@@ -313,8 +332,10 @@ export class CelosAnimalService {
       );
     }
 
-    const especie = animal.especie.nombre as keyof typeof this.ESPECIE_CONFIG;
-    const config = this.ESPECIE_CONFIG[especie] || this.ESPECIE_CONFIG.BOVINO;
+    const especieKey = animal.especie.nombre.toUpperCase();
+
+    const config =
+      this.ESPECIE_CONFIG[especieKey as keyof typeof this.ESPECIE_CONFIG];
 
     let intervaloPromedio = config.cicloDias.promedio;
     if (ultimosCelos.length >= 2) {
@@ -350,23 +371,6 @@ export class CelosAnimalService {
       nivelConfianza,
       recomendaciones: `Observar al animal entre el ${ventanaInicio.toLocaleDateString()} y ${ventanaFin.toLocaleDateString()}. ${config.mejorMomentoIA}`,
     };
-  }
-
-  async finalizarCelo(id: string, fechaFin?: Date): Promise<CelosAnimal> {
-    const celo = await this.findOne(id);
-
-    if (celo.fechaFin) {
-      throw new BadRequestException('Este celo ya ha sido finalizado');
-    }
-
-    celo.fechaFin = fechaFin || new Date();
-    await this.validarDuracionCelo(
-      celo.animal.especie.nombre,
-      celo.fechaInicio,
-      celo.fechaFin,
-    );
-
-    return await this.celosAnimalRepository.save(celo);
   }
 
   async getEstadisticasPorFinca(
@@ -435,7 +439,7 @@ export class CelosAnimalService {
       );
     }
 
-    if (animal.sexo?.toUpperCase() !== 'HEMBRA') {
+    if (animal.sexo?.toUpperCase() !== 'Hembra') {
       throw new BadRequestException('Solo las hembras pueden registrar celo');
     }
   }
@@ -573,6 +577,271 @@ export class CelosAnimalService {
         throw new BadRequestException(
           'El período de celo no puede durar más de 30 días',
         );
+      }
+    }
+  }
+
+  //SERVICIOS
+
+  async actualizarEstadoPorServicio(celoId: string): Promise<CelosAnimal> {
+    const celo = await this.findOne(celoId);
+
+    if (!celo) {
+      throw new NotFoundException(`Celo con ID ${celoId} no encontrado`);
+    }
+
+    const servicios = await this.servicioRepository.find({
+      where: { celo_asociado: { id: celoId } },
+    });
+
+    if (servicios.length > 0) {
+      if (celo.estado === EstadoCeloAnimal.ACTIVO) {
+        celo.estado = EstadoCeloAnimal.SERVIDO;
+        await this.celosAnimalRepository.save(celo);
+      }
+
+      const servicioExitoso = servicios.some(
+        (servicio) => servicio.exitoso === true,
+      );
+
+      if (servicioExitoso && celo.fechaFin) {
+        celo.estado = EstadoCeloAnimal.PREÑADO;
+        await this.celosAnimalRepository.save(celo);
+      }
+    } else if (celo.fechaFin && celo.fechaFin <= new Date()) {
+      if (celo.estado !== EstadoCeloAnimal.FINALIZADO) {
+        celo.estado = EstadoCeloAnimal.SIN_SERVICIO;
+        await this.celosAnimalRepository.save(celo);
+      }
+    }
+
+    return celo;
+  }
+
+  async finalizarCelo(id: string, fechaFin?: Date): Promise<CelosAnimal> {
+    const celo = await this.findOne(id);
+
+    if (celo.fechaFin) {
+      throw new BadRequestException('Este celo ya ha sido finalizado');
+    }
+
+    celo.fechaFin = fechaFin || new Date();
+    await this.validarDuracionCelo(
+      celo.animal.especie.nombre,
+      celo.fechaInicio,
+      celo.fechaFin,
+    );
+
+    const servicios = await this.servicioRepository.find({
+      where: { celo_asociado: { id: id } },
+    });
+
+    if (servicios.length > 0) {
+      celo.estado = EstadoCeloAnimal.SERVIDO;
+    } else {
+      celo.estado = EstadoCeloAnimal.SIN_SERVICIO;
+    }
+
+    return await this.celosAnimalRepository.save(celo);
+  }
+
+  async actualizarEstadoPorNuevoServicio(servicioId: string): Promise<void> {
+    const servicio = await this.servicioRepository.findOne({
+      where: { id: servicioId },
+      relations: ['celo_asociado'],
+    });
+
+    if (!servicio?.celo_asociado) {
+      return;
+    }
+
+    const celo = servicio.celo_asociado;
+
+    if (celo.estado === EstadoCeloAnimal.ACTIVO) {
+      celo.estado = EstadoCeloAnimal.SERVIDO;
+      await this.celosAnimalRepository.save(celo);
+    }
+  }
+
+  async actualizarPorConfirmacionServicio(
+    servicioId: string,
+    exitoso: boolean,
+  ): Promise<void> {
+    const servicio = await this.servicioRepository.findOne({
+      where: { id: servicioId },
+      relations: ['celo_asociado'],
+    });
+
+    if (!servicio?.celo_asociado) {
+      return;
+    }
+
+    const celo = servicio.celo_asociado;
+
+    if (exitoso && celo.fechaFin && celo.fechaFin <= new Date()) {
+      celo.estado = EstadoCeloAnimal.PREÑADO;
+      await this.celosAnimalRepository.save(celo);
+    } else if (!exitoso) {
+      const otrosServicios = await this.servicioRepository.find({
+        where: {
+          celo_asociado: { id: celo.id },
+          id: Not(servicioId),
+        },
+      });
+
+      const tieneExitosos = otrosServicios.some((s) => s.exitoso === true);
+      const tienePendientes = otrosServicios.some(
+        (s) => s.exitoso === null || s.estado === EstadoServicio.REALIZADO,
+      );
+
+      if (tieneExitosos) {
+        celo.estado = EstadoCeloAnimal.PREÑADO;
+        await this.celosAnimalRepository.save(celo);
+      } else if (
+        !tienePendientes &&
+        celo.fechaFin &&
+        celo.fechaFin <= new Date()
+      ) {
+        celo.estado = EstadoCeloAnimal.NO_FECUNDADO;
+        await this.celosAnimalRepository.save(celo);
+      }
+    }
+  }
+
+  async actualizarEstadosCelosVencidos(): Promise<{
+    actualizados: number;
+    detalles: Array<{
+      celoId: string;
+      estadoAnterior: string;
+      estadoNuevo: string;
+      razon: string;
+    }>;
+  }> {
+    const hoy = new Date();
+
+    const celosVencidos = await this.celosAnimalRepository
+      .createQueryBuilder('celo')
+      .leftJoinAndSelect('celo.animal', 'animal')
+      .leftJoinAndSelect('animal.especie', 'especie')
+      .where('celo.fechaFin IS NOT NULL')
+      .andWhere('celo.fechaFin <= :hoy', { hoy })
+      .andWhere('celo.estado IN (:...estados)', {
+        estados: [EstadoCeloAnimal.ACTIVO, EstadoCeloAnimal.SERVIDO],
+      })
+      .getMany();
+
+    const resultados = [];
+
+    for (const celo of celosVencidos) {
+      const estadoAnterior = celo.estado;
+      let estadoNuevo = celo.estado;
+      let razon = '';
+
+      const serviciosAsociados = await this.servicioRepository.find({
+        where: { celo_asociado: { id: celo.id } },
+        relations: ['celo_asociado', 'detalles'],
+      });
+
+      if (serviciosAsociados.length === 0) {
+        estadoNuevo = EstadoCeloAnimal.SIN_SERVICIO;
+        razon = 'Celo finalizado sin ningún servicio asociado';
+      } else {
+        const servicioExitoso = serviciosAsociados.some(
+          (servicio) => servicio.exitoso === true,
+        );
+
+        const serviciosRealizados = serviciosAsociados.filter(
+          (servicio) =>
+            servicio.estado === EstadoServicio.REALIZADO &&
+            servicio.exitoso === false,
+        );
+
+        const serviciosFallidos = serviciosAsociados.filter(
+          (servicio) => servicio.estado === EstadoServicio.FALLIDO,
+        );
+
+        if (servicioExitoso) {
+          estadoNuevo = EstadoCeloAnimal.PREÑADO;
+          razon = 'Servicio exitoso confirmado durante este celo';
+        } else if (serviciosRealizados.length > 0) {
+          estadoNuevo = EstadoCeloAnimal.SERVIDO;
+          razon = `Servicio(s) realizado(s) (${serviciosRealizados.length}) pendiente de confirmación de éxito`;
+        } else if (serviciosFallidos.length === serviciosAsociados.length) {
+          estadoNuevo = EstadoCeloAnimal.NO_FECUNDADO;
+          razon = 'Todos los servicios asociados fueron fallidos';
+        } else {
+          const tieneProgramados = serviciosAsociados.some(
+            (s) => s.estado === EstadoServicio.PROGRAMADO,
+          );
+
+          if (tieneProgramados && celo.fechaFin <= hoy) {
+            estadoNuevo = EstadoCeloAnimal.SIN_SERVICIO;
+            razon = 'Celo finalizado con servicios programados no realizados';
+          } else {
+            estadoNuevo = EstadoCeloAnimal.SERVIDO;
+            razon = 'Servicios asociados registrados, pendiente de evaluación';
+          }
+        }
+      }
+
+      if (estadoAnterior !== estadoNuevo) {
+        celo.estado = estadoNuevo;
+        await this.celosAnimalRepository.save(celo);
+
+        resultados.push({
+          celoId: celo.id,
+          estadoAnterior,
+          estadoNuevo,
+          razon,
+        });
+      }
+    }
+
+    return {
+      actualizados: resultados.length,
+      detalles: resultados,
+    };
+  }
+
+  async programarActualizacionAutomatica(): Promise<void> {
+    await this.actualizarEstadosCelosVencidos();
+
+    const celosActivos = await this.celosAnimalRepository
+      .createQueryBuilder('celo')
+      .leftJoinAndSelect('celo.animal', 'animal')
+      .leftJoinAndSelect('animal.especie', 'especie')
+      .where('celo.fechaFin IS NULL')
+      .andWhere('celo.estado = :estado', { estado: EstadoCeloAnimal.ACTIVO })
+      .getMany();
+
+    for (const celo of celosActivos) {
+      const ahora = new Date();
+      const duracionHorasActual =
+        (ahora.getTime() - celo.fechaInicio.getTime()) / (1000 * 60 * 60);
+
+      const especieKey = celo.animal.especie.nombre.toUpperCase();
+      const config =
+        this.ESPECIE_CONFIG[especieKey as keyof typeof this.ESPECIE_CONFIG];
+
+      if (config && duracionHorasActual > config.duracionHoras.max) {
+        celo.fechaFin = ahora;
+
+        const servicios = await this.servicioRepository.find({
+          where: { celo_asociado: { id: celo.id } },
+        });
+
+        if (servicios.length > 0) {
+          const tieneExitosos = servicios.some((s) => s.exitoso === true);
+          if (tieneExitosos) {
+            celo.estado = EstadoCeloAnimal.PREÑADO;
+          } else {
+            celo.estado = EstadoCeloAnimal.SERVIDO;
+          }
+        } else {
+          celo.estado = EstadoCeloAnimal.SIN_SERVICIO;
+        }
+
+        await this.celosAnimalRepository.save(celo);
       }
     }
   }

@@ -1,6 +1,7 @@
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import {
   DeteccionCelo,
+  EstadoCeloAnimal,
   IntensidadCelosAnimal,
 } from 'src/interfaces/celos.animal.enum';
 import {
@@ -46,6 +47,13 @@ export class CelosAnimal {
 
   @Column({ type: 'varchar', default: 'N/A' })
   observaciones: string;
+
+  @Column({
+    type: 'enum',
+    enum: EstadoCeloAnimal,
+    default: EstadoCeloAnimal.ACTIVO,
+  })
+  estado: EstadoCeloAnimal;
 
   @Column({ type: 'jsonb', nullable: true })
   signos_observados: {

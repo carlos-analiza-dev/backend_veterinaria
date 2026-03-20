@@ -87,9 +87,11 @@ import { AlimentacionAnimalModule } from './alimentacion_animal/alimentacion_ani
 import { CelosAnimalModule } from './celos_animal/celos_animal.module';
 import { ServiciosReproductivosModule } from './servicios_reproductivos/servicios_reproductivos.module';
 import { DetallesServicioReproductivoModule } from './detalles_servicio_reproductivo/detalles_servicio_reproductivo.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ConfigModule.forRoot(),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'uploads'),
