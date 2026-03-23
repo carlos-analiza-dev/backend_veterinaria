@@ -2,16 +2,9 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import {
-  Repository,
-  Between,
-  LessThanOrEqual,
-  MoreThanOrEqual,
-  Not,
-} from 'typeorm';
+import { Repository, Not } from 'typeorm';
 import { CreateCelosAnimalDto } from './dto/create-celos_animal.dto';
 import { UpdateCelosAnimalDto } from './dto/update-celos_animal.dto';
 import { CelosAnimal } from './entities/celos_animal.entity';
@@ -22,6 +15,8 @@ import { instanceToPlain } from 'class-transformer';
 import { ServicioReproductivo } from 'src/servicios_reproductivos/entities/servicios_reproductivo.entity';
 import { EstadoCeloAnimal } from 'src/interfaces/celos.animal.enum';
 import { EstadoServicio } from 'src/interfaces/servicios-reproductivos.enum';
+import { CelosAnimalValidationService } from './celos-animal-validation.service';
+import { ESPECIE_CONFIG } from 'src/interfaces/especies-config';
 
 @Injectable()
 export class CelosAnimalService {
@@ -32,45 +27,13 @@ export class CelosAnimalService {
     private animalRepository: Repository<AnimalFinca>,
     @InjectRepository(ServicioReproductivo)
     private servicioRepository: Repository<ServicioReproductivo>,
+    private validationService: CelosAnimalValidationService,
   ) {}
-
-  private readonly ESPECIE_CONFIG = {
-    BOVINO: {
-      duracionHoras: { min: 6, max: 30, promedio: 18 },
-      cicloDias: { min: 18, max: 24, promedio: 21 },
-      mejorMomentoIA: '12-18 horas después del inicio',
-      coloresSecrecion: ['clara', 'transparente', 'viscosa'],
-    },
-    EQUINO: {
-      duracionHoras: { min: 96, max: 168, promedio: 120 },
-      cicloDias: { min: 19, max: 22, promedio: 21 },
-      mejorMomentoIA: 'Cada 48 horas durante el celo',
-      coloresSecrecion: ['blanquecina', 'amarillenta'],
-    },
-    CAPRINO: {
-      duracionHoras: { min: 24, max: 48, promedio: 36 },
-      cicloDias: { min: 18, max: 21, promedio: 19 },
-      mejorMomentoIA: '12-24 horas después del inicio',
-      coloresSecrecion: ['clara', 'lechosa'],
-    },
-    PORCINO: {
-      duracionHoras: { min: 48, max: 72, promedio: 60 },
-      cicloDias: { min: 18, max: 21, promedio: 19 },
-      mejorMomentoIA: '24-36 horas después del inicio',
-      coloresSecrecion: ['clara', 'viscosa'],
-    },
-    OVINO: {
-      duracionHoras: { min: 24, max: 36, promedio: 30 },
-      cicloDias: { min: 14, max: 19, promedio: 17 },
-      mejorMomentoIA: '12-24 horas después del inicio',
-      coloresSecrecion: ['clara', 'turbia'],
-    },
-  };
 
   async create(createCelosAnimalDto: CreateCelosAnimalDto) {
     const animal = await this.animalRepository.findOne({
       where: { id: createCelosAnimalDto.animalId },
-      relations: ['especie'],
+      relations: ['especie', 'celos'],
     });
 
     if (!animal) {
@@ -79,25 +42,29 @@ export class CelosAnimalService {
       );
     }
 
-    this.validarAnimalParaCelo(animal);
+    await this.validationService.validarAnimalParaCelo(animal);
+    await this.validationService.validarAnimalNoPreñado(animal);
 
     const fechaInicio = new Date(createCelosAnimalDto.fechaInicio);
     const fechaFin = createCelosAnimalDto.fechaFin
       ? new Date(createCelosAnimalDto.fechaFin)
       : null;
 
-    await this.validarSinCeloActivo(animal.id, fechaInicio, fechaFin);
+    await this.validationService.validarSinCeloActivo(
+      animal.id,
+      fechaInicio,
+      fechaFin,
+    );
 
-    this.validarFechas(fechaInicio, fechaFin);
+    this.validationService.validarFechas(fechaInicio, fechaFin);
 
     if (!createCelosAnimalDto.numeroCelo) {
-      createCelosAnimalDto.numeroCelo = await this.calcularNumeroCelo(
-        animal.id,
-      );
+      createCelosAnimalDto.numeroCelo =
+        await this.validationService.calcularNumeroCelo(animal.id);
     }
 
     if (fechaFin) {
-      await this.validarDuracionCelo(
+      await this.validationService.validarDuracionCelo(
         animal.especie.nombre,
         fechaInicio,
         fechaFin,
@@ -105,7 +72,7 @@ export class CelosAnimalService {
     }
 
     if (createCelosAnimalDto.signos_observados?.secreciones) {
-      this.validarSecreciones(
+      this.validationService.validarSecreciones(
         animal.especie.nombre,
         createCelosAnimalDto.signos_observados.secreciones,
       );
@@ -272,7 +239,7 @@ export class CelosAnimalService {
     const celo = await this.findOne(id);
 
     if (updateCelosAnimalDto.fechaFin) {
-      await this.validarDuracionCelo(
+      await this.validationService.validarDuracionCelo(
         celo.animal.especie.nombre,
         celo.fechaInicio,
         new Date(updateCelosAnimalDto.fechaFin),
@@ -287,6 +254,22 @@ export class CelosAnimalService {
     const celo = await this.findOne(id);
     await this.celosAnimalRepository.remove(celo);
     return { message: 'Registro de celo eliminado correctamente' };
+  }
+
+  async getCelosActivosByAnimal(animalId: string): Promise<CelosAnimal[]> {
+    const fechaActual = new Date();
+
+    return await this.celosAnimalRepository
+      .createQueryBuilder('celo')
+      .leftJoinAndSelect('celo.animal', 'animal')
+      .where('celo.animalId = :animalId', { animalId })
+      .andWhere('celo.estado = :estado', { estado: EstadoCeloAnimal.ACTIVO })
+      .andWhere('celo.fechaInicio <= :fechaActual', { fechaActual })
+      .andWhere('(celo.fechaFin IS NULL OR celo.fechaFin >= :fechaActual)', {
+        fechaActual,
+      })
+      .orderBy('celo.fechaInicio', 'DESC')
+      .getMany();
   }
 
   async getAnimalesEnCeloActivo(fincaId?: string): Promise<CelosAnimal[]> {
@@ -334,8 +317,7 @@ export class CelosAnimalService {
 
     const especieKey = animal.especie.nombre.toUpperCase();
 
-    const config =
-      this.ESPECIE_CONFIG[especieKey as keyof typeof this.ESPECIE_CONFIG];
+    const config = ESPECIE_CONFIG[especieKey as keyof typeof ESPECIE_CONFIG];
 
     let intervaloPromedio = config.cicloDias.promedio;
     if (ultimosCelos.length >= 2) {
@@ -432,155 +414,6 @@ export class CelosAnimalService {
     };
   }
 
-  private validarAnimalParaCelo(animal: AnimalFinca): void {
-    if (animal.castrado || animal.esterelizado) {
-      throw new BadRequestException(
-        'El animal está castrado/esterilizado, no puede presentar celo',
-      );
-    }
-
-    if (animal.sexo?.toUpperCase() !== 'Hembra') {
-      throw new BadRequestException('Solo las hembras pueden registrar celo');
-    }
-  }
-
-  private async calcularNumeroCelo(animalId: string): Promise<number> {
-    const count = await this.celosAnimalRepository.count({
-      where: { animal: { id: animalId } },
-    });
-    return count + 1;
-  }
-
-  private async validarDuracionCelo(
-    especie: string,
-    fechaInicio: Date,
-    fechaFin: Date,
-  ): Promise<void> {
-    const duracionHoras =
-      (fechaFin.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60);
-    const config =
-      this.ESPECIE_CONFIG[especie as keyof typeof this.ESPECIE_CONFIG];
-
-    if (
-      config &&
-      (duracionHoras < config.duracionHoras.min ||
-        duracionHoras > config.duracionHoras.max)
-    ) {
-      throw new BadRequestException(
-        `La duración del celo para ${especie} debe estar entre ${config.duracionHoras.min} y ${config.duracionHoras.max} horas. ` +
-          `Duración registrada: ${duracionHoras.toFixed(1)} horas`,
-      );
-    }
-  }
-
-  private validarSecreciones(especie: string, secreciones: string): void {
-    const config =
-      this.ESPECIE_CONFIG[especie as keyof typeof this.ESPECIE_CONFIG];
-    if (
-      config &&
-      !config.coloresSecrecion.includes(secreciones?.toLowerCase())
-    ) {
-      console.warn(`Secreción inusual para ${especie}: ${secreciones}`);
-    }
-  }
-
-  private async validarSinCeloActivo(
-    animalId: string,
-    fechaInicio: Date,
-    fechaFin?: Date,
-  ): Promise<void> {
-    const queryBuilder = this.celosAnimalRepository
-      .createQueryBuilder('celo')
-      .where('celo.animalId = :animalId', { animalId })
-      .andWhere(
-        '(' +
-          'celo.fechaFin IS NULL OR ' +
-          '(:fechaInicio BETWEEN celo.fechaInicio AND COALESCE(celo.fechaFin, :infinito) OR ' +
-          'COALESCE(:fechaFin, :infinito) BETWEEN celo.fechaInicio AND COALESCE(celo.fechaFin, :infinito) OR ' +
-          'celo.fechaInicio BETWEEN :fechaInicio AND COALESCE(:fechaFin, :infinito))' +
-          ')',
-        {
-          fechaInicio,
-          fechaFin: fechaFin || new Date('2999-12-31'),
-          infinito: new Date('2999-12-31'),
-        },
-      );
-
-    const celosActivos = await queryBuilder.getMany();
-
-    if (celosActivos.length > 0) {
-      const celo = celosActivos[0];
-      const estado = celo.fechaFin ? 'activo' : 'solapado';
-      throw new BadRequestException(
-        `El animal ya tiene un registro de celo ${estado} para este período. ` +
-          `Inicio: ${celo.fechaInicio.toLocaleDateString()} ${celo.fechaFin ? `- Fin: ${celo.fechaFin.toLocaleDateString()}` : '(activo)'}`,
-      );
-    }
-  }
-
-  private async validarSinCeloActivoParaUpdate(
-    celoId: string,
-    animalId: string,
-    fechaInicio: Date,
-    fechaFin?: Date,
-  ): Promise<void> {
-    const queryBuilder = this.celosAnimalRepository
-      .createQueryBuilder('celo')
-      .where('celo.animalId = :animalId', { animalId })
-      .andWhere('celo.id != :celoId', { celoId })
-      .andWhere(
-        '(' +
-          'celo.fechaFin IS NULL OR ' +
-          '(:fechaInicio BETWEEN celo.fechaInicio AND COALESCE(celo.fechaFin, :infinito) OR ' +
-          'COALESCE(:fechaFin, :infinito) BETWEEN celo.fechaInicio AND COALESCE(celo.fechaFin, :infinito) OR ' +
-          'celo.fechaInicio BETWEEN :fechaInicio AND COALESCE(:fechaFin, :infinito))' +
-          ')',
-        {
-          fechaInicio,
-          fechaFin: fechaFin || new Date('2999-12-31'),
-          infinito: new Date('2999-12-31'),
-        },
-      );
-
-    const celosActivos = await queryBuilder.getMany();
-
-    if (celosActivos.length > 0) {
-      const celo = celosActivos[0];
-      throw new BadRequestException(
-        `La actualización causaría solapamiento con otro celo existente. ` +
-          `ID del celo conflictivo: ${celo.id}`,
-      );
-    }
-  }
-
-  private validarFechas(fechaInicio: Date, fechaFin?: Date): void {
-    const ahora = new Date();
-
-    if (fechaInicio > ahora) {
-      throw new BadRequestException('No puedes registrar un celo en el futuro');
-    }
-
-    if (fechaFin) {
-      if (fechaFin <= fechaInicio) {
-        throw new BadRequestException(
-          'La fecha fin debe ser posterior a la fecha de inicio',
-        );
-      }
-
-      if (fechaFin > ahora) {
-        throw new BadRequestException('La fecha fin no puede ser futura');
-      }
-
-      const diasDiferencia =
-        (fechaFin.getTime() - fechaInicio.getTime()) / (1000 * 60 * 60 * 24);
-      if (diasDiferencia > 30) {
-        throw new BadRequestException(
-          'El período de celo no puede durar más de 30 días',
-        );
-      }
-    }
-  }
-
   //SERVICIOS
 
   async actualizarEstadoPorServicio(celoId: string): Promise<CelosAnimal> {
@@ -626,7 +459,7 @@ export class CelosAnimalService {
     }
 
     celo.fechaFin = fechaFin || new Date();
-    await this.validarDuracionCelo(
+    await this.validationService.validarDuracionCelo(
       celo.animal.especie.nombre,
       celo.fechaInicio,
       celo.fechaFin,
@@ -703,144 +536,6 @@ export class CelosAnimalService {
         celo.fechaFin <= new Date()
       ) {
         celo.estado = EstadoCeloAnimal.NO_FECUNDADO;
-        await this.celosAnimalRepository.save(celo);
-      }
-    }
-  }
-
-  async actualizarEstadosCelosVencidos(): Promise<{
-    actualizados: number;
-    detalles: Array<{
-      celoId: string;
-      estadoAnterior: string;
-      estadoNuevo: string;
-      razon: string;
-    }>;
-  }> {
-    const hoy = new Date();
-
-    const celosVencidos = await this.celosAnimalRepository
-      .createQueryBuilder('celo')
-      .leftJoinAndSelect('celo.animal', 'animal')
-      .leftJoinAndSelect('animal.especie', 'especie')
-      .where('celo.fechaFin IS NOT NULL')
-      .andWhere('celo.fechaFin <= :hoy', { hoy })
-      .andWhere('celo.estado IN (:...estados)', {
-        estados: [EstadoCeloAnimal.ACTIVO, EstadoCeloAnimal.SERVIDO],
-      })
-      .getMany();
-
-    const resultados = [];
-
-    for (const celo of celosVencidos) {
-      const estadoAnterior = celo.estado;
-      let estadoNuevo = celo.estado;
-      let razon = '';
-
-      const serviciosAsociados = await this.servicioRepository.find({
-        where: { celo_asociado: { id: celo.id } },
-        relations: ['celo_asociado', 'detalles'],
-      });
-
-      if (serviciosAsociados.length === 0) {
-        estadoNuevo = EstadoCeloAnimal.SIN_SERVICIO;
-        razon = 'Celo finalizado sin ningún servicio asociado';
-      } else {
-        const servicioExitoso = serviciosAsociados.some(
-          (servicio) => servicio.exitoso === true,
-        );
-
-        const serviciosRealizados = serviciosAsociados.filter(
-          (servicio) =>
-            servicio.estado === EstadoServicio.REALIZADO &&
-            servicio.exitoso === false,
-        );
-
-        const serviciosFallidos = serviciosAsociados.filter(
-          (servicio) => servicio.estado === EstadoServicio.FALLIDO,
-        );
-
-        if (servicioExitoso) {
-          estadoNuevo = EstadoCeloAnimal.PREÑADO;
-          razon = 'Servicio exitoso confirmado durante este celo';
-        } else if (serviciosRealizados.length > 0) {
-          estadoNuevo = EstadoCeloAnimal.SERVIDO;
-          razon = `Servicio(s) realizado(s) (${serviciosRealizados.length}) pendiente de confirmación de éxito`;
-        } else if (serviciosFallidos.length === serviciosAsociados.length) {
-          estadoNuevo = EstadoCeloAnimal.NO_FECUNDADO;
-          razon = 'Todos los servicios asociados fueron fallidos';
-        } else {
-          const tieneProgramados = serviciosAsociados.some(
-            (s) => s.estado === EstadoServicio.PROGRAMADO,
-          );
-
-          if (tieneProgramados && celo.fechaFin <= hoy) {
-            estadoNuevo = EstadoCeloAnimal.SIN_SERVICIO;
-            razon = 'Celo finalizado con servicios programados no realizados';
-          } else {
-            estadoNuevo = EstadoCeloAnimal.SERVIDO;
-            razon = 'Servicios asociados registrados, pendiente de evaluación';
-          }
-        }
-      }
-
-      if (estadoAnterior !== estadoNuevo) {
-        celo.estado = estadoNuevo;
-        await this.celosAnimalRepository.save(celo);
-
-        resultados.push({
-          celoId: celo.id,
-          estadoAnterior,
-          estadoNuevo,
-          razon,
-        });
-      }
-    }
-
-    return {
-      actualizados: resultados.length,
-      detalles: resultados,
-    };
-  }
-
-  async programarActualizacionAutomatica(): Promise<void> {
-    await this.actualizarEstadosCelosVencidos();
-
-    const celosActivos = await this.celosAnimalRepository
-      .createQueryBuilder('celo')
-      .leftJoinAndSelect('celo.animal', 'animal')
-      .leftJoinAndSelect('animal.especie', 'especie')
-      .where('celo.fechaFin IS NULL')
-      .andWhere('celo.estado = :estado', { estado: EstadoCeloAnimal.ACTIVO })
-      .getMany();
-
-    for (const celo of celosActivos) {
-      const ahora = new Date();
-      const duracionHorasActual =
-        (ahora.getTime() - celo.fechaInicio.getTime()) / (1000 * 60 * 60);
-
-      const especieKey = celo.animal.especie.nombre.toUpperCase();
-      const config =
-        this.ESPECIE_CONFIG[especieKey as keyof typeof this.ESPECIE_CONFIG];
-
-      if (config && duracionHorasActual > config.duracionHoras.max) {
-        celo.fechaFin = ahora;
-
-        const servicios = await this.servicioRepository.find({
-          where: { celo_asociado: { id: celo.id } },
-        });
-
-        if (servicios.length > 0) {
-          const tieneExitosos = servicios.some((s) => s.exitoso === true);
-          if (tieneExitosos) {
-            celo.estado = EstadoCeloAnimal.PREÑADO;
-          } else {
-            celo.estado = EstadoCeloAnimal.SERVIDO;
-          }
-        } else {
-          celo.estado = EstadoCeloAnimal.SIN_SERVICIO;
-        }
-
         await this.celosAnimalRepository.save(celo);
       }
     }

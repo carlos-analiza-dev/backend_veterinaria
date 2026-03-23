@@ -1,0 +1,42 @@
+export const ESPECIE_CONFIG = {
+  Bovino: {
+    duracionHoras: { min: 6, max: 30, promedio: 18 },
+    cicloDias: { min: 18, max: 24, promedio: 21 },
+    mejorMomentoIA: '12-18 horas después del inicio',
+    coloresSecrecion: ['clara', 'transparente', 'viscosa'],
+    periodoGestacionDias: 285,
+    periodoEsperaPostPartoDias: 45,
+  },
+  Equino: {
+    duracionHoras: { min: 96, max: 168, promedio: 120 },
+    cicloDias: { min: 19, max: 22, promedio: 21 },
+    mejorMomentoIA: 'Cada 48 horas durante el celo',
+    coloresSecrecion: ['blanquecina', 'amarillenta'],
+    periodoGestacionDias: 340,
+    periodoEsperaPostPartoDias: 30,
+  },
+  Caprino: {
+    duracionHoras: { min: 24, max: 48, promedio: 36 },
+    cicloDias: { min: 18, max: 21, promedio: 19 },
+    mejorMomentoIA: '12-24 horas después del inicio',
+    coloresSecrecion: ['clara', 'lechosa'],
+    periodoGestacionDias: 150,
+    periodoEsperaPostPartoDias: 30,
+  },
+  Porcino: {
+    duracionHoras: { min: 48, max: 72, promedio: 60 },
+    cicloDias: { min: 18, max: 21, promedio: 19 },
+    mejorMomentoIA: '24-36 horas después del inicio',
+    coloresSecrecion: ['clara', 'viscosa'],
+    periodoGestacionDias: 115,
+    periodoEsperaPostPartoDias: 21,
+  },
+  Ovino: {
+    duracionHoras: { min: 24, max: 36, promedio: 30 },
+    cicloDias: { min: 14, max: 19, promedio: 17 },
+    mejorMomentoIA: '12-24 horas después del inicio',
+    coloresSecrecion: ['clara', 'turbia'],
+    periodoGestacionDias: 150,
+    periodoEsperaPostPartoDias: 30,
+  },
+};

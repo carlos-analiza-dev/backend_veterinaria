@@ -43,7 +43,6 @@ export class CreateServiciosReproductivoDto {
   hembra_id: string;
 
   @IsOptional()
-  @IsUUID()
   macho_id?: string;
 
   @IsEnum(TipoServicio)
@@ -80,6 +79,13 @@ export class CreateServiciosReproductivoDto {
   @IsOptional()
   @IsBoolean()
   exitoso?: boolean;
+
+  @IsOptional()
+  @IsString()
+  macho_externo_nombre?: string;
+
+  @IsBoolean()
+  macho_pertenece_finca: boolean;
 
   @IsOptional()
   @IsString()

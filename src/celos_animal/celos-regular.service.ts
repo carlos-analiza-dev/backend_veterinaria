@@ -1,19 +1,19 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CelosAnimalService } from './celos_animal.service';
 import { Cron, CronExpression } from '@nestjs/schedule';
+import { CelosAnimalValidationService } from './celos-animal-validation.service';
 
 @Injectable()
 export class CelosRegularService {
   private readonly logger = new Logger(CelosRegularService.name);
 
-  constructor(private readonly celosAnimalService: CelosAnimalService) {}
+  constructor(private validationService: CelosAnimalValidationService) {}
 
   @Cron(CronExpression.EVERY_HOUR)
   async handleCeloStatusUpdate() {
     this.logger.log('Ejecutando actualización automática de estados de celos');
     try {
       const resultado =
-        await this.celosAnimalService.actualizarEstadosCelosVencidos();
+        await this.validationService.actualizarEstadosCelosVencidos();
       this.logger.log(`Celos actualizados: ${resultado.actualizados}`);
 
       if (resultado.actualizados > 0) {
@@ -30,7 +30,7 @@ export class CelosRegularService {
   async handleCelosSinFechaFin() {
     this.logger.log('Ejecutando verificación de celos activos sin fecha fin');
     try {
-      await this.celosAnimalService.programarActualizacionAutomatica();
+      await this.validationService.programarActualizacionAutomatica();
     } catch (error) {
       this.logger.error(
         `Error actualizando celos sin fecha fin: ${error.message}`,

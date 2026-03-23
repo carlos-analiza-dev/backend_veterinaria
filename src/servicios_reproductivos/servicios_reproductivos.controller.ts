@@ -44,10 +44,7 @@ export class ServiciosReproductivosController {
   @AuthCliente()
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     const servicio = await this.serviciosReproductivosService.findOne(id);
-    return {
-      statusCode: HttpStatus.OK,
-      data: servicio,
-    };
+    return servicio;
   }
 
   @Patch(':id')

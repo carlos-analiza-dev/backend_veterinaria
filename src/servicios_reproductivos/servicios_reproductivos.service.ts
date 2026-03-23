@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, DataSource } from 'typeorm';
+import { Repository, Between, DataSource, Not } from 'typeorm';
 import { ServicioReproductivo } from './entities/servicios_reproductivo.entity';
 import { DetalleServicio } from 'src/detalles_servicio_reproductivo/entities/detalles_servicio_reproductivo.entity';
 import { CreateServiciosReproductivoDto } from './dto/create-servicios_reproductivo.dto';
@@ -12,7 +12,11 @@ import { UpdateServiciosReproductivoDto } from './dto/update-servicios_reproduct
 import { FilterServiciosDto } from './dto/filter-servicios.dto';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { CelosAnimal } from 'src/celos_animal/entities/celos_animal.entity';
-import { EstadoServicio } from 'src/interfaces/servicios-reproductivos.enum';
+import {
+  EstadoServicio,
+  TipoServicio,
+} from 'src/interfaces/servicios-reproductivos.enum';
+import { EstadoCeloAnimal } from 'src/interfaces/celos.animal.enum';
 
 @Injectable()
 export class ServiciosReproductivosService {
@@ -69,19 +73,21 @@ export class ServiciosReproductivosService {
         }
       }
 
+      if (
+        createDto.tipo_servicio === TipoServicio.MONTA_NATURAL &&
+        !createDto.macho_id
+      ) {
+        throw new BadRequestException(
+          'Debe seleccionar un macho para un servicio de monta natural',
+        );
+      }
+
+      let celo = null;
       if (createDto.celo_id) {
-        const celo = await this.celoRepo.findOne({
+        celo = await this.celoRepo.findOne({
           where: { id: createDto.celo_id },
           relations: ['animal'],
         });
-
-        const servicio_celo_existe = await this.servicioRepo.findOne({
-          where: { celo_asociado: { id: celo.id } },
-        });
-        if (servicio_celo_existe)
-          throw new BadRequestException(
-            'Este celo ya esta asociado a un servicio',
-          );
 
         if (!celo) {
           throw new NotFoundException(
@@ -92,6 +98,33 @@ export class ServiciosReproductivosService {
         if (celo.animal.id !== hembra.id) {
           throw new BadRequestException(
             'El celo no pertenece a la hembra seleccionada',
+          );
+        }
+
+        const servicioCeloExiste = await this.servicioRepo.findOne({
+          where: { celo_asociado: { id: celo.id } },
+        });
+
+        if (servicioCeloExiste) {
+          throw new BadRequestException(
+            'Este celo ya está asociado a un servicio',
+          );
+        }
+
+        await this.validarFechaServicioEnCelo(
+          celo,
+          new Date(createDto.fecha_servicio),
+        );
+
+        if (celo.estado === EstadoCeloAnimal.PREÑADO) {
+          throw new BadRequestException(
+            'No se puede registrar un servicio porque este celo ya resultó en preñez',
+          );
+        }
+
+        if (celo.estado === EstadoCeloAnimal.FINALIZADO) {
+          throw new BadRequestException(
+            'No se puede registrar un servicio porque este celo ya finalizó',
           );
         }
       }
@@ -139,14 +172,72 @@ export class ServiciosReproductivosService {
 
       await queryRunner.commitTransaction();
 
-      return 'Servicio Guardado con Exito';
+      return 'Servicio Guardado con Éxito';
     } catch (error) {
       await queryRunner.rollbackTransaction();
-
       throw error;
     } finally {
       await queryRunner.release();
     }
+  }
+
+  //SERVICIOS PARA CREAR
+  private async validarFechaServicioEnCelo(
+    celo: CelosAnimal,
+    fechaServicio: Date,
+  ): Promise<void> {
+    const fechaInicioCelo = new Date(celo.fechaInicio);
+    const fechaServicioDate = new Date(fechaServicio);
+
+    if (fechaServicioDate < fechaInicioCelo) {
+      throw new BadRequestException(
+        `La fecha y hora del servicio (${this.formatearFechaHora(fechaServicioDate)}) ` +
+          `no puede ser anterior al inicio del celo (${this.formatearFechaHora(fechaInicioCelo)})`,
+      );
+    }
+
+    if (celo.fechaFin) {
+      const fechaFinCelo = new Date(celo.fechaFin);
+      if (fechaServicioDate > fechaFinCelo) {
+        throw new BadRequestException(
+          `La fecha y hora del servicio (${this.formatearFechaHora(fechaServicioDate)}) ` +
+            `no puede ser posterior al fin del celo (${this.formatearFechaHora(fechaFinCelo)})`,
+        );
+      }
+    } else {
+      const horasDesdeInicio =
+        (fechaServicioDate.getTime() - fechaInicioCelo.getTime()) /
+        (1000 * 60 * 60);
+      const horasMinimas = 0;
+      const horasMaximas = 48;
+
+      if (horasDesdeInicio < horasMinimas) {
+        throw new BadRequestException(
+          `La fecha y hora del servicio (${this.formatearFechaHora(fechaServicioDate)}) ` +
+            `no puede ser anterior al inicio del celo (${this.formatearFechaHora(fechaInicioCelo)})`,
+        );
+      }
+
+      if (horasDesdeInicio > horasMaximas) {
+        throw new BadRequestException(
+          `El servicio debe realizarse dentro de las ${horasMaximas} horas posteriores al inicio del celo.\n` +
+            `📅 Inicio del celo: ${this.formatearFechaHora(fechaInicioCelo)}\n` +
+            `⏰ Hora del servicio: ${this.formatearFechaHora(fechaServicioDate)}\n` +
+            `⏱️ Horas transcurridas: ${horasDesdeInicio.toFixed(1)} horas\n` +
+            `⚠️ Ha excedido el límite de ${horasMaximas} horas.`,
+        );
+      }
+    }
+  }
+
+  private formatearFechaHora(fecha: Date): string {
+    const year = fecha.getFullYear();
+    const month = String(fecha.getMonth() + 1).padStart(2, '0');
+    const day = String(fecha.getDate()).padStart(2, '0');
+    const hours = String(fecha.getHours()).padStart(2, '0');
+    const minutes = String(fecha.getMinutes()).padStart(2, '0');
+
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
   }
 
   async findAll(filters: FilterServiciosDto) {
@@ -176,6 +267,13 @@ export class ServiciosReproductivosService {
         'servicio.numero_servicio',
         'servicio.exitoso',
         'servicio.estado',
+        'servicio.dosis_semen',
+        'servicio.proveedor_semen',
+        'servicio.tecnico_responsable',
+        'servicio.proveedor_semen',
+        'servicio.observaciones',
+        'servicio.metadata',
+        'servicio.macho_pertenece_finca',
 
         'hembra.id',
         'hembra.identificador',
@@ -271,14 +369,204 @@ export class ServiciosReproductivosService {
     try {
       const servicio = await this.findOne(id);
 
-      if (
-        updateDto.estado === EstadoServicio.REALIZADO &&
-        servicio.estado !== EstadoServicio.REALIZADO
-      ) {
-        await this.validarServicioRealizado(servicio);
+      if (updateDto.macho_pertenece_finca !== undefined) {
+        servicio.macho_pertenece_finca = updateDto.macho_pertenece_finca;
+
+        if (updateDto.macho_pertenece_finca === false) {
+          servicio.macho = null;
+        }
       }
 
-      Object.assign(servicio, updateDto);
+      if (updateDto.macho_id !== undefined) {
+        if (servicio.macho_pertenece_finca === false) {
+          throw new BadRequestException(
+            'No se puede asignar un macho de la finca cuando el servicio usa un macho externo',
+          );
+        }
+
+        if (updateDto.macho_id) {
+          const macho = await this.animalRepo.findOne({
+            where: { id: updateDto.macho_id },
+          });
+
+          if (!macho) {
+            throw new NotFoundException(
+              `Macho con ID ${updateDto.macho_id} no encontrado`,
+            );
+          }
+
+          if (macho.sexo !== 'Macho') {
+            throw new BadRequestException(
+              'El animal seleccionado no es un macho',
+            );
+          }
+
+          servicio.macho = macho;
+        } else {
+          servicio.macho = null;
+        }
+      }
+
+      if (updateDto.celo_id !== undefined) {
+        if (updateDto.celo_id) {
+          const nuevoCelo = await this.celoRepo.findOne({
+            where: { id: updateDto.celo_id },
+            relations: ['animal'],
+          });
+
+          if (!nuevoCelo) {
+            throw new NotFoundException(
+              `Celo con ID ${updateDto.celo_id} no encontrado`,
+            );
+          }
+
+          if (nuevoCelo.animal.id !== servicio.hembra.id) {
+            throw new BadRequestException(
+              'El celo no pertenece a la hembra del servicio',
+            );
+          }
+
+          const servicioCeloExiste = await this.servicioRepo.findOne({
+            where: {
+              celo_asociado: { id: nuevoCelo.id },
+              id: Not(id),
+            },
+          });
+
+          if (servicioCeloExiste) {
+            throw new BadRequestException(
+              'Este celo ya está asociado a otro servicio',
+            );
+          }
+
+          const fechaServicio = updateDto.fecha_servicio
+            ? new Date(updateDto.fecha_servicio)
+            : servicio.fecha_servicio;
+
+          await this.validarFechaServicioEnCelo(nuevoCelo, fechaServicio);
+
+          servicio.celo_asociado = nuevoCelo;
+        } else {
+          servicio.celo_asociado = null;
+        }
+      }
+
+      if (updateDto.fecha_servicio) {
+        const nuevaFechaServicio = new Date(updateDto.fecha_servicio);
+
+        const celoAsociado =
+          updateDto.celo_id !== undefined
+            ? updateDto.celo_id
+              ? await this.celoRepo.findOne({
+                  where: { id: updateDto.celo_id },
+                  relations: ['animal'],
+                })
+              : null
+            : servicio.celo_asociado;
+
+        if (celoAsociado) {
+          await this.validarFechaServicioEnCelo(
+            celoAsociado,
+            nuevaFechaServicio,
+          );
+        }
+
+        servicio.fecha_servicio = nuevaFechaServicio;
+      }
+
+      if (updateDto.estado !== undefined) {
+        if (
+          updateDto.estado === EstadoServicio.REALIZADO &&
+          servicio.estado !== EstadoServicio.REALIZADO
+        ) {
+          await this.validarServicioRealizado(servicio);
+        }
+        servicio.estado = updateDto.estado;
+      }
+
+      if (updateDto.tipo_servicio !== undefined) {
+        servicio.tipo_servicio = updateDto.tipo_servicio;
+
+        if (
+          updateDto.tipo_servicio === TipoServicio.MONTA_NATURAL &&
+          !servicio.macho
+        ) {
+          throw new BadRequestException(
+            'Para un servicio de monta natural debe seleccionar un macho',
+          );
+        }
+      }
+
+      if (updateDto.numero_servicio !== undefined) {
+        servicio.numero_servicio = updateDto.numero_servicio;
+      }
+
+      if (updateDto.dosis_semen !== undefined) {
+        servicio.dosis_semen = updateDto.dosis_semen;
+      }
+
+      if (updateDto.proveedor_semen !== undefined) {
+        servicio.proveedor_semen = updateDto.proveedor_semen;
+      }
+
+      if (updateDto.tecnico_responsable !== undefined) {
+        servicio.tecnico_responsable = updateDto.tecnico_responsable;
+      }
+
+      if (updateDto.observaciones !== undefined) {
+        servicio.observaciones = updateDto.observaciones;
+      }
+
+      if (updateDto.macho_externo_nombre !== undefined) {
+        servicio.macho_externo_nombre = updateDto.macho_externo_nombre;
+      }
+
+      if (updateDto.macho_pertenece_finca !== undefined) {
+        servicio.macho_pertenece_finca = updateDto.macho_pertenece_finca;
+      }
+
+      if (updateDto.metadata !== undefined) {
+        servicio.metadata = updateDto.metadata;
+      }
+
+      if (updateDto.exitoso !== undefined) {
+        const celoAsociado = servicio.celo_asociado;
+
+        if (updateDto.exitoso === true && servicio.exitoso !== true) {
+          if (celoAsociado) {
+            if (celoAsociado.estado === EstadoCeloAnimal.PREÑADO) {
+              throw new BadRequestException(
+                'Este celo ya está marcado como preñado',
+              );
+            }
+
+            celoAsociado.estado = EstadoCeloAnimal.PREÑADO;
+            await queryRunner.manager.save(celoAsociado);
+          }
+          servicio.exitoso = true;
+        } else if (updateDto.exitoso === false && servicio.exitoso !== false) {
+          if (
+            celoAsociado &&
+            celoAsociado.estado !== EstadoCeloAnimal.PREÑADO
+          ) {
+            const otrosServicios = await this.servicioRepo.find({
+              where: {
+                celo_asociado: { id: celoAsociado.id },
+                id: Not(id),
+              },
+            });
+
+            if (
+              otrosServicios.length === 0 &&
+              servicio.estado === EstadoServicio.FALLIDO
+            ) {
+              celoAsociado.estado = EstadoCeloAnimal.NO_FECUNDADO;
+              await queryRunner.manager.save(celoAsociado);
+            }
+          }
+          servicio.exitoso = false;
+        }
+      }
 
       const servicioActualizado = await queryRunner.manager.save(servicio);
 
@@ -292,6 +580,11 @@ export class ServiciosReproductivosService {
           }),
         );
         await queryRunner.manager.save(nuevosDetalles);
+      } else if (
+        updateDto.detalles !== undefined &&
+        updateDto.detalles.length === 0
+      ) {
+        await queryRunner.manager.delete(DetalleServicio, { servicio: { id } });
       }
 
       await queryRunner.commitTransaction();

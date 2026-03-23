@@ -29,6 +29,12 @@ export class ServicioReproductivo {
   @JoinColumn({ name: 'macho_id' })
   macho: AnimalFinca;
 
+  @Column({ nullable: true })
+  macho_externo_nombre: string;
+
+  @Column({ default: true })
+  macho_pertenece_finca: boolean;
+
   @Column({ type: 'enum', enum: TipoServicio })
   tipo_servicio: TipoServicio;
 

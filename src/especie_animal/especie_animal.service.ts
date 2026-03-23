@@ -15,9 +15,6 @@ export class EspecieAnimalService {
     @InjectRepository(EspecieAnimal)
     private readonly especieRepo: Repository<EspecieAnimal>,
   ) {}
-  create(createEspecieAnimalDto: CreateEspecieAnimalDto) {
-    return 'This action adds a new especieAnimal';
-  }
 
   async findAll() {
     try {
@@ -30,17 +27,5 @@ export class EspecieAnimalService {
     } catch (error) {
       throw error;
     }
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} especieAnimal`;
-  }
-
-  update(id: number, updateEspecieAnimalDto: UpdateEspecieAnimalDto) {
-    return `This action updates a #${id} especieAnimal`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} especieAnimal`;
   }
 }

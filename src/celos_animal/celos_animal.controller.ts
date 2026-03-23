@@ -36,6 +36,13 @@ export class CelosAnimalController {
     return this.celosAnimalService.findAll(paginationDto, cliente);
   }
 
+  @Get('activos/animal/:animalId')
+  async getCelosActivosByAnimal(@Param('animalId') animalId: string) {
+    const celos =
+      await this.celosAnimalService.getCelosActivosByAnimal(animalId);
+    return celos;
+  }
+
   @Get('activos')
   @AuthCliente()
   getActivos(@Query('fincaId') fincaId?: string) {
