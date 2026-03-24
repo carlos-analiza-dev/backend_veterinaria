@@ -50,6 +50,13 @@ export class SubServiciosController {
     return this.subServiciosService.findAllProductosDisponibles(user);
   }
 
+  @Get('productos-publics-disponibles')
+  findAllProductosDisponiblesPublicos(@Query() paginationDto: PaginationDto) {
+    return this.subServiciosService.findAllProductosDisponiblesPublicos(
+      paginationDto,
+    );
+  }
+
   @Get('servicios-disponibles')
   @Auth()
   findAllServiciosDisponibles(@GetUser() user: User) {

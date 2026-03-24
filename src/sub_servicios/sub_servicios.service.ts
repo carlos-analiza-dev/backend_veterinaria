@@ -429,6 +429,86 @@ export class SubServiciosService {
     }
   }
 
+  async findAllProductosDisponiblesPublicos(paginationDto: PaginationDto) {
+    const {
+      limit = 10,
+      offset = 0,
+      tipo_categoria = '',
+      pais = '',
+    } = paginationDto;
+
+    try {
+      const queryBuilder = this.sub_servicio_repo
+        .createQueryBuilder('producto')
+        .distinctOn(['producto.id'])
+        .leftJoinAndSelect('producto.marca', 'marca')
+        .leftJoinAndSelect('producto.proveedor', 'proveedor')
+        .leftJoinAndSelect('producto.categoria', 'categoria')
+        .leftJoinAndSelect('producto.tax', 'tax')
+        .leftJoinAndSelect('producto.imagenes', 'imagenes')
+        .leftJoinAndSelect(
+          'producto.preciosPorPais',
+          'precio',
+          'precio.paisId = :paisId AND precio.sub_servicio_id = producto.id',
+          { paisId: pais },
+        )
+        .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
+        .andWhere('producto.disponible = :disponible', { disponible: true })
+        .andWhere('producto.isActive = :isActive', { isActive: true })
+        .andWhere('precio.paisId IS NOT NULL');
+
+      if (tipo_categoria && tipo_categoria.trim() !== '') {
+        queryBuilder.andWhere('categoria.tipo = :tipoCategoria', {
+          tipoCategoria: tipo_categoria,
+        });
+      }
+
+      const countQueryBuilder = this.sub_servicio_repo
+        .createQueryBuilder('producto')
+        .leftJoin(
+          'producto.preciosPorPais',
+          'precio',
+          'precio.paisId = :paisId AND precio.sub_servicio_id = producto.id',
+          { paisId: pais },
+        )
+        .leftJoin('producto.categoria', 'categoria')
+        .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
+        .andWhere('producto.disponible = :disponible', { disponible: true })
+        .andWhere('producto.isActive = :isActive', { isActive: true })
+        .andWhere('precio.paisId IS NOT NULL');
+
+      if (tipo_categoria && tipo_categoria.trim() !== '') {
+        countQueryBuilder.andWhere('categoria.tipo = :tipoCategoria', {
+          tipoCategoria: tipo_categoria,
+        });
+      }
+
+      const [productosDisponibles, total] = await Promise.all([
+        queryBuilder
+          .orderBy('producto.id', 'ASC')
+          .addOrderBy('imagenes.createdAt', 'DESC')
+          .skip(offset)
+          .take(limit)
+          .getMany(),
+        countQueryBuilder.getCount(),
+      ]);
+
+      if (!productosDisponibles || productosDisponibles.length === 0) {
+        throw new NotFoundException('No se encontraron productos disponibles');
+      }
+
+      return {
+        total,
+        limit,
+        offset,
+        productos: productosDisponibles,
+        hasMore: offset + limit < total,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findAllServiciosDisponibles(user: User) {
     const paisId = user.pais.id;
 

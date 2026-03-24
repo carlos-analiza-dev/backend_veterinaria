@@ -8,7 +8,7 @@ export class CelosRegularService {
 
   constructor(private validationService: CelosAnimalValidationService) {}
 
-  @Cron(CronExpression.EVERY_HOUR)
+  @Cron(CronExpression.EVERY_6_HOURS)
   async handleCeloStatusUpdate() {
     this.logger.log('Ejecutando actualización automática de estados de celos');
     try {
@@ -26,7 +26,7 @@ export class CelosRegularService {
     }
   }
 
-  @Cron(CronExpression.EVERY_6_HOURS)
+  @Cron(CronExpression.EVERY_12_HOURS)
   async handleCelosSinFechaFin() {
     this.logger.log('Ejecutando verificación de celos activos sin fecha fin');
     try {

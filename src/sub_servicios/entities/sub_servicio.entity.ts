@@ -18,7 +18,6 @@ import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
 import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
 import { Marca } from 'src/marcas/entities/marca.entity';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
-import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
 import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
 import { ProductosImage } from 'src/productos_images/entities/productos_image.entity';
 import { DatosProducto } from 'src/datos-productos/entities/datos-producto.entity';
