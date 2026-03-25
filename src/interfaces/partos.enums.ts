@@ -1,0 +1,27 @@
+export enum TipoParto {
+  NORMAL = 'NORMAL',
+  DISTOCICO = 'DISTOCICO',
+  CESAREA = 'CESAREA',
+  ABORTO = 'ABORTO',
+  MUERTE_NATAL = 'MUERTE_NATAL',
+}
+
+export enum EstadoParto {
+  PROGRAMADO = 'PROGRAMADO',
+  EN_PROGRESO = 'EN_PROGRESO',
+  COMPLETADO = 'COMPLETADO',
+  COMPLICADO = 'COMPLICADO',
+  ABORTADO = 'ABORTADO',
+}
+
+export enum SexoCria {
+  MACHO = 'MACHO',
+  HEMBRA = 'HEMBRA',
+}
+
+export enum EstadoCria {
+  VIVA = 'VIVA',
+  MUERTA = 'MUERTA',
+  DEBIL = 'DEBIL',
+  MALFORMACION = 'MALFORMACION',
+}

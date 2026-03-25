@@ -17,6 +17,52 @@ export class CelosAnimalValidationService {
     private servicioRepository: Repository<ServicioReproductivo>,
   ) {}
 
+  async validarEdadMinimaParto(hembra: AnimalFinca): Promise<void> {
+    if (!hembra.fecha_nacimiento) {
+      console.warn('⚠️ Animal sin fecha de nacimiento registrada');
+      return;
+    }
+
+    const fechaNacimiento = new Date(hembra.fecha_nacimiento);
+
+    if (isNaN(fechaNacimiento.getTime())) {
+      throw new BadRequestException(
+        'La fecha de nacimiento del animal no es válida',
+      );
+    }
+
+    const fechaActual = new Date();
+    const edadMeses = this.calcularEdadMeses(fechaNacimiento, fechaActual);
+
+    const config =
+      ESPECIE_CONFIG[hembra.especie.nombre as keyof typeof ESPECIE_CONFIG];
+
+    const edadMinimaMeses = config?.edadMinimaReproduccionMeses || 18;
+
+    if (edadMeses < edadMinimaMeses) {
+      throw new BadRequestException(
+        `❌ La hembra es demasiado joven para reproducción.\n\n` +
+          `🐄 Especie: ${hembra.especie.nombre}\n` +
+          `📅 Fecha de nacimiento: ${fechaNacimiento.toLocaleDateString()}\n` +
+          `📆 Edad actual: ${Math.floor(edadMeses)} meses (${(edadMeses / 12).toFixed(1)} años)\n` +
+          `⏳ Edad mínima requerida: ${edadMinimaMeses} meses (${(edadMinimaMeses / 12).toFixed(1)} años)\n\n` +
+          `⚠️ Espere hasta que la hembra alcance la edad adecuada.`,
+      );
+    }
+  }
+
+  private calcularEdadMeses(
+    fechaNacimiento: Date | string,
+    fechaActual: Date,
+  ): number {
+    const fechaNac = new Date(fechaNacimiento);
+
+    const years = fechaActual.getFullYear() - fechaNac.getFullYear();
+    const months = fechaActual.getMonth() - fechaNac.getMonth();
+
+    return years * 12 + months;
+  }
+
   async validarAnimalParaCelo(animal: AnimalFinca): Promise<void> {
     if (animal.castrado || animal.esterelizado) {
       throw new BadRequestException(
@@ -64,7 +110,6 @@ export class CelosAnimalValidationService {
       (fechaActual.getTime() - fechaServicio.getTime()) / (1000 * 60 * 60 * 24),
     );
 
-    // Obtener período de gestación según especie
     const periodoGestacion = this.obtenerPeriodoGestacion(
       animal.especie.nombre,
     );
@@ -131,7 +176,6 @@ export class CelosAnimalValidationService {
     animal: AnimalFinca,
     fechaServicio: Date,
   ): Promise<boolean> {
-    // TODO: Implementar cuando tengas la entidad Parto
     // Por ahora retorna true para permitir el flujo
     // Cuando implementes Parto, deberías hacer:
     // const parto = await this.partoRepository.findOne({
@@ -142,7 +186,7 @@ export class CelosAnimalValidationService {
     // });
     // return !!parto;
 
-    return true; // Placeholder
+    return true;
   }
 
   async calcularNumeroCelo(animalId: string): Promise<number> {
@@ -246,7 +290,6 @@ export class CelosAnimalValidationService {
     animal: AnimalFinca,
     fechaInicio: Date,
   ): Promise<void> {
-    // Obtener el último celo registrado (excluyendo PREÑADO)
     const ultimoCelo = await this.celosAnimalRepository.findOne({
       where: {
         animal: { id: animal.id },
@@ -327,6 +370,14 @@ export class CelosAnimalValidationService {
   }> {
     const hoy = new Date();
 
+    const estadosARevisar = [
+      EstadoCeloAnimal.ACTIVO,
+      EstadoCeloAnimal.SERVIDO,
+      EstadoCeloAnimal.SIN_SERVICIO,
+      EstadoCeloAnimal.NO_FECUNDADO,
+      EstadoCeloAnimal.PREÑADO,
+    ];
+
     const celosVencidos = await this.celosAnimalRepository
       .createQueryBuilder('celo')
       .leftJoinAndSelect('celo.animal', 'animal')
@@ -334,7 +385,7 @@ export class CelosAnimalValidationService {
       .where('celo.fechaFin IS NOT NULL')
       .andWhere('celo.fechaFin <= :hoy', { hoy })
       .andWhere('celo.estado IN (:...estados)', {
-        estados: [EstadoCeloAnimal.ACTIVO, EstadoCeloAnimal.SERVIDO],
+        estados: estadosARevisar,
       })
       .getMany();
 
@@ -351,40 +402,54 @@ export class CelosAnimalValidationService {
       });
 
       if (serviciosAsociados.length === 0) {
-        estadoNuevo = EstadoCeloAnimal.SIN_SERVICIO;
-        razon = 'Celo finalizado sin ningún servicio asociado';
+        if (estadoAnterior !== EstadoCeloAnimal.SIN_SERVICIO) {
+          estadoNuevo = EstadoCeloAnimal.SIN_SERVICIO;
+          razon = 'Celo finalizado sin ningún servicio asociado';
+        }
       } else {
         const servicioExitoso = serviciosAsociados.some(
           (servicio) => servicio.exitoso === true,
         );
 
-        const serviciosRealizados = serviciosAsociados.filter(
-          (servicio) =>
-            servicio.estado === EstadoServicio.REALIZADO &&
-            servicio.exitoso === false,
-        );
-
-        const serviciosFallidos = serviciosAsociados.filter(
-          (servicio) => servicio.estado === EstadoServicio.FALLIDO,
-        );
-
         if (servicioExitoso) {
           estadoNuevo = EstadoCeloAnimal.PREÑADO;
           razon = 'Servicio exitoso confirmado durante este celo';
-        } else if (serviciosRealizados.length > 0) {
-          estadoNuevo = EstadoCeloAnimal.SERVIDO;
-          razon = `Servicio(s) realizado(s) (${serviciosRealizados.length}) pendiente de confirmación de éxito`;
-        } else if (serviciosFallidos.length === serviciosAsociados.length) {
-          estadoNuevo = EstadoCeloAnimal.NO_FECUNDADO;
-          razon = 'Todos los servicios asociados fueron fallidos';
         } else {
-          const tieneProgramados = serviciosAsociados.some(
-            (s) => s.estado === EstadoServicio.PROGRAMADO,
+          const serviciosRealizados = serviciosAsociados.filter(
+            (servicio) => servicio.estado === EstadoServicio.REALIZADO,
           );
 
-          if (tieneProgramados && celo.fechaFin <= hoy) {
+          const serviciosFallidos = serviciosAsociados.filter(
+            (servicio) => servicio.estado === EstadoServicio.FALLIDO,
+          );
+
+          const serviciosProgramados = serviciosAsociados.filter(
+            (servicio) => servicio.estado === EstadoServicio.PROGRAMADO,
+          );
+
+          if (serviciosRealizados.length > 0) {
+            const serviciosNoExitosos = serviciosRealizados.filter(
+              (s) => s.exitoso === false,
+            );
+
+            if (
+              serviciosNoExitosos.length === serviciosRealizados.length &&
+              serviciosRealizados.length === serviciosAsociados.length
+            ) {
+              estadoNuevo = EstadoCeloAnimal.NO_FECUNDADO;
+              razon = 'Todos los servicios realizados fueron no exitosos';
+            } else {
+              estadoNuevo = EstadoCeloAnimal.SERVIDO;
+              razon = `Celo finalizado con ${serviciosRealizados.length} servicio(s) realizado(s) pendiente de confirmación de éxito`;
+            }
+          } else if (serviciosFallidos.length === serviciosAsociados.length) {
+            estadoNuevo = EstadoCeloAnimal.NO_FECUNDADO;
+            razon = 'Todos los servicios asociados fueron fallidos';
+          } else if (
+            serviciosProgramados.length === serviciosAsociados.length
+          ) {
             estadoNuevo = EstadoCeloAnimal.SIN_SERVICIO;
-            razon = 'Celo finalizado con servicios programados no realizados';
+            razon = `Celo finalizado con ${serviciosProgramados.length} servicio(s) programado(s) no realizados. Puedes actualizar el estado manualmente cuando se confirme el resultado.`;
           } else {
             estadoNuevo = EstadoCeloAnimal.SERVIDO;
             razon = 'Servicios asociados registrados, pendiente de evaluación';

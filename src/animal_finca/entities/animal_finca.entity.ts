@@ -3,6 +3,7 @@ import { CelosAnimal } from 'src/celos_animal/entities/celos_animal.entity';
 import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { ImagesAminale } from 'src/images_aminales/entities/images_aminale.entity';
+import { PartoAnimal } from 'src/parto_animal/entities/parto_animal.entity';
 import { PesoHistorial } from 'src/peso_historial/entities/peso_historial.entity';
 import { RazaAnimal } from 'src/raza_animal/entities/raza_animal.entity';
 import {
@@ -200,6 +201,9 @@ export class AnimalFinca {
     cascade: true,
   })
   celos: CelosAnimal[];
+
+  @OneToMany(() => PartoAnimal, (parto) => parto.hembra)
+  partos: PartoAnimal[];
 
   get currentProfileImage(): ImagesAminale | null {
     if (!this.profileImages || this.profileImages.length === 0) return null;

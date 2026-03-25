@@ -17,6 +17,7 @@ import {
   TipoServicio,
 } from 'src/interfaces/servicios-reproductivos.enum';
 import { EstadoCeloAnimal } from 'src/interfaces/celos.animal.enum';
+import { UpdateEstadoServicioDto } from './dto/update-estado-servicio.dto';
 
 @Injectable()
 export class ServiciosReproductivosService {
@@ -271,6 +272,8 @@ export class ServiciosReproductivosService {
         'servicio.proveedor_semen',
         'servicio.tecnico_responsable',
         'servicio.proveedor_semen',
+        'servicio.macho_externo_nombre',
+        'servicio.macho_pertenece_finca',
         'servicio.observaciones',
         'servicio.metadata',
         'servicio.macho_pertenece_finca',
@@ -596,6 +599,26 @@ export class ServiciosReproductivosService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async actualizarEstadoServicio(id: string, dto: UpdateEstadoServicioDto) {
+    const servicio = await this.servicioRepo.findOne({
+      where: { id },
+    });
+
+    if (!servicio) {
+      throw new NotFoundException('Servicio reproductivo no encontrado');
+    }
+
+    if (dto.estado !== undefined) {
+      servicio.estado = dto.estado;
+    }
+
+    if (dto.exitoso !== undefined) {
+      servicio.exitoso = dto.exitoso;
+    }
+
+    return await this.servicioRepo.save(servicio);
   }
 
   async remove(id: string): Promise<{ message: string }> {

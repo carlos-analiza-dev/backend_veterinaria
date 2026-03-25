@@ -15,6 +15,7 @@ import { CreateServiciosReproductivoDto } from './dto/create-servicios_reproduct
 import { UpdateServiciosReproductivoDto } from './dto/update-servicios_reproductivo.dto';
 import { FilterServiciosDto } from './dto/filter-servicios.dto';
 import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
+import { UpdateEstadoServicioDto } from './dto/update-estado-servicio.dto';
 
 @Controller('servicios-reproductivos')
 export class ServiciosReproductivosController {
@@ -62,6 +63,14 @@ export class ServiciosReproductivosController {
       message: 'Servicio reproductivo actualizado exitosamente',
       data: servicio,
     };
+  }
+
+  @Patch(':id/estado')
+  actualizarEstado(
+    @Param('id') id: string,
+    @Body() dto: UpdateEstadoServicioDto,
+  ) {
+    return this.serviciosReproductivosService.actualizarEstadoServicio(id, dto);
   }
 
   @Delete(':id')

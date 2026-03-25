@@ -1,5 +1,6 @@
 export const ESPECIE_CONFIG = {
   Bovino: {
+    edadMinimaReproduccionMeses: 18,
     duracionHoras: { min: 6, max: 30, promedio: 18 },
     cicloDias: { min: 18, max: 24, promedio: 21 },
     mejorMomentoIA: '12-18 horas después del inicio',
@@ -8,6 +9,7 @@ export const ESPECIE_CONFIG = {
     periodoEsperaPostPartoDias: 45,
   },
   Equino: {
+    edadMinimaReproduccionMeses: 20,
     duracionHoras: { min: 96, max: 168, promedio: 120 },
     cicloDias: { min: 19, max: 22, promedio: 21 },
     mejorMomentoIA: 'Cada 48 horas durante el celo',
@@ -16,6 +18,7 @@ export const ESPECIE_CONFIG = {
     periodoEsperaPostPartoDias: 30,
   },
   Caprino: {
+    edadMinimaReproduccionMeses: 8,
     duracionHoras: { min: 24, max: 48, promedio: 36 },
     cicloDias: { min: 18, max: 21, promedio: 19 },
     mejorMomentoIA: '12-24 horas después del inicio',
@@ -24,6 +27,7 @@ export const ESPECIE_CONFIG = {
     periodoEsperaPostPartoDias: 30,
   },
   Porcino: {
+    edadMinimaReproduccionMeses: 7,
     duracionHoras: { min: 48, max: 72, promedio: 60 },
     cicloDias: { min: 18, max: 21, promedio: 19 },
     mejorMomentoIA: '24-36 horas después del inicio',
@@ -32,6 +36,7 @@ export const ESPECIE_CONFIG = {
     periodoEsperaPostPartoDias: 21,
   },
   Ovino: {
+    edadMinimaReproduccionMeses: 8,
     duracionHoras: { min: 24, max: 36, promedio: 30 },
     cicloDias: { min: 14, max: 19, promedio: 17 },
     mejorMomentoIA: '12-24 horas después del inicio',

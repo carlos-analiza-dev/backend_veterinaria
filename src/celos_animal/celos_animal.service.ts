@@ -42,6 +42,7 @@ export class CelosAnimalService {
       );
     }
 
+    await this.validationService.validarEdadMinimaParto(animal);
     await this.validationService.validarAnimalParaCelo(animal);
     await this.validationService.validarAnimalNoPreñado(animal);
 
@@ -55,6 +56,7 @@ export class CelosAnimalService {
       fechaInicio,
       fechaFin,
     );
+    await this.validationService.validarCicloEstral(animal, fechaInicio);
 
     this.validationService.validarFechas(fechaInicio, fechaFin);
 

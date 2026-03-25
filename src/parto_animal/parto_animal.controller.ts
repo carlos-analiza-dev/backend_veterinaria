@@ -1,13 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+} from '@nestjs/common';
 import { PartoAnimalService } from './parto_animal.service';
 import { CreatePartoAnimalDto } from './dto/create-parto_animal.dto';
 import { UpdatePartoAnimalDto } from './dto/update-parto_animal.dto';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
 
 @Controller('parto-animal')
 export class PartoAnimalController {
   constructor(private readonly partoAnimalService: PartoAnimalService) {}
 
   @Post()
+  @AuthCliente()
   create(@Body() createPartoAnimalDto: CreatePartoAnimalDto) {
     return this.partoAnimalService.create(createPartoAnimalDto);
   }
@@ -23,7 +33,10 @@ export class PartoAnimalController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updatePartoAnimalDto: UpdatePartoAnimalDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updatePartoAnimalDto: UpdatePartoAnimalDto,
+  ) {
     return this.partoAnimalService.update(+id, updatePartoAnimalDto);
   }
 
