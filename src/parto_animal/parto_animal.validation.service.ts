@@ -660,4 +660,75 @@ ${diasGestacion < minDias ? '📉 Parto prematuro detectado' : '📈 Parto post�
 
     return years * 12 + months;
   }
+
+  //GESTACION
+  calcularGestacionPorServicio(
+    fechaServicio: Date,
+    fechaParto: Date,
+  ): { dias: number; semanas: number } {
+    const fechaServicioObj = new Date(fechaServicio);
+    const fechaPartoObj = new Date(fechaParto);
+
+    const diasGestacion = Math.round(
+      (fechaPartoObj.getTime() - fechaServicioObj.getTime()) /
+        (1000 * 60 * 60 * 24),
+    );
+
+    const semanasGestacion = Math.round(diasGestacion / 7);
+
+    return { dias: diasGestacion, semanas: semanasGestacion };
+  }
+
+  calcularGestacion(
+    fechaServicio?: Date,
+    fechaParto?: Date,
+    especie?: string,
+    diasIngresados?: number,
+  ): { dias: number; semanas: number } {
+    if (diasIngresados && diasIngresados > 0) {
+      return {
+        dias: diasIngresados,
+        semanas: Math.round(diasIngresados / 7),
+      };
+    }
+
+    if (fechaServicio && fechaParto) {
+      return this.calcularGestacionPorServicio(fechaServicio, fechaParto);
+    }
+
+    if (especie) {
+      const config = ESPECIE_CONFIG[especie as keyof typeof ESPECIE_CONFIG];
+      if (config) {
+        return {
+          dias: config.periodoGestacionDias,
+          semanas: Math.round(config.periodoGestacionDias / 7),
+        };
+      }
+    }
+
+    return { dias: 285, semanas: 40 };
+  }
+
+  validarRangoGestacion(dias: number, especie: string): void {
+    const config = ESPECIE_CONFIG[especie as keyof typeof ESPECIE_CONFIG];
+    if (!config) return;
+
+    const minDias =
+      config.periodoGestacionMin || config.periodoGestacionDias * 0.95;
+    const maxDias =
+      config.periodoGestacionMax || config.periodoGestacionDias * 1.05;
+
+    if (dias < minDias || dias > maxDias) {
+      const mensaje = `
+⚠️ El período de gestación calculado (${dias} días) está fuera del rango normal para ${especie}.
+📊 Rango normal: ${Math.round(minDias)} - ${Math.round(maxDias)} días
+📆 Período promedio: ${config.periodoGestacionDias} días
+
+${dias < minDias ? '⚠️ Parto prematuro detectado' : '⚠️ Parto prolongado detectado'}
+
+Por favor verifique las fechas ingresadas.
+`;
+      throw new BadRequestException(mensaje);
+    }
+  }
 }

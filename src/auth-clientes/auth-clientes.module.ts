@@ -38,7 +38,7 @@ import { NotificacionesAdminsModule } from 'src/notificaciones_admins/notificaci
         return {
           secret: configService.get('JWT_SECRET'),
           signOptions: {
-            expiresIn: '12h',
+            expiresIn: '1d',
           },
         };
       },

@@ -7,6 +7,8 @@ export const ESPECIE_CONFIG = {
     coloresSecrecion: ['clara', 'transparente', 'viscosa'],
     periodoGestacionDias: 285,
     periodoEsperaPostPartoDias: 45,
+    periodoGestacionMin: 270,
+    periodoGestacionMax: 300,
   },
   Equino: {
     edadMinimaReproduccionMeses: 20,
@@ -16,6 +18,8 @@ export const ESPECIE_CONFIG = {
     coloresSecrecion: ['blanquecina', 'amarillenta'],
     periodoGestacionDias: 340,
     periodoEsperaPostPartoDias: 30,
+    periodoGestacionMin: 320,
+    periodoGestacionMax: 365,
   },
   Caprino: {
     edadMinimaReproduccionMeses: 8,
@@ -25,6 +29,8 @@ export const ESPECIE_CONFIG = {
     coloresSecrecion: ['clara', 'lechosa'],
     periodoGestacionDias: 150,
     periodoEsperaPostPartoDias: 30,
+    periodoGestacionMin: 145,
+    periodoGestacionMax: 155,
   },
   Porcino: {
     edadMinimaReproduccionMeses: 7,
@@ -34,6 +40,8 @@ export const ESPECIE_CONFIG = {
     coloresSecrecion: ['clara', 'viscosa'],
     periodoGestacionDias: 115,
     periodoEsperaPostPartoDias: 21,
+    periodoGestacionMin: 112,
+    periodoGestacionMax: 118,
   },
   Ovino: {
     edadMinimaReproduccionMeses: 8,
@@ -43,5 +51,7 @@ export const ESPECIE_CONFIG = {
     coloresSecrecion: ['clara', 'turbia'],
     periodoGestacionDias: 150,
     periodoEsperaPostPartoDias: 30,
+    periodoGestacionMin: 145,
+    periodoGestacionMax: 155,
   },
 };

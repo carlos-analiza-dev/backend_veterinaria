@@ -15,6 +15,7 @@ import { CelosAnimal } from 'src/celos_animal/entities/celos_animal.entity';
 import { EstadoCeloAnimal } from 'src/interfaces/celos.animal.enum';
 import { EstadoCria } from 'src/interfaces/partos.enums';
 import { PartoAnimalValidationService } from './parto_animal.validation.service';
+import { FiltrarPartosDto } from './dto/filtrar-partos.dto';
 
 @Injectable()
 export class PartoAnimalService {
@@ -40,17 +41,34 @@ export class PartoAnimalService {
           createPartoAnimalDto.crias,
         );
 
-      let diasGestacion = createPartoAnimalDto.dias_gestacion;
-      let semanasGestacion = createPartoAnimalDto.semanas_gestacion;
+      let diasGestacion: number;
+      let semanasGestacion: number;
 
-      if (servicio && !diasGestacion) {
-        const fechaServicio = new Date(servicio.fecha_servicio);
-        const fechaParto = new Date(createPartoAnimalDto.fecha_parto);
-        diasGestacion = Math.round(
-          (fechaParto.getTime() - fechaServicio.getTime()) /
-            (1000 * 60 * 60 * 24),
+      if (servicio) {
+        const gestacion = this.validationService.calcularGestacion(
+          servicio.fecha_servicio,
+          createPartoAnimalDto.fecha_parto,
+          hembra.especie.nombre,
+          createPartoAnimalDto.dias_gestacion,
         );
-        semanasGestacion = Math.round(diasGestacion / 7);
+
+        diasGestacion = gestacion.dias;
+        semanasGestacion = gestacion.semanas;
+
+        this.validationService.validarRangoGestacion(
+          diasGestacion,
+          hembra.especie.nombre,
+        );
+      } else {
+        const gestacion = this.validationService.calcularGestacion(
+          undefined,
+          undefined,
+          hembra.especie.nombre,
+          createPartoAnimalDto.dias_gestacion,
+        );
+
+        diasGestacion = gestacion.dias;
+        semanasGestacion = gestacion.semanas;
       }
 
       const numeroCrias =
@@ -111,8 +129,65 @@ export class PartoAnimalService {
     }
   }
 
-  findAll() {
-    return `This action returns all partoAnimal`;
+  async findAll(filtros: FiltrarPartosDto) {
+    const {
+      finca_id,
+      hembra_id,
+      tipo_parto,
+      estado,
+      fecha_desde,
+      fecha_hasta,
+      page = 1,
+      limit = 10,
+    } = filtros;
+
+    const query = this.partoRepository
+      .createQueryBuilder('parto')
+      .leftJoinAndSelect('parto.hembra', 'hembra')
+      .leftJoinAndSelect('hembra.finca', 'finca')
+      .leftJoinAndSelect('parto.servicio_asociado', 'servicio')
+      .orderBy('parto.fecha_parto', 'DESC');
+
+    if (finca_id) {
+      query.andWhere('finca.id = :finca_id', { finca_id });
+    }
+
+    if (hembra_id) {
+      query.andWhere('hembra.id = :hembra_id', { hembra_id });
+    }
+
+    if (tipo_parto) {
+      query.andWhere('parto.tipo_parto = :tipo_parto', { tipo_parto });
+    }
+
+    if (estado) {
+      query.andWhere('parto.estado = :estado', { estado });
+    }
+
+    if (fecha_desde) {
+      query.andWhere('parto.fecha_parto >= :fecha_desde', {
+        fecha_desde,
+      });
+    }
+
+    if (fecha_hasta) {
+      query.andWhere('parto.fecha_parto <= :fecha_hasta', {
+        fecha_hasta,
+      });
+    }
+
+    const skip = (page - 1) * limit;
+    query.skip(skip).take(limit);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      data,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   findOne(id: number) {

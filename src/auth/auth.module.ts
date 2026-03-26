@@ -40,7 +40,7 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
         return {
           secret: configService.get('JWT_SECRET'),
           signOptions: {
-            expiresIn: '12h',
+            expiresIn: '1d',
           },
         };
       },
