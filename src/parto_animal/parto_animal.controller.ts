@@ -31,8 +31,9 @@ export class PartoAnimalController {
   }
 
   @Get(':id')
+  @AuthCliente()
   findOne(@Param('id') id: string) {
-    return this.partoAnimalService.findOne(+id);
+    return this.partoAnimalService.findOne(id);
   }
 
   @Patch(':id')
@@ -40,7 +41,7 @@ export class PartoAnimalController {
     @Param('id') id: string,
     @Body() updatePartoAnimalDto: UpdatePartoAnimalDto,
   ) {
-    return this.partoAnimalService.update(+id, updatePartoAnimalDto);
+    return this.partoAnimalService.update(id, updatePartoAnimalDto);
   }
 
   @Delete(':id')

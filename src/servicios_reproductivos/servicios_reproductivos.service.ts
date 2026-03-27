@@ -18,6 +18,7 @@ import {
 } from 'src/interfaces/servicios-reproductivos.enum';
 import { EstadoCeloAnimal } from 'src/interfaces/celos.animal.enum';
 import { UpdateEstadoServicioDto } from './dto/update-estado-servicio.dto';
+import { PartoAnimal } from 'src/parto_animal/entities/parto_animal.entity';
 
 @Injectable()
 export class ServiciosReproductivosService {
@@ -30,6 +31,8 @@ export class ServiciosReproductivosService {
     private animalRepo: Repository<AnimalFinca>,
     @InjectRepository(CelosAnimal)
     private celoRepo: Repository<CelosAnimal>,
+    @InjectRepository(PartoAnimal)
+    private partoRepo: Repository<PartoAnimal>,
     private dataSource: DataSource,
   ) {}
 
@@ -359,6 +362,48 @@ export class ServiciosReproductivosService {
     }
 
     return servicio;
+  }
+
+  async findAllHembraId(id: string) {
+    try {
+      const hembra = await this.animalRepo.findOne({
+        where: { id: id },
+        select: ['id', 'sexo'],
+      });
+
+      if (!hembra) {
+        throw new NotFoundException('No se encontró la hembra seleccionada');
+      }
+
+      if (hembra.sexo !== 'Hembra') {
+        throw new NotFoundException('El animal seleccionado no es una hembra');
+      }
+
+      const servicios = await this.servicioRepo
+        .createQueryBuilder('servicio')
+        .leftJoinAndSelect('servicio.hembra', 'hembra')
+        .leftJoinAndSelect('servicio.macho', 'macho')
+        .leftJoinAndSelect('servicio.celo_asociado', 'celo')
+        .leftJoinAndSelect('servicio.detalles', 'detalles')
+        .leftJoin('partos_animales', 'parto', 'parto.servicio_id = servicio.id')
+        .where('servicio.hembra_id = :hembraId', { hembraId: id })
+        .andWhere('servicio.estado = :estado', {
+          estado: EstadoServicio.REALIZADO,
+        })
+        .andWhere('servicio.exitoso = :exitoso', { exitoso: true })
+        .andWhere('parto.id IS NULL')
+        .orderBy('servicio.fecha_servicio', 'DESC')
+        .getMany();
+
+      return servicios;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error(
+        `Error al obtener servicios de la hembra: ${error.message}`,
+      );
+    }
   }
 
   async update(

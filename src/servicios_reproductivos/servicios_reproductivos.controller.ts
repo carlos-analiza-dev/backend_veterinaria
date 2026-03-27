@@ -48,6 +48,13 @@ export class ServiciosReproductivosController {
     return servicio;
   }
 
+  @Get('/hembra/:id')
+  @AuthCliente()
+  async findAllHembraId(@Param('id', ParseUUIDPipe) id: string) {
+    const result = await this.serviciosReproductivosService.findAllHembraId(id);
+    return result;
+  }
+
   @Patch(':id')
   @AuthCliente()
   async update(

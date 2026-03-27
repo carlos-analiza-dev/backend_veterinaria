@@ -130,63 +130,6 @@ export class CelosAnimalValidationService {
           `⚠️ No puede registrar un nuevo celo hasta después del parto.`,
       );
     }
-
-    // Si pasó el período de gestación, verificar si ya hubo parto
-    await this.validarPartoRegistrado(animal, fechaServicio, periodoGestacion);
-  }
-
-  private async validarPartoRegistrado(
-    animal: AnimalFinca,
-    fechaServicio: Date,
-    periodoGestacion: number,
-  ): Promise<void> {
-    // Calcular fecha esperada de parto
-    const fechaEsperadaParto = new Date(fechaServicio);
-    fechaEsperadaParto.setDate(fechaEsperadaParto.getDate() + periodoGestacion);
-
-    const fechaActual = new Date();
-
-    // Buscar si hay registros de parto para este animal
-    // Nota: Necesitas implementar la entidad Parto
-    // Por ahora, esta es una validación placeholder
-    const tienePartoRegistrado = await this.verificarPartoRegistrado(
-      animal,
-      fechaServicio,
-    );
-
-    if (!tienePartoRegistrado) {
-      const diasPostPartoEsperado = Math.floor(
-        (fechaActual.getTime() - fechaEsperadaParto.getTime()) /
-          (1000 * 60 * 60 * 24),
-      );
-
-      if (diasPostPartoEsperado > 0) {
-        throw new BadRequestException(
-          `⚠️ El período de gestación ha finalizado, pero no se ha registrado el parto.\n\n` +
-            `📅 Fecha de servicio: ${fechaServicio.toLocaleDateString()}\n` +
-            `🎯 Fecha estimada de parto: ${fechaEsperadaParto.toLocaleDateString()}\n` +
-            `⏰ Han pasado ${diasPostPartoEsperado} días desde la fecha estimada de parto.\n\n` +
-            `❗ Por favor registre el parto antes de continuar con nuevos registros de celo.`,
-        );
-      }
-    }
-  }
-
-  private async verificarPartoRegistrado(
-    animal: AnimalFinca,
-    fechaServicio: Date,
-  ): Promise<boolean> {
-    // Por ahora retorna true para permitir el flujo
-    // Cuando implementes Parto, deberías hacer:
-    // const parto = await this.partoRepository.findOne({
-    //   where: {
-    //     animal: { id: animal.id },
-    //     fecha_parto: MoreThan(fechaServicio)
-    //   }
-    // });
-    // return !!parto;
-
-    return true;
   }
 
   async calcularNumeroCelo(animalId: string): Promise<number> {

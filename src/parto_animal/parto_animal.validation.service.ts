@@ -4,7 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, In } from 'typeorm';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { ServicioReproductivo } from 'src/servicios_reproductivos/entities/servicios_reproductivo.entity';
 import { CelosAnimal } from 'src/celos_animal/entities/celos_animal.entity';
@@ -153,7 +153,7 @@ export class PartoAnimalValidationService {
 
     if (edadMeses < edadMinimaMeses) {
       throw new BadRequestException(
-        `❌ La hembra es demasiado joven para reproducción.\n\n` +
+        `❌ La hembra es demasiado joven para ingresar en proceso de reproducción.\n\n` +
           `🐄 Especie: ${hembra.especie.nombre}\n` +
           `📅 Fecha de nacimiento: ${fechaNacimiento.toLocaleDateString()}\n` +
           `📆 Edad actual: ${Math.floor(edadMeses)} meses (${(edadMeses / 12).toFixed(1)} años)\n` +
@@ -729,6 +729,68 @@ ${dias < minDias ? '⚠️ Parto prematuro detectado' : '⚠️ Parto prolongado
 Por favor verifique las fechas ingresadas.
 `;
       throw new BadRequestException(mensaje);
+    }
+  }
+
+  //VALIDAR IDENTIFICADORES
+  async validarIdentificadoresCrias(
+    crias: any[],
+    fincaId: string,
+  ): Promise<void> {
+    if (!crias || crias.length === 0) return;
+
+    const identificadores = new Set<string>();
+    const identificadoresDuplicados: string[] = [];
+    const identificadoresVacios: number[] = [];
+
+    for (let i = 0; i < crias.length; i++) {
+      const cria = crias[i];
+
+      if (!cria.identificador || cria.identificador.trim() === '') {
+        identificadoresVacios.push(i + 1);
+        continue;
+      }
+
+      const identificador = cria.identificador.trim().toUpperCase();
+
+      if (identificadores.has(identificador)) {
+        identificadoresDuplicados.push(identificador);
+      } else {
+        identificadores.add(identificador);
+      }
+    }
+
+    if (identificadoresVacios.length > 0) {
+      const mensaje =
+        identificadoresVacios.length === 1
+          ? `La cría #${identificadoresVacios[0]} no tiene identificador. Por favor, ingrese un identificador válido.`
+          : `Las crías #${identificadoresVacios.join(', #')} no tienen identificador. Por favor, ingrese identificadores válidos.`;
+      throw new BadRequestException(mensaje);
+    }
+
+    if (identificadoresDuplicados.length > 0) {
+      const mensaje = `Los siguientes identificadores están duplicados entre las crías: ${identificadoresDuplicados.join(', ')}. Cada cría debe tener un identificador único.`;
+      throw new BadRequestException(mensaje);
+    }
+
+    const identificadoresArray = Array.from(identificadores);
+
+    if (identificadoresArray.length > 0) {
+      const animalesExistentes = await this.animalRepository.find({
+        where: {
+          identificador: In(identificadoresArray),
+          finca: { id: fincaId },
+        },
+        select: ['identificador'],
+      });
+
+      if (animalesExistentes.length > 0) {
+        const identificadoresExistentes = animalesExistentes.map(
+          (a) => a.identificador,
+        );
+        const mensaje = `Los siguientes identificadores ya están registrados en la finca: ${identificadoresExistentes.join(', ')}. Por favor, use identificadores únicos.`;
+        throw new BadRequestException(mensaje);
+      }
     }
   }
 }
