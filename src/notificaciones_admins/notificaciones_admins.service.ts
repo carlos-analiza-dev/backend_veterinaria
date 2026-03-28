@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { UpdateNotificacionesAdminDto } from './dto/update-notificaciones_admin.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { NotificacionesAdmin } from './entities/notificaciones_admin.entity';
 import { Repository } from 'typeorm';
 import { User } from 'src/auth/entities/auth.entity';
 import { ValidRoles } from 'src/interfaces/valid-roles.interface';
 import { NotificationType } from 'src/interfaces/nptificaciones.type';
+import { CreateNotificacionesAdminDto } from './dto/create-notificaciones_admin.dto';
 
 @Injectable()
 export class NotificacionesAdminsService {
@@ -15,6 +15,25 @@ export class NotificacionesAdminsService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
   ) {}
+
+  async create(createNotification: CreateNotificacionesAdminDto) {
+    const { message, title, type } = createNotification;
+
+    const admins = await this.userRepo.find({
+      where: { role: { name: ValidRoles.Administrador } },
+      relations: ['role'],
+    });
+
+    const notifications = admins.map((admin) =>
+      this.notifitacionRepo.create({
+        type,
+        title,
+        message,
+        user: admin,
+      }),
+    );
+    await this.notifitacionRepo.save(notifications);
+  }
 
   async notifyAdmins(type: NotificationType, title: string, message: string) {
     try {

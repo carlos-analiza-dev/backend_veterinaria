@@ -11,8 +11,9 @@ export class CreateNotificacionesAdminDto {
   @IsString()
   message: string;
 
+  @IsOptional()
   @IsUUID()
-  userId: string;
+  userId?: string;
 
   @IsOptional()
   read?: boolean;
