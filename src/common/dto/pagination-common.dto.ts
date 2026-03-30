@@ -68,6 +68,10 @@ export class PaginationDto {
 
   @IsOptional()
   @IsString()
+  metodo_pago?: string;
+
+  @IsOptional()
+  @IsString()
   rol?: string;
 
   @IsOptional()

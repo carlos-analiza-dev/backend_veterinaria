@@ -89,6 +89,7 @@ import { ServiciosReproductivosModule } from './servicios_reproductivos/servicio
 import { DetallesServicioReproductivoModule } from './detalles_servicio_reproductivo/detalles_servicio_reproductivo.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { PartoAnimalModule } from './parto_animal/parto_animal.module';
+import { GastosModule } from './gastos/gastos.module';
 
 @Module({
   imports: [
@@ -254,6 +255,8 @@ import { PartoAnimalModule } from './parto_animal/parto_animal.module';
     DetallesServicioReproductivoModule,
 
     PartoAnimalModule,
+
+    GastosModule,
   ],
   controllers: [],
   providers: [],
