@@ -292,9 +292,7 @@ export class AuthService {
         throw error;
       }
 
-      throw new BadRequestException(
-        'Error al verificar la cuenta: ' + error.message,
-      );
+      throw new BadRequestException('Error al verificar la cuenta: ');
     }
   }
 

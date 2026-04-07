@@ -158,7 +158,7 @@ export class ServiciosService {
       };
     } catch (error) {
       throw new BadRequestException(
-        error.message || 'Ocurrió un error al actualizar el servicio',
+        'Ocurrió un error al actualizar el servicio',
       );
     }
   }

@@ -302,9 +302,7 @@ export class AuthClientesService {
         throw error;
       }
 
-      throw new BadRequestException(
-        'Error al verificar la cuenta: ' + error.message,
-      );
+      throw new BadRequestException('Error al verificar la cuenta ');
     }
   }
 

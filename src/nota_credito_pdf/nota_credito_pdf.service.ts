@@ -1,6 +1,5 @@
 import { Injectable, Res } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import * as PDFDocument from 'pdfkit';
 import { Response } from 'express';
 import * as path from 'path';
 import { DatosEmpresa } from 'src/datos-empresa/entities/datos-empresa.entity';
@@ -8,6 +7,8 @@ import { NotaCredito } from 'src/nota_credito/entities/nota_credito.entity';
 import { Repository } from 'typeorm';
 import { User } from 'src/auth/entities/auth.entity';
 import * as fs from 'fs';
+
+const PDFDocument = require('pdfkit');
 
 @Injectable()
 export class NotaCreditoPdfService {
@@ -64,7 +65,10 @@ export class NotaCreditoPdfService {
     } catch (validationError) {
       return res.status(500).json({
         message: 'Error al validar datos',
-        error: validationError.message,
+        error:
+          validationError instanceof Error
+            ? validationError.message
+            : 'Error desconocido',
       });
     }
 
@@ -92,7 +96,7 @@ export class NotaCreditoPdfService {
         try {
           doc.image(logoPath, 400, 0, { width: 120 });
         } catch (imageError) {
-          console.warn('No se pudo cargar el logo:', imageError.message);
+          console.warn('No se pudo cargar el logo');
         }
       }
 
@@ -711,7 +715,8 @@ export class NotaCreditoPdfService {
       } else {
         res.status(500).json({
           message: 'Error al generar la nota de crédito PDF',
-          error: pdfError.message,
+          error:
+            pdfError instanceof Error ? pdfError.message : 'Error desconocido',
         });
       }
     }
@@ -728,7 +733,7 @@ export class NotaCreditoPdfService {
       if (!res.headersSent) {
         res.status(500).json({
           message: 'Error al generar la previsualización',
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Error desconocido',
         });
       }
     }

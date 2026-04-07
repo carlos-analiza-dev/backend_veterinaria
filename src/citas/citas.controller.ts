@@ -18,7 +18,6 @@ export class CitasController {
   constructor(private readonly citasService: CitasService) {}
 
   @Post()
-  @Post()
   create(@Body() createCitaDto: CreateCitaDto) {
     return this.citasService.create(createCitaDto);
   }

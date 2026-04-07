@@ -2,7 +2,7 @@
   <head>
     <meta charset='UTF-8' />
     <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-    <title>Cita Médica Pendiente</title>
+    <title>Cita Confirmada</title>
     <style>
       body {
         font-family: 'Arial', sans-serif;
@@ -36,6 +36,16 @@
         max-width: 150px;
         margin-bottom: 15px;
       }
+      .confirmation-badge {
+        background-color: #c6f6d5;
+        color: #22543d;
+        padding: 10px;
+        text-align: center;
+        border-radius: 4px;
+        font-weight: bold;
+        margin-bottom: 25px;
+        border-left: 4px solid #38a169;
+      }
       .appointment-card {
         background-color: #ebf8ff;
         border-left: 4px solid #4299e1;
@@ -55,14 +65,6 @@
       .detail-value {
         color: #2d3748;
       }
-      .footer {
-        font-size: 14px;
-        color: #718096;
-        text-align: center;
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 1px solid #e2e8f0;
-      }
       .button {
         display: inline-block;
         background-color: #4299e1;
@@ -73,8 +75,13 @@
         font-weight: 500;
         margin: 20px 0;
       }
-      .button:hover {
-        background-color: #3182ce;
+      .footer {
+        font-size: 14px;
+        color: #718096;
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
       }
       .note {
         font-size: 14px;
@@ -94,29 +101,61 @@
                 alt='Logo'
                 class='logo'
               />
-              <h1>Nueva Cita Médica Programada</h1>
+              <h1>¡Cita Médica Confirmada!</h1>
             </div>
 
-            <p>Hola Dr./Dra. {{nombre_veterinario}},</p>
-            <p>Se ha programado una nueva cita médica que requiere su atención:</p>
+            <div class='confirmation-badge'>
+              ✓ Su cita ha sido confirmada exitosamente
+            </div>
+
+            <p>Hola <strong>{{nombre_cliente}}</strong>,</p>
+            <p>Nos complace informarle que su cita ha sido
+              <strong>confirmada</strong>
+              y está agendada para la fecha y hora indicadas:</p>
 
             <div class='appointment-card'>
               <div class='detail-row'>
-                <span class='detail-label'>Cliente:</span>
-                <span class='detail-value'>{{cliente}}</span>
+                <span class='detail-label'>Código de Cita:</span>
+                <span class='detail-value'>{{codigo_cita}}</span>
+              </div>
+              <div class='detail-row'>
+                <span class='detail-label'>Fecha:</span>
+                <span class='detail-value'>{{fecha}}</span>
+              </div>
+              <div class='detail-row'>
+                <span class='detail-label'>Hora:</span>
+                <span class='detail-value'>{{hora_inicio}} - {{hora_fin}}</span>
+              </div>
+              <div class='detail-row'>
+                <span class='detail-label'>Veterinario:</span>
+                <span class='detail-value'>{{nombre_veterinario}}</span>
               </div>
               <div class='detail-row'>
                 <span class='detail-label'>Finca:</span>
                 <span class='detail-value'>{{nombre_finca}}</span>
               </div>
-              <div class='detail-row'>
-                <span class='detail-label'>Fecha/Hora:</span>
-                <span class='detail-value'>{{hora_inicio}} - {{hora_fin}}</span>
-              </div>
+              {{#if cantidad_animales}}
+                <div class='detail-row'>
+                  <span class='detail-label'>Animales:</span>
+                  <span class='detail-value'>{{cantidad_animales}}</span>
+                </div>
+              {{/if}}
+              {{#if servicio}}
+                <div class='detail-row'>
+                  <span class='detail-label'>Servicio:</span>
+                  <span class='detail-value'>{{servicio}}</span>
+                </div>
+              {{/if}}
             </div>
 
-            <p>Por favor confirme su disponibilidad para esta cita lo antes
-              posible.</p>
+            <p><strong>Recomendaciones:</strong></p>
+            <ul>
+              <li>Por favor, asegúrese de tener a los animales listos para la
+                revisión.</li>
+              <li>Si necesita cancelar o reprogramar, hágalo con al menos 24
+                horas de anticipación.</li>
+              <li>Llegue puntual a la cita programada.</li>
+            </ul>
 
             <p class='note'>
               <strong>Nota:</strong>

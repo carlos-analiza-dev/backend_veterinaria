@@ -20,9 +20,7 @@ export class CelosRegularService {
         this.logger.debug(`Detalles: ${JSON.stringify(resultado.detalles)}`);
       }
     } catch (error) {
-      this.logger.error(
-        `Error actualizando estados de celos: ${error.message}`,
-      );
+      this.logger.error(`Error actualizando estados de celos`);
     }
   }
 
@@ -32,9 +30,7 @@ export class CelosRegularService {
     try {
       await this.validationService.programarActualizacionAutomatica();
     } catch (error) {
-      this.logger.error(
-        `Error actualizando celos sin fecha fin: ${error.message}`,
-      );
+      this.logger.error(`Error actualizando celos sin fecha fin`);
     }
   }
 }

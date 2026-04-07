@@ -76,4 +76,8 @@ export class CreateCitaDto {
 
   @IsOptional()
   estado?: EstadoCita;
+
+  @IsOptional()
+  @IsString()
+  motivoCancelacion?: string;
 }

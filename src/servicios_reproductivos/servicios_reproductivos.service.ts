@@ -400,9 +400,7 @@ export class ServiciosReproductivosService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new Error(
-        `Error al obtener servicios de la hembra: ${error.message}`,
-      );
+      throw new Error(`Error al obtener servicios de la hembra`);
     }
   }
 

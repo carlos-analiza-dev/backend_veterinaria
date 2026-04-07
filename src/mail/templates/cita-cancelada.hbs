@@ -2,7 +2,7 @@
   <head>
     <meta charset='UTF-8' />
     <meta name='viewport' content='width=device-width, initial-scale=1.0' />
-    <title>Cita Médica Pendiente</title>
+    <title>Cita Cancelada</title>
     <style>
       body {
         font-family: 'Arial', sans-serif;
@@ -28,7 +28,7 @@
         margin-bottom: 25px;
       }
       h1 {
-        color: #2b6cb0;
+        color: #e53e3e;
         font-size: 24px;
         margin: 0 0 10px 0;
       }
@@ -36,9 +36,19 @@
         max-width: 150px;
         margin-bottom: 15px;
       }
+      .cancellation-badge {
+        background-color: #fed7d7;
+        color: #742a2a;
+        padding: 10px;
+        text-align: center;
+        border-radius: 4px;
+        font-weight: bold;
+        margin-bottom: 25px;
+        border-left: 4px solid #e53e3e;
+      }
       .appointment-card {
-        background-color: #ebf8ff;
-        border-left: 4px solid #4299e1;
+        background-color: #fef5e7;
+        border-left: 4px solid #ed8936;
         padding: 15px;
         border-radius: 4px;
         margin-bottom: 25px;
@@ -55,14 +65,6 @@
       .detail-value {
         color: #2d3748;
       }
-      .footer {
-        font-size: 14px;
-        color: #718096;
-        text-align: center;
-        margin-top: 30px;
-        padding-top: 20px;
-        border-top: 1px solid #e2e8f0;
-      }
       .button {
         display: inline-block;
         background-color: #4299e1;
@@ -73,8 +75,13 @@
         font-weight: 500;
         margin: 20px 0;
       }
-      .button:hover {
-        background-color: #3182ce;
+      .footer {
+        font-size: 14px;
+        color: #718096;
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
       }
       .note {
         font-size: 14px;
@@ -94,29 +101,52 @@
                 alt='Logo'
                 class='logo'
               />
-              <h1>Nueva Cita Médica Programada</h1>
+              <h1>Cita Médica Cancelada</h1>
             </div>
 
-            <p>Hola Dr./Dra. {{nombre_veterinario}},</p>
-            <p>Se ha programado una nueva cita médica que requiere su atención:</p>
+            <div class='cancellation-badge'>
+              ✗ Su cita ha sido cancelada
+            </div>
+
+            <p>Hola <strong>{{nombre_cliente}}</strong>,</p>
+            <p>Le informamos que su cita ha sido
+              <strong>cancelada</strong>
+              con los siguientes detalles:</p>
 
             <div class='appointment-card'>
               <div class='detail-row'>
-                <span class='detail-label'>Cliente:</span>
-                <span class='detail-value'>{{cliente}}</span>
+                <span class='detail-label'>Código de Cita:</span>
+                <span class='detail-value'>{{codigo_cita}}</span>
+              </div>
+              <div class='detail-row'>
+                <span class='detail-label'>Fecha original:</span>
+                <span class='detail-value'>{{fecha}}</span>
+              </div>
+              <div class='detail-row'>
+                <span class='detail-label'>Hora original:</span>
+                <span class='detail-value'>{{hora_inicio}} - {{hora_fin}}</span>
               </div>
               <div class='detail-row'>
                 <span class='detail-label'>Finca:</span>
                 <span class='detail-value'>{{nombre_finca}}</span>
               </div>
-              <div class='detail-row'>
-                <span class='detail-label'>Fecha/Hora:</span>
-                <span class='detail-value'>{{hora_inicio}} - {{hora_fin}}</span>
-              </div>
+              {{#if motivo_cancelacion}}
+                <div class='detail-row'>
+                  <span class='detail-label'>Motivo:</span>
+                  <span class='detail-value'>{{motivo_cancelacion}}</span>
+                </div>
+              {{/if}}
             </div>
 
-            <p>Por favor confirme su disponibilidad para esta cita lo antes
-              posible.</p>
+            <p><strong>¿Qué puede hacer ahora?</strong></p>
+            <ul>
+              <li>Agendar una nueva cita desde nuestra plataforma.</li>
+              <li>Contactarnos para reprogramar su cita.</li>
+              <li>Llamar a nuestra línea de atención al cliente para más
+                información.</li>
+            </ul>
+
+            <p>Lamentamos los inconvenientes que esto pueda causarle.</p>
 
             <p class='note'>
               <strong>Nota:</strong>

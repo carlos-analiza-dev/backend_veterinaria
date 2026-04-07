@@ -16,11 +16,11 @@ export class CreateGastoDto {
   })
   categoria: CategoriaGasto;
 
-  @IsOptional()
+  @IsNotEmpty({ message: 'El ingreso de una finca es obligatorio' })
   @IsUUID('4', {
     message: 'La finca seleccionada no es válida.',
   })
-  fincaId?: string;
+  fincaId: string;
 
   @IsOptional()
   @IsUUID('4', {

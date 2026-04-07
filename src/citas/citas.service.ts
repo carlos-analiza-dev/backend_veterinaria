@@ -821,12 +821,14 @@ export class CitasService {
   async update(id: string, updateCitaDto: UpdateCitaDto) {
     const cita = await this.citas_repo.findOne({
       where: { id },
-      relations: ['medico'],
+      relations: ['medico', 'cliente', 'finca', 'subServicio'],
     });
 
     if (!cita) {
       throw new NotFoundException('Cita no encontrada');
     }
+
+    const estadoAnterior = cita.estado;
 
     const {
       medicoId = cita.medico.id,
@@ -840,6 +842,7 @@ export class CitasService {
       totalPagar,
       totalFinal,
       estado,
+      motivoCancelacion,
     } = updateCitaDto;
 
     if (estado) {
@@ -954,6 +957,104 @@ export class CitasService {
     cita.cantidadAnimales = cantidadAnimales ?? cita.cantidadAnimales;
     cita.estado = estado;
 
-    return await this.citas_repo.save(cita);
+    if (estado === EstadoCita.CANCELADA && motivoCancelacion) {
+      cita.motivoCancelacion = motivoCancelacion;
+    }
+
+    const citaActualizada = await this.citas_repo.save(cita);
+
+    await this.enviarNotificacionEstadoCita(
+      citaActualizada,
+      estadoAnterior,
+      motivoCancelacion,
+    );
+
+    return citaActualizada;
+  }
+
+  private async enviarNotificacionEstadoCita(
+    cita: Cita,
+    estadoAnterior: EstadoCita,
+    motivoCancelacion?: string,
+  ) {
+    if (cita.estado === estadoAnterior) {
+      return;
+    }
+
+    const formatDate = (date: any): string => {
+      if (!date) return 'N/A';
+
+      const options: Intl.DateTimeFormatOptions = {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      };
+
+      if (typeof date === 'string') {
+        const [year, month, day] = date.split('-').map(Number);
+        const dateObj = new Date(year, month - 1, day);
+
+        return dateObj.toLocaleDateString('es-ES', options);
+      }
+
+      if (date instanceof Date) {
+        return date.toLocaleDateString('es-ES', options);
+      }
+
+      return 'N/A';
+    };
+
+    const fechaFormateada = formatDate(cita.fecha);
+
+    try {
+      switch (cita.estado) {
+        case EstadoCita.CONFIRMADA:
+          await this.email_service.sendCitaConfirmadaCliente(
+            cita.cliente.email,
+            cita.cliente.nombre,
+            cita.codigo,
+            fechaFormateada,
+            cita.horaInicio.substring(0, 5),
+            cita.horaFin.substring(0, 5),
+            cita.medico.usuario.name,
+            cita.finca.nombre_finca,
+            cita.cantidadAnimales,
+            cita.subServicio?.nombre,
+          );
+          break;
+
+        case EstadoCita.CANCELADA:
+          await this.email_service.sendCitaCanceladaCliente(
+            cita.cliente.email,
+            cita.cliente.nombre,
+            cita.codigo,
+            fechaFormateada,
+            cita.horaInicio.substring(0, 5),
+            cita.horaFin.substring(0, 5),
+            cita.finca.nombre_finca,
+            motivoCancelacion,
+          );
+          break;
+
+        case EstadoCita.COMPLETADA:
+          await this.email_service.sendCitaCompletadaCliente(
+            cita.cliente.email,
+            cita.cliente.nombre,
+            cita.codigo,
+            fechaFormateada,
+            cita.medico.usuario.name,
+            cita.finca.nombre_finca,
+            cita.subServicio?.nombre,
+            cita.totalFinal,
+            cita.cliente.pais.simbolo_moneda,
+          );
+          break;
+
+        case EstadoCita.PENDIENTE:
+          break;
+      }
+    } catch (error) {
+      console.error(`Error al enviar notificación de cita ${cita.estado}`);
+    }
   }
 }

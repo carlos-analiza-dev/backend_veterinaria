@@ -1,29 +1,30 @@
-import {
-  Entity,
-  Column,
-  ManyToOne,
-  JoinColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  PrimaryGeneratedColumn,
-} from 'typeorm';
-import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
-import { CategoriaGasto, MetodoPago } from 'src/interfaces/gastos.enums';
-import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity';
-import { RazaAnimal } from 'src/raza_animal/entities/raza_animal.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity';
+import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
+import { MetodoPago } from 'src/interfaces/gastos.enums';
+import { CategoriaIngreso } from 'src/interfaces/ingresos.enums';
+import { RazaAnimal } from 'src/raza_animal/entities/raza_animal.entity';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
-@Entity('gastos')
-export class Gasto {
+@Entity('ingresos')
+export class Ingreso {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({
     type: 'enum',
-    enum: CategoriaGasto,
+    enum: CategoriaIngreso,
     nullable: false,
   })
-  categoria: CategoriaGasto;
+  categoria: CategoriaIngreso;
 
   @ManyToOne(() => FincasGanadero)
   finca: FincasGanadero;
@@ -44,7 +45,7 @@ export class Gasto {
   monto: number;
 
   @Column({ type: 'date' })
-  fecha_gasto: Date;
+  fecha_ingreso: Date;
 
   @Column({
     type: 'enum',

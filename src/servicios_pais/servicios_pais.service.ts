@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { CreateServiciosPaiDto } from './dto/create-servicios_pai.dto';
 import { UpdateServiciosPaiDto } from './dto/update-servicios_pai.dto';
@@ -59,16 +60,12 @@ export class ServiciosPaisService {
         );
       }
 
-      const servicioPaisExistente = await this.servicio_percios_Repo.findOne({
-        where: {
-          subServicio: { id: sub_servicio_id },
-          pais: { id: paisId },
-        },
-      });
-
-      if (servicioPaisExistente) {
-        throw new BadRequestException(
-          'Ya existe un precio configurado para este servicio en el país seleccionado.',
+      if (cantidadMin !== null && cantidadMax !== null) {
+        await this.validarRangosUnicos(
+          sub_servicio_id,
+          paisId,
+          cantidadMin,
+          cantidadMax,
         );
       }
 
@@ -85,9 +82,8 @@ export class ServiciosPaisService {
         cantidadMax,
       });
 
-      const servicioPaisGuardado = await this.servicio_percios_Repo.save(
-        servicioPais,
-      );
+      const servicioPaisGuardado =
+        await this.servicio_percios_Repo.save(servicioPais);
 
       if (insumos && insumos.length > 0) {
         await this.procesarInsumos(servicioPaisGuardado.id, insumos);
@@ -140,14 +136,11 @@ export class ServiciosPaisService {
           cantidad: insumoDto.cantidad || 1,
         });
 
-        const servicioInsumoGuardado = await this.servicioInsumoRepo.save(
-          servicioInsumo,
-        );
+        const servicioInsumoGuardado =
+          await this.servicioInsumoRepo.save(servicioInsumo);
         insumosCreados.push(servicioInsumoGuardado);
       } catch (error) {
-        throw new BadRequestException(
-          `Error al procesar insumos: ${error.message}`,
-        );
+        throw new BadRequestException(`Error al procesar insumos`);
       }
     }
 
@@ -240,6 +233,35 @@ export class ServiciosPaisService {
       }
     }
 
+    const tiempoActualizado = tiempo !== undefined ? tiempo : servicio.tiempo;
+    const cantidadMinActualizada =
+      cantidadMin !== undefined ? cantidadMin : servicio.cantidadMin;
+    const cantidadMaxActualizada =
+      cantidadMax !== undefined ? cantidadMax : servicio.cantidadMax;
+    const paisActualizado = paisId
+      ? await this.paisRepo.findOne({ where: { id: paisId } })
+      : servicio.pais;
+    const subServicioActual = servicio.subServicio;
+
+    const hayCambioEnRangos =
+      (cantidadMin !== undefined && cantidadMin !== servicio.cantidadMin) ||
+      (cantidadMax !== undefined && cantidadMax !== servicio.cantidadMax) ||
+      (paisId !== undefined && paisId !== servicio.pais?.id);
+
+    if (
+      hayCambioEnRangos &&
+      cantidadMinActualizada !== null &&
+      cantidadMaxActualizada !== null
+    ) {
+      await this.validarRangosUnicos(
+        subServicioActual.id,
+        paisActualizado.id,
+        cantidadMinActualizada,
+        cantidadMaxActualizada,
+        id,
+      );
+    }
+
     if (tiempo !== undefined) servicio.tiempo = tiempo;
     if (cantidadMin !== undefined) servicio.cantidadMin = cantidadMin;
     if (cantidadMax !== undefined) servicio.cantidadMax = cantidadMax;
@@ -299,5 +321,60 @@ export class ServiciosPaisService {
     }
 
     return servicioPais.insumos;
+  }
+
+  private async validarRangosUnicos(
+    sub_servicio_id: string,
+    paisId: string,
+    nuevaMin: number | null,
+    nuevaMax: number | null,
+    excludeId?: string,
+  ): Promise<void> {
+    if (nuevaMin === null && nuevaMax === null) {
+      return;
+    }
+
+    const serviciosExistentes = await this.servicio_percios_Repo.find({
+      where: {
+        subServicio: { id: sub_servicio_id },
+        pais: { id: paisId },
+      },
+      relations: ['subServicio', 'pais'],
+    });
+
+    const serviciosAFiltrar = excludeId
+      ? serviciosExistentes.filter((s) => s.id !== excludeId)
+      : serviciosExistentes;
+
+    const nuevoMin = nuevaMin ?? 0;
+    const nuevoMax = nuevaMax ?? Infinity;
+
+    for (const servicio of serviciosAFiltrar) {
+      const existenteMin = servicio.cantidadMin ?? 0;
+      const existenteMax = servicio.cantidadMax ?? Infinity;
+
+      const haySolapamiento = !(
+        nuevoMax < existenteMin || nuevoMin > existenteMax
+      );
+
+      if (haySolapamiento) {
+        const rangoNuevo = this.formatearRango(nuevaMin, nuevaMax);
+        const rangoExistente = this.formatearRango(
+          servicio.cantidadMin,
+          servicio.cantidadMax,
+        );
+
+        throw new ConflictException(
+          `El rango ${rangoNuevo} se solapa con el rango existente ${rangoExistente} para el mismo subservicio y país.`,
+        );
+      }
+    }
+  }
+
+  private formatearRango(min: number | null, max: number | null): string {
+    if (min === null && max === null) return 'sin límite';
+    if (min === null) return `0 - ${max}`;
+    if (max === null) return `${min} - ∞`;
+    return `${min} - ${max}`;
   }
 }

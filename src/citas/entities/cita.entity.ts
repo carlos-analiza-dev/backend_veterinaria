@@ -72,6 +72,9 @@ export class Cita {
   @Column({ type: 'int', default: 1 })
   cantidadAnimales: number;
 
+  @Column({ type: 'varchar', default: 'N/D' })
+  motivoCancelacion?: string;
+
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   totalPagar: number;
 

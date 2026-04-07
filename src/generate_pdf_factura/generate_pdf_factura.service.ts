@@ -1,12 +1,13 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Injectable, Res } from '@nestjs/common';
-import * as PDFDocument from 'pdfkit';
 import { Response } from 'express';
 import * as path from 'path';
 import { FacturaEncabezado } from 'src/factura_encabezado/entities/factura_encabezado.entity';
 import { DatosEmpresa } from 'src/datos-empresa/entities/datos-empresa.entity';
 import { User } from 'src/auth/entities/auth.entity';
+
+const PDFDocument = require('pdfkit');
 
 @Injectable()
 export class FacturaPdfService {
@@ -72,33 +73,30 @@ export class FacturaPdfService {
       try {
         doc.image(logoPath, 400, 0, { width: 120 });
       } catch (error) {
-        console.warn('No se pudo cargar el logo:', error.message);
+        console.warn(
+          'No se pudo cargar el logo:',
+          error instanceof Error ? error.message : 'Error desconocido',
+        );
       }
 
       const formatDate = (date: any): string => {
         if (!date) return 'N/A';
 
-        if (date instanceof Date) {
-          const options: Intl.DateTimeFormatOptions = {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-          };
-          return date.toLocaleDateString('es-ES', options);
-        }
+        const options: Intl.DateTimeFormatOptions = {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        };
 
         if (typeof date === 'string') {
-          try {
-            const dateObj = new Date(date);
-            const options: Intl.DateTimeFormatOptions = {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric',
-            };
-            return dateObj.toLocaleDateString('es-ES', options);
-          } catch {
-            return date;
-          }
+          const [year, month, day] = date.split('-').map(Number);
+          const dateObj = new Date(year, month - 1, day);
+
+          return dateObj.toLocaleDateString('es-ES', options);
+        }
+
+        if (date instanceof Date) {
+          return date.toLocaleDateString('es-ES', options);
         }
 
         return 'N/A';
@@ -673,7 +671,7 @@ export class FacturaPdfService {
       if (!res.headersSent) {
         res.status(500).json({
           message: 'Error al generar la factura PDF',
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Error desconocido',
         });
       }
     }
@@ -686,7 +684,7 @@ export class FacturaPdfService {
       if (!res.headersSent) {
         res.status(500).json({
           message: 'Error al generar la previsualización',
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Error desconocido',
         });
       }
     }

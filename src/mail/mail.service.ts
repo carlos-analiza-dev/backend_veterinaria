@@ -103,7 +103,125 @@ export class MailService {
 
       return { message: 'Cita enviada correctamente' };
     } catch (error) {
-      throw new Error(`Failed to send cita: ${error.message}`);
+      throw new Error(`Fallo al enviar la cita`);
+    }
+  }
+
+  // En tu archivo mail.service.ts
+
+  async sendCitaConfirmadaCliente(
+    email_cliente: string,
+    nombre_cliente: string,
+    codigo_cita: string,
+    fecha: string,
+    hora_inicio: string,
+    hora_fin: string,
+    nombre_veterinario: string,
+    nombre_finca: string,
+    cantidad_animales?: number,
+    servicio?: string,
+  ) {
+    if (!email_cliente)
+      throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email_cliente,
+        subject: '✅ Cita Confirmada - El Sembrador',
+        template: './cita-confirmada',
+        context: {
+          nombre_cliente,
+          codigo_cita,
+          fecha,
+          hora_inicio,
+          hora_fin,
+          nombre_veterinario,
+          nombre_finca,
+          cantidad_animales,
+          servicio,
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de confirmación enviado al cliente' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de confirmación`);
+    }
+  }
+
+  async sendCitaCanceladaCliente(
+    email_cliente: string,
+    nombre_cliente: string,
+    codigo_cita: string,
+    fecha: string,
+    hora_inicio: string,
+    hora_fin: string,
+    nombre_finca: string,
+    motivo_cancelacion?: string,
+  ) {
+    if (!email_cliente)
+      throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email_cliente,
+        subject: '❌ Cita Cancelada - El Sembrador',
+        template: './cita-cancelada',
+        context: {
+          nombre_cliente,
+          codigo_cita,
+          fecha,
+          hora_inicio,
+          hora_fin,
+          nombre_finca,
+          motivo_cancelacion: motivo_cancelacion || 'No especificado',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de cancelación enviado al cliente' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de cancelación`);
+    }
+  }
+
+  async sendCitaCompletadaCliente(
+    email_cliente: string,
+    nombre_cliente: string,
+    codigo_cita: string,
+    fecha: string,
+    nombre_veterinario: string,
+    nombre_finca: string,
+    servicio?: string,
+    total_pagar?: number,
+    simbolo_moneda?: string,
+    forma_pago?: string,
+  ) {
+    if (!email_cliente)
+      throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email_cliente,
+        subject: '✅ Cita Completada - El Sembrador',
+        template: './cita-completada',
+        context: {
+          nombre_cliente,
+          codigo_cita,
+          fecha,
+          nombre_veterinario,
+          nombre_finca,
+          servicio,
+          total_pagar,
+          simbolo_moneda: simbolo_moneda || 'L',
+          forma_pago,
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de cita completada enviado al cliente' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de cita completada`);
     }
   }
 }

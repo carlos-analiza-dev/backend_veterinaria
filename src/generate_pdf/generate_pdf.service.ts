@@ -2,10 +2,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Cita } from 'src/citas/entities/cita.entity';
 import { Repository } from 'typeorm';
 import { Injectable, Res } from '@nestjs/common';
-import * as PDFDocument from 'pdfkit';
 import { Response } from 'express';
 import { EstadoCita } from 'src/interfaces/estados_citas';
 import * as path from 'path';
+
+const PDFDocument = require('pdfkit');
 
 @Injectable()
 export class GeneratePdfService {
@@ -270,7 +271,7 @@ export class GeneratePdfService {
       if (!res.headersSent) {
         res.status(500).json({
           message: 'Error al generar la factura',
-          error: error.message,
+          error: error instanceof Error ? error.message : 'Error desconocido',
         });
       }
     }
