@@ -67,10 +67,41 @@ export class ClientePermisosService {
     }
   }
 
-  findAll() {
-    return this.clientePermisoRepo.find({
+  async findAll() {
+    return await this.clientePermisoRepo.find({
       relations: ['cliente', 'permiso'],
     });
+  }
+
+  async findAllByPropietario(propietario: Cliente) {
+    const propietarioId = propietario.id;
+
+    const permisos = await this.clientePermisoRepo.find({
+      where: { cliente: { id: propietarioId }, ver: true },
+      relations: ['permiso'],
+    });
+
+    if (!permisos || permisos.length === 0) {
+      throw new NotFoundException(
+        `Hola ${propietario.nombre} en estos momentos no cuentas con permisos`,
+      );
+    }
+
+    const permisosTransformados = permisos.map((item) => ({
+      id: item.permiso.id,
+      nombre: item.permiso.nombre,
+      descripcion: item.permiso.descripcion,
+      url: item.permiso.url,
+      modulo: item.permiso.modulo,
+      isActive: item.permiso.isActive,
+
+      ver: item.ver,
+      crear: item.crear,
+      editar: item.editar,
+      eliminar: item.eliminar,
+    }));
+
+    return permisosTransformados;
   }
 
   async findByCliente(clienteId: string) {

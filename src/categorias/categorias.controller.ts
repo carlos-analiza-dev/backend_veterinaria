@@ -1,4 +1,3 @@
-// src/categorias/categorias.controller.ts
 import {
   Controller,
   Get,
@@ -35,6 +34,11 @@ export class CategoriasController {
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
   findAll(@Query() searchCategoriaDto: SearchCategoriaDto) {
     return this.categoriasService.findAll(searchCategoriaDto);
+  }
+
+  @Get('all')
+  findAllCategorias() {
+    return this.categoriasService.findAllCategorias();
   }
 
   @Get(':id')

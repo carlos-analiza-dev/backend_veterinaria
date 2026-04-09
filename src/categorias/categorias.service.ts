@@ -73,13 +73,11 @@ export class CategoriasService {
         search?: string;
       } = {};
 
-      // Filtro por estado activo/inactivo si se proporciona específicamente
       if (isActive !== undefined) {
         whereConditions.push('categoria.is_active = :isActive');
         parameters.isActive = isActive;
       }
 
-      // Búsqueda por nombre o descripción
       if (search && search.trim() !== '') {
         whereConditions.push(
           '(LOWER(categoria.nombre) LIKE LOWER(:search) OR ' +
@@ -88,7 +86,6 @@ export class CategoriasService {
         parameters.search = `%${search}%`;
       }
 
-      // Aplicar condiciones WHERE
       if (whereConditions.length > 0) {
         query.where(whereConditions.join(' AND '), parameters);
       }
@@ -107,6 +104,17 @@ export class CategoriasService {
         limit,
         offset,
       };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAllCategorias() {
+    try {
+      const categorias = await this.categoria_repo.find({});
+      if (!categorias)
+        throw new NotFoundException('No se encontraron categorias disponibles');
+      return categorias;
     } catch (error) {
       throw error;
     }

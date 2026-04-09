@@ -10,6 +10,9 @@ import {
 import { ClientePermisosService } from './cliente_permisos.service';
 import { CreateClientePermisoDto } from './dto/create-cliente_permiso.dto';
 import { UpdateClientePermisoDto } from './dto/update-cliente_permiso.dto';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
+import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Controller('cliente-permisos')
 export class ClientePermisosController {
@@ -25,6 +28,12 @@ export class ClientePermisosController {
   @Get()
   findAll() {
     return this.clientePermisosService.findAll();
+  }
+
+  @Get('propietario')
+  @AuthCliente()
+  findAllByPropietario(@GetCliente() propietario: Cliente) {
+    return this.clientePermisosService.findAllByPropietario(propietario);
   }
 
   @Get(':id')

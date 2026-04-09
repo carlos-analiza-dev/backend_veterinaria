@@ -31,6 +31,18 @@ export class AuthClientesController {
     return this.authClientesService.create(createClienteDto);
   }
 
+  @Post('register-trabajador')
+  @AuthCliente()
+  createTrabajador(
+    @Body() createClienteDto: CreateAuthClienteDto,
+    @GetCliente() propietario: Cliente,
+  ) {
+    return this.authClientesService.createTrabajador(
+      createClienteDto,
+      propietario,
+    );
+  }
+
   @Post('login')
   loginUser(@Body() loginClienteDto: LoginClienteDto) {
     return this.authClientesService.login(loginClienteDto);
@@ -61,6 +73,15 @@ export class AuthClientesController {
   @Auth()
   getUsers(@Query() paginationDto: PaginationDto) {
     return this.authClientesService.getClientes(paginationDto);
+  }
+
+  @Get('trabajadores')
+  @AuthCliente()
+  getTrabajadores(
+    @Query() paginationDto: PaginationDto,
+    @GetCliente() propietario: Cliente,
+  ) {
+    return this.authClientesService.getTrabajadores(paginationDto, propietario);
   }
 
   @Get(':id')

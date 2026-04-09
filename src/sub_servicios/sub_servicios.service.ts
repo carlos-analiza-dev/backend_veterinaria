@@ -434,6 +434,7 @@ export class SubServiciosService {
       limit = 10,
       offset = 0,
       tipo_categoria = '',
+      categoria = '',
       pais = '',
     } = paginationDto;
 
@@ -457,7 +458,11 @@ export class SubServiciosService {
         .andWhere('producto.isActive = :isActive', { isActive: true })
         .andWhere('precio.paisId IS NOT NULL');
 
-      if (tipo_categoria && tipo_categoria.trim() !== '') {
+      if (categoria && categoria.trim() !== '') {
+        queryBuilder.andWhere('categoria.id = :categoriaId', {
+          categoriaId: categoria,
+        });
+      } else if (tipo_categoria && tipo_categoria.trim() !== '') {
         queryBuilder.andWhere('categoria.tipo = :tipoCategoria', {
           tipoCategoria: tipo_categoria,
         });
@@ -477,7 +482,11 @@ export class SubServiciosService {
         .andWhere('producto.isActive = :isActive', { isActive: true })
         .andWhere('precio.paisId IS NOT NULL');
 
-      if (tipo_categoria && tipo_categoria.trim() !== '') {
+      if (categoria && categoria.trim() !== '') {
+        countQueryBuilder.andWhere('categoria.id = :categoriaId', {
+          categoriaId: categoria,
+        });
+      } else if (tipo_categoria && tipo_categoria.trim() !== '') {
         countQueryBuilder.andWhere('categoria.tipo = :tipoCategoria', {
           tipoCategoria: tipo_categoria,
         });
@@ -545,7 +554,12 @@ export class SubServiciosService {
     cliente: Cliente,
     paginationDto: PaginationDto,
   ) {
-    const { limit = 10, offset = 0, tipo_categoria = '' } = paginationDto;
+    const {
+      limit = 10,
+      offset = 0,
+      tipo_categoria = '',
+      categoria = '',
+    } = paginationDto;
     const paisId = cliente.pais.id;
 
     try {
@@ -568,7 +582,11 @@ export class SubServiciosService {
         .andWhere('producto.isActive = :isActive', { isActive: true })
         .andWhere('precio.paisId IS NOT NULL');
 
-      if (tipo_categoria && tipo_categoria.trim() !== '') {
+      if (categoria && categoria.trim() !== '') {
+        queryBuilder.andWhere('categoria.id = :categoriaId', {
+          categoriaId: categoria,
+        });
+      } else if (tipo_categoria && tipo_categoria.trim() !== '') {
         queryBuilder.andWhere('categoria.tipo = :tipoCategoria', {
           tipoCategoria: tipo_categoria,
         });
@@ -588,7 +606,11 @@ export class SubServiciosService {
         .andWhere('producto.isActive = :isActive', { isActive: true })
         .andWhere('precio.paisId IS NOT NULL');
 
-      if (tipo_categoria && tipo_categoria.trim() !== '') {
+      if (categoria && categoria.trim() !== '') {
+        countQueryBuilder.andWhere('categoria.id = :categoriaId', {
+          categoriaId: categoria,
+        });
+      } else if (tipo_categoria && tipo_categoria.trim() !== '') {
         countQueryBuilder.andWhere('categoria.tipo = :tipoCategoria', {
           tipoCategoria: tipo_categoria,
         });

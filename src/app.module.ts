@@ -92,6 +92,7 @@ import { PartoAnimalModule } from './parto_animal/parto_animal.module';
 import { GastosModule } from './gastos/gastos.module';
 import { IngresosModule } from './ingresos/ingresos.module';
 import { RentabilidadModule } from './rentabilidad/rentabilidad.module';
+import { ClienteFincaTrabajadorModule } from './cliente_finca_trabajador/cliente_finca_trabajador.module';
 
 @Module({
   imports: [
@@ -263,6 +264,8 @@ import { RentabilidadModule } from './rentabilidad/rentabilidad.module';
     IngresosModule,
 
     RentabilidadModule,
+
+    ClienteFincaTrabajadorModule,
   ],
   controllers: [],
   providers: [],

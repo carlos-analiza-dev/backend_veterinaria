@@ -1,6 +1,7 @@
 import {
   IsBoolean,
   IsEmail,
+  IsEnum,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -8,6 +9,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
 
 export class CreateAuthClienteDto {
   @IsString()
@@ -75,4 +77,10 @@ export class CreateAuthClienteDto {
   @IsOptional()
   @IsBoolean()
   verified?: boolean;
+
+  @IsEnum(TipoCliente, {
+    message: `Ocurrio un error, asegurate que tu rol sea ${TipoCliente.PROPIETARIO.toLowerCase()} o ${TipoCliente.TRABAJADOR.toLowerCase()}`,
+  })
+  @IsOptional()
+  rol: string;
 }

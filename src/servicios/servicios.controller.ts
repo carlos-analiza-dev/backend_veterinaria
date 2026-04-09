@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { ServiciosService } from './servicios.service';
 import { CreateServicioDto } from './dto/create-servicio.dto';
@@ -32,6 +33,14 @@ export class ServiciosController {
   @Auth()
   findAll(@GetUser() user: User, @Query() paginationDto: PaginationDto) {
     return this.serviciosService.findAll(user, paginationDto);
+  }
+
+  @Get('pais/:id')
+  findAllByPais(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.serviciosService.findAllByPais(id, paginationDto);
   }
 
   @Get('/activos-admin')

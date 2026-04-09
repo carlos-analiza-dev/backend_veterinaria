@@ -31,6 +31,8 @@ export class JwtClienteStrategy extends PassportStrategy(
       where: { id },
     });
 
+    console.log('CLIENTE', cliente);
+
     if (!cliente) {
       throw new UnauthorizedException('Token inválido');
     }

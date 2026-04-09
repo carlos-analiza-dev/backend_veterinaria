@@ -25,6 +25,7 @@ import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { VerifiedAccountDto } from 'src/auth/dto/verify-account';
 import { NotificacionesAdminsService } from 'src/notificaciones_admins/notificaciones_admins.service';
 import { NotificationType } from 'src/interfaces/nptificaciones.type';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
 
 @Injectable()
 export class AuthClientesService {
@@ -110,6 +111,12 @@ export class AuthClientesService {
       );
     }
 
+    if (createClienteDto.rol === TipoCliente.TRABAJADOR) {
+      throw new BadRequestException(
+        'Los trabajadores deben ser creados por un administrador',
+      );
+    }
+
     try {
       const user = this.clienteRepository.create({
         email,
@@ -122,6 +129,7 @@ export class AuthClientesService {
         departamento: departamento_existe,
         municipio: municipio_existe,
         sexo,
+        rol: createClienteDto.rol ?? TipoCliente.PROPIETARIO,
         isActive: true,
         verified: false,
       });
@@ -162,22 +170,82 @@ export class AuthClientesService {
         );
       }
 
-      await this.notificacionService.notifyAdmins(
-        NotificationType.NEW_CLIENT,
-        'Nuevo Cliente Registrado',
-        `Se registro el cliente ${user.nombre}`,
-      );
+      if (createClienteDto.rol !== TipoCliente.TRABAJADOR) {
+        await this.notificacionService.notifyAdmins(
+          NotificationType.NEW_CLIENT,
+          'Nuevo Cliente Registrado',
+          `Se registro el cliente ${user.nombre}`,
+        );
+      }
 
-      await this.mailService.verifyAccount(
-        user.email,
-        user.nombre,
-        `${process.env.FRONTEND_URL_CLIENT}/verify-account/${user.email}`,
-      );
+      if (createClienteDto.rol !== TipoCliente.TRABAJADOR) {
+        await this.mailService.verifyAccount(
+          user.email,
+          user.nombre,
+          `${process.env.FRONTEND_URL_CLIENT}/verify-account/${user.email}`,
+        );
+      }
 
       return user;
     } catch (error) {
       this.handleDatabaseErrors(error);
     }
+  }
+
+  async createTrabajador(
+    createClienteDto: CreateAuthClienteDto,
+    propietario: Cliente,
+  ): Promise<Cliente> {
+    if (createClienteDto.rol !== TipoCliente.TRABAJADOR) {
+      throw new BadRequestException('Solo se pueden crear trabajadores');
+    }
+
+    const existing = await this.clienteRepository.findOne({
+      where: [
+        { email: createClienteDto.email },
+        { identificacion: createClienteDto.identificacion },
+      ],
+    });
+    if (existing) {
+      throw new BadRequestException(
+        'El correo o identificación ya está registrado',
+      );
+    }
+
+    const pais = await this.paisRepo.findOne({
+      where: { id: createClienteDto.pais },
+    });
+    const departamento = await this.departamentoRepo.findOne({
+      where: { id: createClienteDto.departamento },
+    });
+    const municipio = await this.municipioRepo.findOne({
+      where: { id: createClienteDto.municipio },
+    });
+
+    if (!pais || !departamento || !municipio) {
+      throw new BadRequestException(
+        'País, departamento o municipio no válidos',
+      );
+    }
+
+    const trabajador = this.clienteRepository.create({
+      nombre: createClienteDto.nombre,
+      identificacion: createClienteDto.identificacion,
+      telefono: createClienteDto.telefono,
+      email: createClienteDto.email,
+      password: bcrypt.hashSync(createClienteDto.password, 10),
+      direccion: createClienteDto.direccion,
+      sexo: createClienteDto.sexo,
+      pais,
+      departamento,
+      municipio,
+      rol: TipoCliente.TRABAJADOR,
+      isActive: createClienteDto.isActive ?? true,
+      verified: createClienteDto.verified ?? false,
+      propietario: propietario,
+    });
+
+    return await this.clienteRepository.save(trabajador);
   }
 
   async login(loginClienteDto: LoginClienteDto) {
@@ -195,6 +263,9 @@ export class AuthClientesService {
         .leftJoinAndSelect('cliente.profileImages', 'profileImages')
         .leftJoinAndSelect('cliente.clientePermisos', 'clientePermisos')
         .leftJoinAndSelect('clientePermisos.permiso', 'permiso')
+        .leftJoinAndSelect('cliente.asignacionesTrabajador', 'asignaciones')
+        .leftJoinAndSelect('asignaciones.finca', 'finca')
+        .leftJoinAndSelect('asignaciones.asignadoPor', 'asignadoPor')
         .where('cliente.email = :email', { email })
         .orderBy('profileImages.createdAt', 'DESC')
         .getOne();
@@ -355,6 +426,55 @@ export class AuthClientesService {
 
       const clientes = instanceToPlain(clients);
       return { clientes, total };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async getTrabajadores(paginationDto: PaginationDto, propietario: Cliente) {
+    const propietarioId = propietario.id ?? '';
+
+    if (propietario.rol !== TipoCliente.PROPIETARIO) {
+      throw new BadRequestException(
+        'Solo los propietarios pueden tener trabajadores',
+      );
+    }
+
+    const { limit = 10, offset = 0, name, pais } = paginationDto;
+    try {
+      const queryBuilder = this.clienteRepository
+        .createQueryBuilder('cliente')
+        .leftJoinAndSelect('cliente.pais', 'pais')
+        .leftJoinAndSelect('cliente.departamento', 'departamento')
+        .leftJoinAndSelect('cliente.municipio', 'municipio')
+        .leftJoinAndSelect('cliente.propietario', 'propietario')
+        .where('cliente.rol = :rol', { rol: TipoCliente.TRABAJADOR })
+        .andWhere('propietario.id = :propietarioId', { propietarioId });
+
+      if (name) {
+        queryBuilder.andWhere('cliente.nombre ILIKE :nombre', {
+          name: `%${name}%`,
+        });
+      }
+
+      if (pais) {
+        queryBuilder.andWhere('pais.nombre ILIKE :pais', { pais: `%${pais}%` });
+      }
+
+      const [clients, total] = await queryBuilder
+        .orderBy('cliente.nombre', 'ASC')
+        .skip(offset)
+        .take(limit)
+        .getManyAndCount();
+
+      if (!clients || clients.length === 0) {
+        throw new NotFoundException(
+          'No se encontraron clientes en este momento.',
+        );
+      }
+
+      const clientes = instanceToPlain(clients);
+      return { trabajadores: clientes, total };
     } catch (error) {
       throw error;
     }

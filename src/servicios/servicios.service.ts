@@ -84,6 +84,51 @@ export class ServiciosService {
     }
   }
 
+  async findAllByPais(id: string, paginationDto: PaginationDto) {
+    const { limit, offset, servicio = '' } = paginationDto;
+
+    try {
+      const queryBuilder = this.servicioRepo
+        .createQueryBuilder('servicio')
+        .leftJoinAndSelect('servicio.subServicios', 'subServicios')
+        .leftJoinAndSelect('subServicios.preciosPorPais', 'preciosPorPais')
+        .leftJoinAndSelect('preciosPorPais.pais', 'pais')
+        .leftJoinAndSelect('preciosPorPais.insumos', 'insumos')
+        .leftJoinAndSelect('insumos.insumo', 'insumo')
+        .where('servicio.pais_id = :id', { id });
+
+      if (servicio && servicio.trim() !== '') {
+        queryBuilder.andWhere(
+          '(servicio.id = :servicioId OR servicio.nombre ILIKE :servicioNombre)',
+          {
+            servicioId: servicio,
+            servicioNombre: `%${servicio}%`,
+          },
+        );
+      }
+
+      if (limit !== undefined) queryBuilder.take(limit);
+      if (offset !== undefined) queryBuilder.skip(offset);
+
+      const [servicios, total] = await queryBuilder.getManyAndCount();
+
+      if (servicios.length === 0) {
+        let errorMessage = 'No se encontraron servicios';
+
+        if (servicio && servicio.trim() !== '') {
+          errorMessage += ` con el filtro: ${servicio}`;
+        }
+
+        errorMessage += ' en este momento.';
+        throw new NotFoundException(errorMessage);
+      }
+
+      return { servicios, total };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findAllActivosAdmin(user: User) {
     const paisId = user.pais.id;
     try {

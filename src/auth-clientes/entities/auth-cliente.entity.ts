@@ -4,6 +4,8 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
@@ -17,6 +19,8 @@ import { ClientePermiso } from 'src/cliente_permisos/entities/cliente_permiso.en
 import { ProductoOpinione } from 'src/producto_opiniones/entities/producto_opinione.entity';
 import { ProductosGanaderia } from 'src/productos_ganaderia/entities/productos_ganaderia.entity';
 import { GananciaPesoRaza } from 'src/ganancia_peso_raza/entities/ganancia_peso_raza.entity';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
+import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cliente_finca_trabajador.entity';
 
 @Entity('clientes')
 export class Cliente {
@@ -47,6 +51,13 @@ export class Cliente {
 
   @Column({ type: 'boolean', default: false })
   verified: boolean;
+
+  @Column({
+    type: 'enum',
+    enum: TipoCliente,
+    default: TipoCliente.PROPIETARIO,
+  })
+  rol: string;
 
   @ManyToOne(() => Pai, (pais) => pais.cliente, { eager: true })
   pais: Pai;
@@ -102,4 +113,27 @@ export class Cliente {
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
+
+  creadoPor: Cliente;
+
+  //NUEVAS RELACIONES
+  @OneToMany(
+    () => ClienteFincaTrabajador,
+    (asignacion) => asignacion.trabajador,
+  )
+  asignacionesTrabajador: ClienteFincaTrabajador[];
+
+  @OneToMany(
+    () => ClienteFincaTrabajador,
+    (asignacion) => asignacion.asignadoPor,
+  )
+  asignacionesRealizadas: ClienteFincaTrabajador[];
+
+  @OneToMany(() => Cliente, (cliente) => cliente.propietario)
+  trabajadores: Cliente[];
+
+  @ManyToOne(() => Cliente, (cliente) => cliente.trabajadores, {
+    nullable: true,
+  })
+  propietario: Cliente;
 }
