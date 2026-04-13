@@ -13,22 +13,35 @@ import { CreateAnimalFincaDto } from './dto/create-animal_finca.dto';
 import { UpdateAnimalFincaDto } from './dto/update-animal_finca.dto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { UpdateDeathStatusDto } from './dto/update-death-status.dto';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
+import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Controller('animal-finca')
 export class AnimalFincaController {
   constructor(private readonly animalFincaService: AnimalFincaService) {}
 
   @Post()
-  create(@Body() createAnimalFincaDto: CreateAnimalFincaDto) {
-    return this.animalFincaService.create(createAnimalFincaDto);
+  @AuthCliente()
+  create(
+    @Body() createAnimalFincaDto: CreateAnimalFincaDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.animalFincaService.create(createAnimalFincaDto, cliente);
   }
 
   @Get('/propietario-animales/:propietarioId')
+  @AuthCliente()
   findAllAnimales(
+    @GetCliente() cliente: Cliente,
     @Param('propietarioId') propietarioId: string,
     @Query() paginationDto: PaginationDto,
   ) {
-    return this.animalFincaService.findAll(propietarioId, paginationDto);
+    return this.animalFincaService.findAll(
+      cliente,
+      propietarioId,
+      paginationDto,
+    );
   }
 
   @Get('/animales/:fincaId/:especieId/:razaId')
@@ -63,11 +76,13 @@ export class AnimalFincaController {
     };
   }
   @Patch(':id')
+  @AuthCliente()
   update(
     @Param('id') id: string,
     @Body() updateAnimalFincaDto: UpdateAnimalFincaDto,
+    @GetCliente() cliente: Cliente,
   ) {
-    return this.animalFincaService.update(id, updateAnimalFincaDto);
+    return this.animalFincaService.update(id, updateAnimalFincaDto, cliente);
   }
 
   @Delete(':id')

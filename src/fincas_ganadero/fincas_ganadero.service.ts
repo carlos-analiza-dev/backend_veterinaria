@@ -13,6 +13,7 @@ import { instanceToPlain } from 'class-transformer';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { NotificacionesAdminsService } from 'src/notificaciones_admins/notificaciones_admins.service';
 import { NotificationType } from 'src/interfaces/nptificaciones.type';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
 
 @Injectable()
 export class FincasGanaderoService {
@@ -29,7 +30,10 @@ export class FincasGanaderoService {
     private readonly municipioRepo: Repository<MunicipiosDepartamentosPai>,
     private readonly notificacionesService: NotificacionesAdminsService,
   ) {}
-  async create(createFincasGanaderoDto: CreateFincasGanaderoDto) {
+  async create(
+    createFincasGanaderoDto: CreateFincasGanaderoDto,
+    cliente: Cliente,
+  ) {
     const {
       nombre_finca,
       cantidad_animales,
@@ -83,6 +87,7 @@ export class FincasGanaderoService {
         especies_maneja,
         ubicacion,
         propietario: propietario,
+        creado_por: cliente,
         pais_id: pais,
         departamento,
         municipio,
@@ -146,14 +151,20 @@ export class FincasGanaderoService {
     }
   }
 
-  async findAll(propietarioId: string, paginationDto: PaginationDto) {
+  async findAll(
+    cliente: Cliente,
+    propietarioId: string,
+    paginationDto: PaginationDto,
+  ) {
     const { limit = 10, offset = 0, name } = paginationDto;
+
     try {
-      const propietario = await this.clienteRepo.findOneBy({
-        id: propietarioId,
+      const propietario = await this.clienteRepo.findOne({
+        where: { id: propietarioId },
       });
+
       if (!propietario) {
-        throw new NotFoundException('El propietario no existe');
+        throw new NotFoundException('El cliente no existe');
       }
 
       const query = this.fincasRepo
@@ -161,8 +172,28 @@ export class FincasGanaderoService {
         .leftJoinAndSelect('finca.departamento', 'departamento')
         .leftJoinAndSelect('finca.municipio', 'municipio')
         .leftJoinAndSelect('finca.propietario', 'propietario')
-        .where('finca.propietarioId = :propietarioId', { propietarioId })
-        .andWhere('finca.isActive = true');
+        .where('finca.isActive = true');
+
+      if (cliente.rol === TipoCliente.PROPIETARIO) {
+        query.andWhere('finca.propietarioId = :propietarioId', {
+          propietarioId: cliente.id,
+        });
+      }
+
+      if (cliente.rol === TipoCliente.TRABAJADOR) {
+        query
+          .innerJoin('finca.asignaciones', 'asignaciones')
+          .innerJoin('asignaciones.trabajador', 'trabajador')
+          .andWhere('trabajador.id = :clienteId', {
+            clienteId: cliente.id,
+          });
+      }
+
+      if (propietarioId && cliente.rol === TipoCliente.PROPIETARIO) {
+        query.andWhere('finca.propietarioId = :propietarioId', {
+          propietarioId,
+        });
+      }
 
       if (name) {
         query.andWhere('LOWER(finca.nombre_finca) LIKE LOWER(:name)', {
@@ -170,13 +201,14 @@ export class FincasGanaderoService {
         });
       }
 
+      query.distinct(true);
+
       query.orderBy('finca.fecha_registro', 'DESC').skip(offset).take(limit);
 
       const [fincas, total] = await query.getManyAndCount();
-      const fincasPlain = instanceToPlain(fincas);
 
       return {
-        fincas: fincasPlain,
+        fincas,
         total,
       };
     } catch (error) {
@@ -195,7 +227,11 @@ export class FincasGanaderoService {
     }
   }
 
-  async update(id: string, updateFincasGanaderoDto: UpdateFincasGanaderoDto) {
+  async update(
+    id: string,
+    updateFincasGanaderoDto: UpdateFincasGanaderoDto,
+    cliente: Cliente,
+  ) {
     const {
       nombre_finca,
       cantidad_animales,
@@ -274,7 +310,7 @@ export class FincasGanaderoService {
       ((finca.latitud = latitud ?? finca.latitud),
         (finca.longitud = longitud ?? finca.longitud));
 
-      await this.fincasRepo.save(finca);
+      await this.fincasRepo.save({ ...finca, actualizado_por: cliente });
 
       return {
         message: 'Finca actualizada exitosamente',

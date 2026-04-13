@@ -32,10 +32,10 @@ export class ClienteFincaTrabajadorController {
     );
   }
 
-  @Get()
+  @Get('all/:trabajadorId')
   @AuthCliente()
-  findAll() {
-    return this.clienteFincaTrabajadorService.findAll();
+  findAll(@Param('trabajadorId') trabajadorId: string) {
+    return this.clienteFincaTrabajadorService.findAll(trabajadorId);
   }
 
   @Get(':id')
@@ -58,6 +58,6 @@ export class ClienteFincaTrabajadorController {
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.clienteFincaTrabajadorService.remove(+id);
+    return this.clienteFincaTrabajadorService.remove(id);
   }
 }

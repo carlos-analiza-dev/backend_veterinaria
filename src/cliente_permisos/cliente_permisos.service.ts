@@ -10,7 +10,6 @@ import { CreateClientePermisoDto } from './dto/create-cliente_permiso.dto';
 import { UpdateClientePermisoDto } from './dto/update-cliente_permiso.dto';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { PermisosCliente } from 'src/permisos_clientes/entities/permisos_cliente.entity';
-import { instanceToPlain } from 'class-transformer';
 
 @Injectable()
 export class ClientePermisosService {
@@ -114,24 +113,65 @@ export class ClientePermisosService {
   async update(id: string, dto: UpdateClientePermisoDto) {
     const clientePermiso = await this.clientePermisoRepo.findOne({
       where: { id },
+      relations: ['cliente', 'permiso'],
     });
 
     if (!clientePermiso)
       throw new NotFoundException('Cliente permiso no encontrado');
 
     Object.assign(clientePermiso, dto);
+    await this.clientePermisoRepo.save(clientePermiso);
 
-    return await this.clientePermisoRepo.save(clientePermiso);
+    const propietario = clientePermiso.cliente;
+
+    const trabajadores = await this.clienteRepo.find({
+      where: { propietario: { id: propietario.id } },
+    });
+
+    for (const trabajador of trabajadores) {
+      const permisoTrabajador = await this.clientePermisoRepo.findOne({
+        where: {
+          cliente: { id: trabajador.id },
+          permiso: { id: clientePermiso.permiso.id },
+        },
+      });
+
+      if (permisoTrabajador) {
+        permisoTrabajador.ver = dto.ver ?? permisoTrabajador.ver;
+        permisoTrabajador.crear = dto.crear ?? permisoTrabajador.crear;
+        permisoTrabajador.editar = dto.editar ?? permisoTrabajador.editar;
+        permisoTrabajador.eliminar = dto.eliminar ?? permisoTrabajador.eliminar;
+
+        await this.clientePermisoRepo.save(permisoTrabajador);
+      }
+    }
+
+    return clientePermiso;
   }
 
   async remove(id: string) {
     const permiso = await this.clientePermisoRepo.findOne({
       where: { id },
+      relations: ['cliente', 'permiso'],
     });
 
     if (!permiso) throw new NotFoundException('Cliente permiso no encontrado');
 
+    const propietario = permiso.cliente;
+
+    const trabajadores = await this.clienteRepo.find({
+      where: { propietario: { id: propietario.id } },
+    });
+
+    for (const trabajador of trabajadores) {
+      await this.clientePermisoRepo.delete({
+        cliente: { id: trabajador.id },
+        permiso: { id: permiso.permiso.id },
+      });
+    }
+
     await this.clientePermisoRepo.remove(permiso);
-    return { message: 'Permiso eliminado correctamente' };
+
+    return { message: 'Permiso eliminado correctamente en todos' };
   }
 }

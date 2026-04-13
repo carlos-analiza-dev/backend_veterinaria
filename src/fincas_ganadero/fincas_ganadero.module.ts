@@ -10,6 +10,7 @@ import { Pai } from 'src/pais/entities/pai.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { NotificacionesAdminsModule } from 'src/notificaciones_admins/notificaciones_admins.module';
+import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 
 @Module({
   controllers: [FincasGanaderoController],
@@ -24,6 +25,7 @@ import { NotificacionesAdminsModule } from 'src/notificaciones_admins/notificaci
       User,
     ]),
     AuthModule,
+    AuthClientesModule,
     NotificacionesAdminsModule,
   ],
   providers: [FincasGanaderoService],

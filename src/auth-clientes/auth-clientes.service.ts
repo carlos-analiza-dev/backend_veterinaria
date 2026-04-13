@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -195,57 +196,84 @@ export class AuthClientesService {
   async createTrabajador(
     createClienteDto: CreateAuthClienteDto,
     propietario: Cliente,
-  ): Promise<Cliente> {
-    if (createClienteDto.rol !== TipoCliente.TRABAJADOR) {
-      throw new BadRequestException('Solo se pueden crear trabajadores');
+  ) {
+    try {
+      if (createClienteDto.rol !== TipoCliente.TRABAJADOR) {
+        throw new BadRequestException('Solo se pueden crear trabajadores');
+      }
+
+      const usuario_existe = await this.userRepository.findOne({
+        where: { email: createClienteDto.email },
+      });
+      if (usuario_existe)
+        throw new NotFoundException(
+          'Ya existe un usuario registrado con este correo electronico',
+        );
+
+      const cliente_existe = await this.clienteRepository.findOne({
+        where: { email: createClienteDto.email },
+      });
+      if (cliente_existe)
+        throw new NotFoundException(
+          'Ya existe un usuario registrado con este correo electronico',
+        );
+
+      const identificacion_existe = await this.userRepository.findOne({
+        where: { identificacion: createClienteDto.identificacion },
+      });
+      if (identificacion_existe)
+        throw new NotFoundException(
+          'Ya existe un usuario registrado con esta identificacion',
+        );
+
+      const identificacion_existe_cliente =
+        await this.clienteRepository.findOne({
+          where: { identificacion: createClienteDto.identificacion },
+        });
+      if (identificacion_existe_cliente)
+        throw new NotFoundException(
+          'Ya existe un usuario registrado con esta identificacion',
+        );
+
+      const pais = await this.paisRepo.findOne({
+        where: { id: createClienteDto.pais },
+      });
+      const departamento = await this.departamentoRepo.findOne({
+        where: { id: createClienteDto.departamento },
+      });
+      const municipio = await this.municipioRepo.findOne({
+        where: { id: createClienteDto.municipio },
+      });
+
+      if (!pais || !departamento || !municipio) {
+        throw new BadRequestException(
+          'País, departamento o municipio no válidos',
+        );
+      }
+
+      const trabajador = this.clienteRepository.create({
+        nombre: createClienteDto.nombre,
+        identificacion: createClienteDto.identificacion,
+        telefono: createClienteDto.telefono,
+        email: createClienteDto.email,
+        password: bcrypt.hashSync(createClienteDto.password, 10),
+        direccion: createClienteDto.direccion,
+        sexo: createClienteDto.sexo,
+        pais,
+        departamento,
+        municipio,
+        rol: TipoCliente.TRABAJADOR,
+        isActive: createClienteDto.isActive ?? true,
+        verified: createClienteDto.verified ?? false,
+        propietario: propietario,
+      });
+
+      await this.clienteRepository.save(trabajador);
+
+      return 'Trabajador Creado Exitosamente';
+    } catch (error) {
+      this.handleDatabaseErrors(error);
     }
-
-    const existing = await this.clienteRepository.findOne({
-      where: [
-        { email: createClienteDto.email },
-        { identificacion: createClienteDto.identificacion },
-      ],
-    });
-    if (existing) {
-      throw new BadRequestException(
-        'El correo o identificación ya está registrado',
-      );
-    }
-
-    const pais = await this.paisRepo.findOne({
-      where: { id: createClienteDto.pais },
-    });
-    const departamento = await this.departamentoRepo.findOne({
-      where: { id: createClienteDto.departamento },
-    });
-    const municipio = await this.municipioRepo.findOne({
-      where: { id: createClienteDto.municipio },
-    });
-
-    if (!pais || !departamento || !municipio) {
-      throw new BadRequestException(
-        'País, departamento o municipio no válidos',
-      );
-    }
-
-    const trabajador = this.clienteRepository.create({
-      nombre: createClienteDto.nombre,
-      identificacion: createClienteDto.identificacion,
-      telefono: createClienteDto.telefono,
-      email: createClienteDto.email,
-      password: bcrypt.hashSync(createClienteDto.password, 10),
-      direccion: createClienteDto.direccion,
-      sexo: createClienteDto.sexo,
-      pais,
-      departamento,
-      municipio,
-      rol: TipoCliente.TRABAJADOR,
-      isActive: createClienteDto.isActive ?? true,
-      verified: createClienteDto.verified ?? false,
-      propietario: propietario,
-    });
-
-    return await this.clienteRepository.save(trabajador);
   }
 
   async login(loginClienteDto: LoginClienteDto) {
@@ -265,6 +293,8 @@ export class AuthClientesService {
         .leftJoinAndSelect('clientePermisos.permiso', 'permiso')
         .leftJoinAndSelect('cliente.asignacionesTrabajador', 'asignaciones')
         .leftJoinAndSelect('asignaciones.finca', 'finca')
+        .leftJoinAndSelect('finca.departamento', 'finca_departamento')
+        .leftJoinAndSelect('finca.municipio', 'finca_municipio')
         .leftJoinAndSelect('asignaciones.asignadoPor', 'asignadoPor')
         .where('cliente.email = :email', { email })
         .orderBy('profileImages.createdAt', 'DESC')
@@ -292,7 +322,7 @@ export class AuthClientesService {
 
       delete cliente.password;
 
-      return { ...cliente, token };
+      return { ...instanceToPlain(cliente), token };
     } catch (error) {
       throw error;
     }
@@ -499,6 +529,7 @@ export class AuthClientesService {
       municipio: municipioId,
       sexo,
       isActive,
+      verified,
     } = updateAuthClienteDto;
 
     const cliente = await this.clienteRepository.findOne({
@@ -590,6 +621,7 @@ export class AuthClientesService {
       if (telefono) cliente.telefono = telefono;
       if (sexo) cliente.sexo = sexo;
       if (isActive !== undefined) cliente.isActive = isActive;
+      if (verified !== undefined) cliente.verified = verified;
 
       if (pais_existe) cliente.pais = pais_existe;
       if (departamento_existe) cliente.departamento = departamento_existe;
@@ -601,6 +633,131 @@ export class AuthClientesService {
 
       return result;
     } catch (error) {
+      this.handleDatabaseErrors(error);
+    }
+  }
+
+  async updateTrabajador(
+    id: string,
+    updateAuthClienteDto: UpdateAuthClienteDto,
+  ) {
+    try {
+      const {
+        email,
+        nombre,
+        direccion,
+        identificacion,
+        telefono,
+        pais: paisId,
+        departamento: departamentoId,
+        municipio: municipioId,
+        sexo,
+        isActive,
+        verified,
+        password,
+      } = updateAuthClienteDto;
+
+      const trabajador = await this.clienteRepository.findOne({
+        where: { id, rol: TipoCliente.TRABAJADOR },
+        relations: ['pais', 'departamento', 'municipio', 'propietario'],
+      });
+
+      if (!trabajador) {
+        throw new NotFoundException('Trabajador no encontrado');
+      }
+
+      if (email && email !== trabajador.email) {
+        const [usuarioExiste, clienteExiste] = await Promise.all([
+          this.userRepository.findOne({ where: { email } }),
+          this.clienteRepository.findOne({ where: { email } }),
+        ]);
+
+        if (usuarioExiste || clienteExiste) {
+          throw new BadRequestException(
+            'Ya existe un usuario registrado con este correo electrónico',
+          );
+        }
+      }
+
+      if (identificacion && identificacion !== trabajador.identificacion) {
+        const [identificacionExiste, identificacionExisteCliente] =
+          await Promise.all([
+            this.userRepository.findOne({ where: { identificacion } }),
+            this.clienteRepository.findOne({ where: { identificacion } }),
+          ]);
+
+        if (identificacionExiste || identificacionExisteCliente) {
+          throw new BadRequestException(
+            'Ya existe un usuario registrado con esta identificación',
+          );
+        }
+      }
+
+      if (telefono && telefono !== trabajador.telefono) {
+        const [telefonoExiste, telefonoExisteCliente] = await Promise.all([
+          this.userRepository.findOne({ where: { telefono } }),
+          this.clienteRepository.findOne({ where: { telefono } }),
+        ]);
+
+        if (telefonoExiste || telefonoExisteCliente) {
+          throw new BadRequestException(
+            'Ya existe un usuario registrado con este teléfono',
+          );
+        }
+      }
+
+      if (paisId && paisId !== trabajador.pais?.id) {
+        const pais = await this.paisRepo.findOne({ where: { id: paisId } });
+        if (!pais) {
+          throw new BadRequestException('País no encontrado');
+        }
+        trabajador.pais = pais;
+      }
+
+      if (departamentoId && departamentoId !== trabajador.departamento?.id) {
+        const departamento = await this.departamentoRepo.findOne({
+          where: { id: departamentoId },
+        });
+        if (!departamento) {
+          throw new BadRequestException('Departamento no encontrado');
+        }
+        trabajador.departamento = departamento;
+      }
+
+      if (municipioId && municipioId !== trabajador.municipio?.id) {
+        const municipio = await this.municipioRepo.findOne({
+          where: { id: municipioId },
+        });
+        if (!municipio) {
+          throw new BadRequestException('Municipio no encontrado');
+        }
+        trabajador.municipio = municipio;
+      }
+
+      if (email) trabajador.email = email;
+      if (nombre) trabajador.nombre = nombre;
+      if (direccion) trabajador.direccion = direccion;
+      if (identificacion) trabajador.identificacion = identificacion;
+      if (telefono) trabajador.telefono = telefono;
+      if (sexo) trabajador.sexo = sexo;
+      if (typeof isActive === 'boolean') trabajador.isActive = isActive;
+      if (typeof verified === 'boolean') trabajador.verified = verified;
+
+      if (password && password.trim() !== '') {
+        trabajador.password = bcrypt.hashSync(password, 10);
+      }
+
+      const trabajadorActualizado =
+        await this.clienteRepository.save(trabajador);
+
+      delete trabajadorActualizado.password;
+
+      return {
+        message: 'Trabajador actualizado exitosamente',
+        trabajador: trabajadorActualizado,
+      };
+    } catch (error) {
+      console.error('Error en update trabajador:', error);
       this.handleDatabaseErrors(error);
     }
   }
@@ -617,6 +774,15 @@ export class AuthClientesService {
   }
 
   private handleDatabaseErrors(error: any): never {
+    if (
+      error instanceof BadRequestException ||
+      error instanceof NotFoundException ||
+      error instanceof UnauthorizedException ||
+      error instanceof ConflictException
+    ) {
+      throw error;
+    }
+
     if (error.code === '23505') {
       const detail = error.detail.toLowerCase();
 
@@ -637,6 +803,26 @@ export class AuthClientesService {
       throw new BadRequestException('Registro duplicado: ' + error.detail);
     }
 
-    throw new error();
+    if (error.code === '22P02') {
+      throw new BadRequestException('ID inválido proporcionado');
+    }
+
+    if (error.code === '23503') {
+      throw new BadRequestException('Referencia a registro inexistente');
+    }
+
+    if (error instanceof Error) {
+      if (
+        error.name === 'NotFoundException' ||
+        error.name === 'BadRequestException' ||
+        error.name === 'UnauthorizedException'
+      ) {
+        throw error;
+      }
+
+      throw new BadRequestException(error.message);
+    }
+
+    throw new BadRequestException('Error desconocido en la base de datos');
   }
 }

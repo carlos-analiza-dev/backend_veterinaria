@@ -14,6 +14,8 @@ import {
   JoinColumn,
   Column,
   ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('produccion_finca')
@@ -85,4 +87,17 @@ export class ProduccionFinca {
 
   @Column({ type: 'bool', default: false })
   produccion_venta: boolean;
+
+  @CreateDateColumn()
+  fecha_registro: Date;
+
+  @UpdateDateColumn()
+  fecha_actualizacion: Date;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  creado_por: Cliente;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'actualizado_por_id' })
+  actualizado_por: Cliente;
 }

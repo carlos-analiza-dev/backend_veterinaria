@@ -14,6 +14,7 @@ import {
   OneToMany,
   OneToOne,
   ManyToMany,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity('finca_ganadero')
@@ -62,6 +63,15 @@ export class FincasGanadero {
 
   @CreateDateColumn()
   fecha_registro: Date;
+
+  @UpdateDateColumn()
+  fecha_actualizacion: Date;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  creado_por: Cliente;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  actualizado_por: Cliente;
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;

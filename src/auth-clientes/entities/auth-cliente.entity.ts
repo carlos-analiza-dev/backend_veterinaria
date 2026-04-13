@@ -4,8 +4,6 @@ import {
   Column,
   ManyToOne,
   OneToMany,
-  ManyToMany,
-  JoinTable,
 } from 'typeorm';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';

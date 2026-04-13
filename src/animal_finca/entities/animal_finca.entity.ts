@@ -15,6 +15,7 @@ import {
   ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 export enum TipoReproduccionEnum {
@@ -172,8 +173,20 @@ export class AnimalFinca {
   @CreateDateColumn()
   fecha_registro: Date;
 
+  @UpdateDateColumn()
+  fecha_actualizacion: Date;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  creado_por: Cliente;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  actualizado_por: Cliente;
+
   @ManyToOne(() => Cliente, (cliente) => cliente.animales, { eager: true })
   propietario: Cliente;
+
+  @ManyToOne(() => Cliente, (cliente) => cliente.animales, { nullable: true })
+  trabajador: Cliente;
 
   @ManyToOne(() => FincasGanadero, (finca) => finca.animales, {
     onDelete: 'CASCADE',

@@ -29,9 +29,8 @@ export class JwtClienteStrategy extends PassportStrategy(
 
     const cliente = await this.clienteRepository.findOne({
       where: { id },
+      relations: ['propietario'],
     });
-
-    console.log('CLIENTE', cliente);
 
     if (!cliente) {
       throw new UnauthorizedException('Token inválido');

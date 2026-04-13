@@ -11,6 +11,7 @@ import { ProduccionForrajesInsumo } from 'src/produccion_forrajes_insumos/entiti
 import { User } from 'src/auth/entities/auth.entity';
 import { ProduccionApicultura } from 'src/produccion_apicultura/entities/produccion_apicultura.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 
 @Module({
   controllers: [ProduccionFincaController],
@@ -26,6 +27,7 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
       User,
       Cliente,
     ]),
+    AuthClientesModule,
   ],
   providers: [ProduccionFincaService],
 })

@@ -97,6 +97,14 @@ export class AuthClientesController {
     return this.authClientesService.update(id, updateAuthClienteDto);
   }
 
+  @Patch('trabajador/:id')
+  updateTrabajador(
+    @Param('id') id: string,
+    @Body() updateAuthClienteDto: UpdateAuthClienteDto,
+  ) {
+    return this.authClientesService.updateTrabajador(id, updateAuthClienteDto);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.authClientesService.remove(+id);

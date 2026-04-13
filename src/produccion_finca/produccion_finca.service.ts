@@ -4,6 +4,7 @@ import {
   Injectable,
   InternalServerErrorException,
   NotFoundException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { CreateProduccionFincaDto } from './dto/create-produccion_finca.dto';
 import { UpdateProduccionFincaDto } from './dto/update-produccion_finca.dto';
@@ -19,6 +20,7 @@ import { User } from '../auth/entities/auth.entity';
 import { ProduccionApicultura } from 'src/produccion_apicultura/entities/produccion_apicultura.entity';
 import { instanceToPlain } from 'class-transformer';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
 
 @Injectable()
 export class ProduccionFincaService {
@@ -41,7 +43,10 @@ export class ProduccionFincaService {
     private readonly usuario_rep: Repository<Cliente>,
   ) {}
 
-  async create(createProduccionFincaDto: CreateProduccionFincaDto) {
+  async create(
+    createProduccionFincaDto: CreateProduccionFincaDto,
+    cliente: Cliente,
+  ) {
     const {
       fincaId,
       userId,
@@ -57,32 +62,85 @@ export class ProduccionFincaService {
     } = createProduccionFincaDto;
 
     try {
+      if (!cliente) {
+        throw new BadRequestException('Usuario no autenticado');
+      }
+
       const finca_exist = await this.finca_ganadero_repo.findOne({
         where: { id: fincaId },
-        relations: ['propietario'],
+        relations: ['propietario', 'asignaciones', 'asignaciones.trabajador'],
       });
+
       if (!finca_exist) {
         throw new NotFoundException('No se encontró la finca');
       }
 
-      const propietario_exist = await this.usuario_rep.findOne({
-        where: { id: userId },
+      let propietarioId: string;
+      let trabajador: Cliente | null = null;
+      let esAccesoPermitido = false;
+
+      if (cliente.rol === TipoCliente.PROPIETARIO) {
+        if (finca_exist.propietario.id === cliente.id) {
+          propietarioId = cliente.id;
+          esAccesoPermitido = true;
+        } else if (userId && userId !== cliente.id) {
+          const propietarioDestino = await this.usuario_rep.findOne({
+            where: { id: userId, rol: TipoCliente.PROPIETARIO },
+          });
+          if (!propietarioDestino) {
+            throw new NotFoundException('Propietario destino no encontrado');
+          }
+          propietarioId = userId;
+          esAccesoPermitido = true;
+        }
+      } else if (cliente.rol === TipoCliente.TRABAJADOR) {
+        if (!cliente.propietario) {
+          throw new BadRequestException(
+            'El trabajador no tiene un propietario asignado',
+          );
+        }
+
+        const fincaAsignada = finca_exist.asignaciones?.some(
+          (asignacion) => asignacion.trabajador?.id === cliente.id,
+        );
+
+        if (!fincaAsignada) {
+          throw new UnauthorizedException(
+            'No tienes permiso para crear producción en esta finca',
+          );
+        }
+
+        propietarioId = cliente.propietario.id;
+        trabajador = cliente;
+        esAccesoPermitido = true;
+      }
+
+      if (!esAccesoPermitido) {
+        throw new UnauthorizedException(
+          'No tienes permiso para crear producción en esta finca',
+        );
+      }
+
+      const propietarioExist = await this.usuario_rep.findOne({
+        where: { id: propietarioId },
       });
-      if (!propietario_exist) {
+
+      if (!propietarioExist) {
         throw new NotFoundException(
           'No se encontró el propietario de la finca',
         );
       }
 
-      if (finca_exist.propietario.id !== userId) {
+      if (finca_exist.propietario.id !== propietarioId) {
         throw new BadRequestException(
-          'El usuario no es propietario de esta finca',
+          'La finca no pertenece al propietario especificado',
         );
       }
 
       const existeProduccion = await this.produccion_finca_repo.findOne({
         where: { finca: { id: fincaId } },
       });
+
       if (existeProduccion) {
         throw new ConflictException(
           'La finca ya tiene un registro de producción',
@@ -115,25 +173,25 @@ export class ProduccionFincaService {
 
       const produccion = this.produccion_finca_repo.create({
         finca: { id: fincaId },
-        propietario: { id: userId },
+        propietario: { id: propietarioId },
         produccion_mixta: produccion_mixta ?? false,
         transformacion_artesanal: transformacion_artesanal ?? false,
         consumo_propio: consumo_propio ?? false,
         produccion_venta: produccion_venta ?? false,
       });
 
-      const produccionGuardada = await this.produccion_finca_repo.save(
-        produccion,
-      );
+      const creadoPor = trabajador ? trabajador : cliente;
+
+      const produccionGuardada =
+        await this.produccion_finca_repo.save(produccion);
 
       if (hasValidGanadera) {
         const ganaderaEntity = this.produccion_ganadera_repo.create({
           ...ganadera,
           produccionFinca: produccionGuardada,
         });
-        produccionGuardada.ganadera = await this.produccion_ganadera_repo.save(
-          ganaderaEntity,
-        );
+        produccionGuardada.ganadera =
+          await this.produccion_ganadera_repo.save(ganaderaEntity);
       }
 
       if (hasValidApicultura) {
@@ -212,9 +270,27 @@ export class ProduccionFincaService {
         }
       }
 
-      await this.produccion_finca_repo.save(produccionGuardada);
-      return 'Producción creada exitosamente';
+      await this.produccion_finca_repo.save({
+        ...produccionGuardada,
+        creado_por: creadoPor,
+      });
+
+      const creadorInfo = trabajador
+        ? `el trabajador ${trabajador.nombre} (del ganadero ${propietarioExist.nombre})`
+        : `el ganadero ${propietarioExist.nombre}`;
+
+      return {
+        message: 'Producción creada exitosamente',
+        produccion: {
+          id: produccionGuardada.id,
+          finca: finca_exist.nombre_finca,
+          propietario: propietarioExist.nombre,
+          creadoPor: trabajador?.nombre || propietarioExist.nombre,
+          rolCreador: trabajador ? 'TRABAJADOR' : 'PROPIETARIO',
+        },
+      };
     } catch (error) {
+      console.error('Error en create producción:', error);
       throw error;
     }
   }
@@ -256,20 +332,44 @@ export class ProduccionFincaService {
     }
   }
 
-  async GetByUserId(id: string) {
+  async GetByUserId(cliente: Cliente) {
     try {
-      const propietario_exist = await this.usuario_rep.findOne({
-        where: { id },
+      const usuario = await this.usuario_rep.findOne({
+        where: { id: cliente.id },
       });
-      if (!propietario_exist)
-        throw new NotFoundException(
-          'No se encontro el propietario de estas producciones',
-        );
+
+      if (!usuario) {
+        throw new NotFoundException('No se encontró el usuario');
+      }
+
+      if (cliente.rol === TipoCliente.PROPIETARIO) {
+        const producciones = await this.produccion_finca_repo.find({
+          where: {
+            propietario: { id: cliente.id },
+          },
+          relations: [
+            'finca',
+            'propietario',
+            'ganadera',
+            'agricola',
+            'forrajesInsumo',
+            'alternativa',
+            'apicultura',
+          ],
+        });
+
+        if (!producciones.length) {
+          throw new NotFoundException('No se encontraron producciones');
+        }
+
+        return instanceToPlain(producciones);
+      }
 
       const producciones = await this.produccion_finca_repo.find({
-        where: { propietario: { id } },
         relations: [
           'finca',
+          'finca.asignaciones',
+          'finca.asignaciones.trabajador',
           'propietario',
           'ganadera',
           'agricola',
@@ -279,16 +379,25 @@ export class ProduccionFincaService {
         ],
       });
 
-      if (!producciones || producciones.length === 0)
-        throw new NotFoundException('No se encontraron producciones');
+      const filtradas = producciones.filter((p) =>
+        p.finca?.asignaciones?.some((a) => a.trabajador?.id === cliente.id),
+      );
 
-      return instanceToPlain(producciones);
+      if (!filtradas.length) {
+        throw new NotFoundException('No se encontraron producciones');
+      }
+
+      return instanceToPlain(filtradas);
     } catch (error) {
       throw error;
     }
   }
 
-  async update(id: string, updateProduccionFincaDto: UpdateProduccionFincaDto) {
+  async update(
+    id: string,
+    updateProduccionFincaDto: UpdateProduccionFincaDto,
+    cliente: Cliente,
+  ) {
     try {
       const produccion = await this.produccion_finca_repo.findOne({
         where: { id },
@@ -376,7 +485,10 @@ export class ProduccionFincaService {
         }
       }
 
-      await this.produccion_finca_repo.save(produccion);
+      await this.produccion_finca_repo.save({
+        ...produccion,
+        actualizado_por: cliente,
+      });
 
       return this.produccion_finca_repo.findOne({
         where: { id },
