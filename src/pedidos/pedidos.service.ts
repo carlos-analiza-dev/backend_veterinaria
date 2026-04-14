@@ -16,6 +16,8 @@ import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { instanceToPlain } from 'class-transformer';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { Lote } from 'src/lotes/entities/lote.entity';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class PedidosService {
@@ -35,19 +37,21 @@ export class PedidosService {
     private dataSource: DataSource,
   ) {}
 
-  async create(createPedidoDto: CreatePedidoDto) {
+  async create(createPedidoDto: CreatePedidoDto, cliente: Cliente) {
+    const clienteId = getPropietarioId(cliente);
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      const cliente = await this.cliente_repo.findOne({
-        where: { id: createPedidoDto.id_cliente },
+      const cliente_existe = await this.cliente_repo.findOne({
+        where: { id: clienteId },
       });
 
-      if (!cliente) {
+      if (!cliente_existe) {
         throw new NotFoundException(
-          `Cliente con ID ${createPedidoDto.id_cliente} no encontrado`,
+          `Cliente con ID ${clienteId} no encontrado`,
         );
       }
 
@@ -64,7 +68,6 @@ export class PedidosService {
         }
       }
 
-      // ---- Inicializar acumuladores ----
       let sub_total = 0;
       let importe_exento = 0;
       let importe_exonerado = 0;
@@ -154,7 +157,7 @@ export class PedidosService {
       }
 
       const pedido = this.pedido_repo.create({
-        id_cliente: createPedidoDto.id_cliente,
+        cliente: { id: clienteId },
         id_sucursal: createPedidoDto.id_sucursal,
         sub_total,
         importe_exento,
@@ -171,6 +174,7 @@ export class PedidosService {
         tipo_entrega: createPedidoDto.tipo_entrega ?? TipoEntrega.RECOGER,
         costo_delivery: createPedidoDto.costo_delivery,
         nombre_finca: createPedidoDto.nombre_finca,
+        creadoPorId: cliente.id,
       });
 
       const savedPedido = await queryRunner.manager.save(pedido);
@@ -238,7 +242,7 @@ export class PedidosService {
 
   async findByCliente(cliente: Cliente, paginationDto: PaginationDto) {
     const { limit = 10, offset = 0, estado } = paginationDto;
-    const clienteId = cliente.id;
+    const clienteId = getPropietarioId(cliente);
 
     try {
       const [pedidos, total] = await this.pedido_repo.findAndCount({
@@ -327,7 +331,11 @@ export class PedidosService {
     }
   }
 
-  async update(id: string, updatePedidoDto: UpdatePedidoDto): Promise<Pedido> {
+  async update(
+    id: string,
+    updatePedidoDto: UpdatePedidoDto,
+    cliente: Cliente,
+  ): Promise<Pedido> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -394,7 +402,9 @@ export class PedidosService {
         pedido.total = nuevoTotal;
       }
 
-      const updatedPedido = await queryRunner.manager.save(pedido);
+      pedido.actualizadoPorId = cliente.id;
+
+      await queryRunner.manager.save(pedido);
       await queryRunner.commitTransaction();
 
       return await this.pedido_repo.findOne({
@@ -414,7 +424,11 @@ export class PedidosService {
     }
   }
 
-  async updateEstado(id: string, estado: EstadoPedido): Promise<Pedido> {
+  async updateEstado(
+    id: string,
+    estado: EstadoPedido,
+    cliente: Cliente,
+  ): Promise<Pedido> {
     try {
       const pedido = await this.pedido_repo.findOne({ where: { id } });
 
@@ -423,7 +437,7 @@ export class PedidosService {
       }
 
       pedido.estado = estado;
-      await this.pedido_repo.save(pedido);
+      await this.pedido_repo.save({ ...pedido, actualizadoPorId: cliente.id });
 
       return await this.pedido_repo.findOne({
         where: { id },

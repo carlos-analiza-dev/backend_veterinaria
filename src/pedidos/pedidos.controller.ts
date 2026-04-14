@@ -28,8 +28,11 @@ export class PedidosController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @AuthCliente()
-  create(@Body() createPedidoDto: CreatePedidoDto) {
-    return this.pedidosService.create(createPedidoDto);
+  create(
+    @Body() createPedidoDto: CreatePedidoDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.pedidosService.create(createPedidoDto, cliente);
   }
 
   @Get()
@@ -80,19 +83,23 @@ export class PedidosController {
   }
 
   @Patch(':id')
+  @AuthCliente()
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updatePedidoDto: UpdatePedidoDto,
+    @GetCliente() cliente: Cliente,
   ) {
-    return this.pedidosService.update(id, updatePedidoDto);
+    return this.pedidosService.update(id, updatePedidoDto, cliente);
   }
 
   @Patch(':id/estado/:estado')
+  @AuthCliente()
   updateEstado(
     @Param('id', ParseUUIDPipe) id: string,
     @Param('estado') estado: EstadoPedido,
+    @GetCliente() cliente: Cliente,
   ) {
-    return this.pedidosService.updateEstado(id, estado);
+    return this.pedidosService.updateEstado(id, estado, cliente);
   }
 
   @Delete(':id')

@@ -13,6 +13,8 @@ import { User } from 'src/auth/entities/auth.entity';
 import { instanceToPlain } from 'class-transformer';
 import { HistorialDocumento } from 'src/historial_documentos/entities/historial_documento.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class HistorialClinicoService {
@@ -97,9 +99,8 @@ export class HistorialClinicoService {
           subServicio,
         });
 
-        const detalleGuardado = await this.historialDetalleRepository.save(
-          detalle,
-        );
+        const detalleGuardado =
+          await this.historialDetalleRepository.save(detalle);
 
         detallesCreados.push(detalleGuardado);
       }
@@ -253,6 +254,7 @@ export class HistorialClinicoService {
   }
 
   async findByFinca(user: Cliente, paginationDto: PaginationDto) {
+    const clienteId = getPropietarioId(user);
     const {
       limit = 10,
       offset = 0,
@@ -277,7 +279,7 @@ export class HistorialClinicoService {
         .leftJoinAndSelect('detalles.subServicio', 'subServicio')
         .leftJoinAndSelect('detalles.documentos', 'documentos')
 
-        .where('propietario.id = :propietarioId', { propietarioId: user.id })
+        .where('propietario.id = :propietarioId', { propietarioId: clienteId })
         .orderBy('historial.createdAt', 'DESC')
         .skip(offset)
         .take(limit);
@@ -328,6 +330,7 @@ export class HistorialClinicoService {
   }
 
   async findTratamientos(user: Cliente, paginationDto: PaginationDto) {
+    const clienteId = getPropietarioId(user);
     const {
       limit = 10,
       offset = 0,
@@ -350,7 +353,7 @@ export class HistorialClinicoService {
         .leftJoinAndSelect('cita.finca', 'finca')
         .leftJoinAndSelect('detalle.subServicio', 'subServicio')
         .leftJoinAndSelect('detalle.documentos', 'documentos')
-        .where('propietario.id = :propietarioId', { propietarioId: user.id })
+        .where('propietario.id = :propietarioId', { propietarioId: clienteId })
         .andWhere('detalle.tratamiento IS NOT NULL')
         .orderBy('detalle.createdAt', 'DESC')
         .skip(offset)

@@ -272,7 +272,7 @@ export class ProduccionFincaService {
 
       await this.produccion_finca_repo.save({
         ...produccionGuardada,
-        creado_por: creadoPor,
+        creadoPorId: creadoPor.id,
       });
 
       const creadorInfo = trabajador
@@ -487,7 +487,7 @@ export class ProduccionFincaService {
 
       await this.produccion_finca_repo.save({
         ...produccion,
-        actualizado_por: cliente,
+        actualizadoPorId: cliente.id,
       });
 
       return this.produccion_finca_repo.findOne({

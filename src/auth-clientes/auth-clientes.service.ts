@@ -171,21 +171,17 @@ export class AuthClientesService {
         );
       }
 
-      if (createClienteDto.rol !== TipoCliente.TRABAJADOR) {
-        await this.notificacionService.notifyAdmins(
-          NotificationType.NEW_CLIENT,
-          'Nuevo Cliente Registrado',
-          `Se registro el cliente ${user.nombre}`,
-        );
-      }
+      await this.notificacionService.notifyAdmins(
+        NotificationType.NEW_CLIENT,
+        'Nuevo Cliente Registrado',
+        `Se registro el cliente ${user.nombre}`,
+      );
 
-      if (createClienteDto.rol !== TipoCliente.TRABAJADOR) {
-        await this.mailService.verifyAccount(
-          user.email,
-          user.nombre,
-          `${process.env.FRONTEND_URL_CLIENT}/verify-account/${user.email}`,
-        );
-      }
+      await this.mailService.verifyAccount(
+        user.email,
+        user.nombre,
+        `${process.env.FRONTEND_URL_CLIENT}/verify-account/${user.email}`,
+      );
 
       return user;
     } catch (error) {
@@ -265,7 +261,7 @@ export class AuthClientesService {
         rol: TipoCliente.TRABAJADOR,
         isActive: createClienteDto.isActive ?? true,
         verified: createClienteDto.verified ?? false,
-        propietario: propietario,
+        propietario: { id: propietario.id },
       });
 
       await this.clienteRepository.save(trabajador);
@@ -514,7 +510,7 @@ export class AuthClientesService {
     const cliente = await this.clienteRepository.findOne({ where: { id } });
     if (!cliente)
       throw new NotFoundException('No se encontro el cliente seleccionado');
-    return cliente;
+    return instanceToPlain(cliente);
   }
 
   async update(id: string, updateAuthClienteDto: UpdateAuthClienteDto) {

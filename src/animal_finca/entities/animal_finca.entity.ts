@@ -10,6 +10,7 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  JoinColumn,
   JoinTable,
   ManyToMany,
   ManyToOne,
@@ -170,22 +171,38 @@ export class AnimalFinca {
   @Column({ type: 'int', default: 1 })
   numero_parto_madre: number;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'fecha_registro' })
   fecha_registro: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'fecha_actualizacion' })
   fecha_actualizacion: Date;
 
+  @Column({ nullable: true })
+  creadoPorId: string;
+
   @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'creadoPorId' })
   creado_por: Cliente;
 
+  @Column({ nullable: true })
+  actualizadoPorId: string;
+
   @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'actualizadoPorId' })
   actualizado_por: Cliente;
 
+  @Column({ nullable: false })
+  propietarioId: string;
+
   @ManyToOne(() => Cliente, (cliente) => cliente.animales, { eager: true })
+  @JoinColumn({ name: 'propietarioId' })
   propietario: Cliente;
 
+  @Column({ nullable: true })
+  trabajadorId: string;
+
   @ManyToOne(() => Cliente, (cliente) => cliente.animales, { nullable: true })
+  @JoinColumn({ name: 'trabajadorId' })
   trabajador: Cliente;
 
   @ManyToOne(() => FincasGanadero, (finca) => finca.animales, {

@@ -23,8 +23,11 @@ export class CelosAnimalController {
 
   @Post()
   @AuthCliente()
-  create(@Body() createCelosAnimalDto: CreateCelosAnimalDto) {
-    return this.celosAnimalService.create(createCelosAnimalDto);
+  create(
+    @Body() createCelosAnimalDto: CreateCelosAnimalDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.celosAnimalService.create(createCelosAnimalDto, cliente);
   }
 
   @Get()

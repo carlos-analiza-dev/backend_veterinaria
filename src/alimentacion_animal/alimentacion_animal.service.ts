@@ -11,6 +11,8 @@ import { AlimentacionAnimal } from './entities/alimentacion_animal.entity';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { instanceToPlain } from 'class-transformer';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class AlimentacionAnimalService {
@@ -22,7 +24,7 @@ export class AlimentacionAnimalService {
     private animalRepository: Repository<AnimalFinca>,
   ) {}
 
-  async create(dto: CreateAlimentacionAnimalDto) {
+  async create(dto: CreateAlimentacionAnimalDto, cliente: Cliente) {
     try {
       const animal = await this.animalRepository.findOne({
         where: { id: dto.animalId },
@@ -48,6 +50,7 @@ export class AlimentacionAnimalService {
         costo_diario: dto.costo_diario,
         fecha: dto.fecha,
         animal,
+        creadoPorId: cliente.id,
       });
 
       await this.alimentacionRepository.save(alimentacion);
@@ -59,8 +62,7 @@ export class AlimentacionAnimalService {
   }
 
   async findAll(cliente: Cliente) {
-    const propietarioId = cliente.id;
-
+    const propietarioId = getPropietarioId(cliente);
     try {
       const alimentacion = await this.alimentacionRepository
         .createQueryBuilder('alimentacion')
@@ -134,7 +136,7 @@ export class AlimentacionAnimalService {
     return alimentacion;
   }
 
-  async update(id: string, dto: UpdateAlimentacionAnimalDto) {
+  async update(id: string, dto: UpdateAlimentacionAnimalDto, cliente: Cliente) {
     try {
       const alimentacion = await this.findOne(id);
 
@@ -185,8 +187,10 @@ export class AlimentacionAnimalService {
         ...(dto.fecha && { fecha: dto.fecha }),
       });
 
-      const alimentacionActualizada =
-        await this.alimentacionRepository.save(alimentacion);
+      const alimentacionActualizada = await this.alimentacionRepository.save({
+        ...alimentacion,
+        actualizadoPorId: cliente.id,
+      });
 
       return {
         message: 'Registro de alimentación actualizado con éxito',

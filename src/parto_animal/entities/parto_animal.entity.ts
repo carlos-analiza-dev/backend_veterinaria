@@ -15,6 +15,7 @@ import {
   SexoCria,
   TipoParto,
 } from 'src/interfaces/partos.enums';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Entity('partos_animales')
 export class PartoAnimal {
@@ -94,4 +95,18 @@ export class PartoAnimal {
 
   @UpdateDateColumn()
   ultima_actualizacion: Date;
+
+  @Column({ nullable: true })
+  creadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'creadoPorId' })
+  creado_por: Cliente;
+
+  @Column({ nullable: true })
+  actualizadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'actualizadoPorId' })
+  actualizado_por: Cliente;
 }

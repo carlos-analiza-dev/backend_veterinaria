@@ -87,7 +87,7 @@ export class FincasGanaderoService {
         especies_maneja,
         ubicacion,
         propietario: propietario,
-        creado_por: cliente,
+        creadoPorId: cliente.id,
         pais_id: pais,
         departamento,
         municipio,
@@ -310,7 +310,7 @@ export class FincasGanaderoService {
       ((finca.latitud = latitud ?? finca.latitud),
         (finca.longitud = longitud ?? finca.longitud));
 
-      await this.fincasRepo.save({ ...finca, actualizado_por: cliente });
+      await this.fincasRepo.save({ ...finca, actualizadoPorId: cliente.id });
 
       return {
         message: 'Finca actualizada exitosamente',

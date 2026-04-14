@@ -6,6 +6,8 @@ import { CreateProductosGanaderiaDto } from './dto/create-productos_ganaderia.dt
 import { UpdateProductosGanaderiaDto } from './dto/update-productos_ganaderia.dto';
 import { ProductosGanaderia } from './entities/productos_ganaderia.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class ProductosGanaderiaService {
@@ -19,7 +21,7 @@ export class ProductosGanaderiaService {
 
   async create(dto: CreateProductosGanaderiaDto, cliente: Cliente) {
     try {
-      const clienteId = cliente.id;
+      const clienteId = getPropietarioId(cliente);
       const propietario = await this.clienteRepository.findOneBy({
         id: clienteId,
       });
@@ -30,7 +32,8 @@ export class ProductosGanaderiaService {
 
       const producto = this.productoRepository.create({
         ...dto,
-        propietario: cliente,
+        propietario: { id: clienteId },
+        creadoPorId: cliente.id,
       });
 
       await this.productoRepository.save(producto);
@@ -42,7 +45,7 @@ export class ProductosGanaderiaService {
   }
 
   async findAll(cliente: Cliente) {
-    const clienteId = cliente.id;
+    const clienteId = getPropietarioId(cliente);
     return await this.productoRepository.find({
       where: {
         propietario: { id: clienteId },
@@ -53,7 +56,7 @@ export class ProductosGanaderiaService {
   }
 
   async findOne(id: string, cliente: Cliente) {
-    const clienteId = cliente.id;
+    const clienteId = getPropietarioId(cliente);
     const producto = await this.productoRepository.findOne({
       where: {
         id,
@@ -74,7 +77,10 @@ export class ProductosGanaderiaService {
 
     Object.assign(producto, dto);
 
-    return await this.productoRepository.save(producto);
+    return await this.productoRepository.save({
+      ...producto,
+      actualizadoPorId: cliente.id,
+    });
   }
 
   async remove(id: string, cliente: Cliente) {

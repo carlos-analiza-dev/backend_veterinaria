@@ -16,6 +16,8 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { CategoriaGasto, MetodoPago } from 'src/interfaces/gastos.enums';
 import { instanceToPlain } from 'class-transformer';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class GastosService {
@@ -32,7 +34,7 @@ export class GastosService {
     private userRepository: Repository<Cliente>,
   ) {}
   async create(createGastoDto: CreateGastoDto, cliente: Cliente) {
-    const userId = cliente.id ?? '';
+    const userId = getPropietarioId(cliente);
     try {
       const { fincaId, especieId, razaId, ...rest } = createGastoDto;
 
@@ -77,8 +79,7 @@ export class GastosService {
         finca,
         especie,
         raza,
-        registradoPor: usuario,
-        registradoPorId: userId,
+        registradoPorId: cliente.id,
       });
 
       const gastoGuardado = await this.gastoRepository.save(gasto);
@@ -172,12 +173,6 @@ export class GastosService {
 
       if (!gasto) {
         throw new NotFoundException(`Gasto con ID ${id} no encontrado`);
-      }
-
-      if (gasto.registradoPorId !== cliente.id) {
-        throw new BadRequestException(
-          'No tienes permiso para editar este gasto',
-        );
       }
 
       const { fincaId, especieId, razaId, ...rest } = updateGastoDto;
@@ -281,7 +276,10 @@ export class GastosService {
         gasto.notas = rest.notas;
       }
 
-      const gastoActualizado = await this.gastoRepository.save(gasto);
+      const gastoActualizado = await this.gastoRepository.save({
+        ...gasto,
+        actualizadoPorId: cliente.id,
+      });
       return this.mapToResponseDto(gastoActualizado);
     } catch (error) {
       if (

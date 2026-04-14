@@ -21,6 +21,7 @@ import {
 import { PartoAnimalValidationService } from './parto_animal.validation.service';
 import { FiltrarPartosDto } from './dto/filtrar-partos.dto';
 import { instanceToPlain } from 'class-transformer';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Injectable()
 export class PartoAnimalService {
@@ -35,7 +36,7 @@ export class PartoAnimalService {
     private readonly celoRepository: Repository<CelosAnimal>,
     private validationService: PartoAnimalValidationService,
   ) {}
-  async create(createPartoAnimalDto: CreatePartoAnimalDto) {
+  async create(createPartoAnimalDto: CreatePartoAnimalDto, cliente: Cliente) {
     try {
       const { hembra, servicio } =
         await this.validationService.validarTodasLasValidacionesParto(
@@ -121,6 +122,7 @@ export class PartoAnimalService {
         numero_crias_muertas: numeroCriasMuertas,
         dias_gestacion: diasGestacion,
         semanas_gestacion: semanasGestacion,
+        creadoPorId: cliente.id,
       });
 
       const partoGuardado = await this.partoRepository.save(parto);
@@ -222,7 +224,11 @@ export class PartoAnimalService {
     return instanceToPlain(parto);
   }
 
-  async update(id: string, updatePartoAnimalDto: UpdatePartoAnimalDto) {
+  async update(
+    id: string,
+    updatePartoAnimalDto: UpdatePartoAnimalDto,
+    cliente: Cliente,
+  ) {
     try {
       const parto = await this.partoRepository.findOne({
         where: { id },
@@ -346,7 +352,10 @@ export class PartoAnimalService {
 
       Object.assign(parto, updatePartoAnimalDto);
 
-      const partoActualizado = await this.partoRepository.save(parto);
+      const partoActualizado = await this.partoRepository.save({
+        ...parto,
+        actualizadoPorId: cliente.id,
+      });
 
       return partoActualizado;
     } catch (error) {

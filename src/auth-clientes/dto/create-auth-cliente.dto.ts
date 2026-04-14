@@ -82,5 +82,5 @@ export class CreateAuthClienteDto {
     message: `Ocurrio un error, asegurate que tu rol sea ${TipoCliente.PROPIETARIO.toLowerCase()} o ${TipoCliente.TRABAJADOR.toLowerCase()}`,
   })
   @IsOptional()
-  rol: string;
+  rol: TipoCliente;
 }

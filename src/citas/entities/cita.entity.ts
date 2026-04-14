@@ -93,6 +93,20 @@ export class Cita {
   @UpdateDateColumn()
   updated_at: Date;
 
+  @Column({ nullable: true })
+  creadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'creadoPorId' })
+  creado_por: Cliente;
+
+  @Column({ nullable: true })
+  actualizadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'actualizadoPorId' })
+  actualizado_por: Cliente;
+
   @BeforeInsert()
   generarCodigo() {
     const año = new Date().getFullYear();

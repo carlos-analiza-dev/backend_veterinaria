@@ -9,6 +9,7 @@ import { CelosAnimal } from 'src/celos_animal/entities/celos_animal.entity';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { PartoAnimal } from 'src/parto_animal/entities/parto_animal.entity';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Module({
   controllers: [ServiciosReproductivosController],
@@ -20,6 +21,7 @@ import { PartoAnimal } from 'src/parto_animal/entities/parto_animal.entity';
       AnimalFinca,
       FincasGanadero,
       PartoAnimal,
+      Cliente,
     ]),
     AuthClientesModule,
   ],

@@ -15,6 +15,7 @@ import {
   EstadoServicio,
   TipoServicio,
 } from 'src/interfaces/servicios-reproductivos.enum';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Entity('servicios_reproductivos')
 export class ServicioReproductivo {
@@ -88,4 +89,18 @@ export class ServicioReproductivo {
 
   @UpdateDateColumn()
   ultima_actualizacion: Date;
+
+  @Column({ nullable: true })
+  creadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'creadoPorId' })
+  creado_por: Cliente;
+
+  @Column({ nullable: true })
+  actualizadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'actualizadoPorId' })
+  actualizado_por: Cliente;
 }

@@ -16,6 +16,8 @@ import { UpdateServiciosReproductivoDto } from './dto/update-servicios_reproduct
 import { FilterServiciosDto } from './dto/filter-servicios.dto';
 import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
 import { UpdateEstadoServicioDto } from './dto/update-estado-servicio.dto';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
 
 @Controller('servicios-reproductivos')
 export class ServiciosReproductivosController {
@@ -25,8 +27,14 @@ export class ServiciosReproductivosController {
 
   @Post()
   @AuthCliente()
-  async create(@Body() createDto: CreateServiciosReproductivoDto) {
-    const servicio = await this.serviciosReproductivosService.create(createDto);
+  async create(
+    @Body() createDto: CreateServiciosReproductivoDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    const servicio = await this.serviciosReproductivosService.create(
+      createDto,
+      cliente,
+    );
     return {
       statusCode: HttpStatus.CREATED,
       message: 'Servicio reproductivo creado exitosamente',
@@ -60,10 +68,12 @@ export class ServiciosReproductivosController {
   async update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: UpdateServiciosReproductivoDto,
+    @GetCliente() cliente: Cliente,
   ) {
     const servicio = await this.serviciosReproductivosService.update(
       id,
       updateDto,
+      cliente,
     );
     return {
       statusCode: HttpStatus.OK,

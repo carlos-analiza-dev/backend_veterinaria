@@ -61,6 +61,13 @@ export class Ingreso {
   @Column({ name: 'registrado_por', nullable: true })
   registradoPorId: string;
 
+  @Column({ nullable: true })
+  actualizadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'actualizadoPorId' })
+  actualizado_por: Cliente;
+
   @Column({ type: 'text', nullable: true })
   notas: string;
 

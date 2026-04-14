@@ -15,6 +15,7 @@ import {
   OneToOne,
   ManyToMany,
   UpdateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 
 @Entity('finca_ganadero')
@@ -61,16 +62,24 @@ export class FincasGanadero {
   @Column({ type: 'jsonb', nullable: true })
   especies_maneja: { especie: string; cantidad: number }[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'fecha_registro' })
   fecha_registro: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'fecha_actualizacion' })
   fecha_actualizacion: Date;
 
-  @ManyToOne(() => Cliente, { nullable: true })
-  creado_por: Cliente;
+  @Column({ nullable: true })
+  creadoPorId: string;
 
   @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'creadoPorId' })
+  creado_por: Cliente;
+
+  @Column({ nullable: true })
+  actualizadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'actualizadoPorId' })
   actualizado_por: Cliente;
 
   @Column({ type: 'boolean', default: true })

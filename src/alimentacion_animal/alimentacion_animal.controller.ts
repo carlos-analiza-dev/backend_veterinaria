@@ -21,8 +21,15 @@ export class AlimentacionAnimalController {
   ) {}
 
   @Post()
-  create(@Body() createAlimentacionAnimalDto: CreateAlimentacionAnimalDto) {
-    return this.alimentacionAnimalService.create(createAlimentacionAnimalDto);
+  @AuthCliente()
+  create(
+    @Body() createAlimentacionAnimalDto: CreateAlimentacionAnimalDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.alimentacionAnimalService.create(
+      createAlimentacionAnimalDto,
+      cliente,
+    );
   }
 
   @Get()
@@ -42,13 +49,16 @@ export class AlimentacionAnimalController {
   }
 
   @Patch(':id')
+  @AuthCliente()
   update(
     @Param('id') id: string,
     @Body() updateAlimentacionAnimalDto: UpdateAlimentacionAnimalDto,
+    @GetCliente() cliente: Cliente,
   ) {
     return this.alimentacionAnimalService.update(
       id,
       updateAlimentacionAnimalDto,
+      cliente,
     );
   }
 

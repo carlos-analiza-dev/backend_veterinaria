@@ -19,6 +19,7 @@ import {
 import { EstadoCeloAnimal } from 'src/interfaces/celos.animal.enum';
 import { UpdateEstadoServicioDto } from './dto/update-estado-servicio.dto';
 import { PartoAnimal } from 'src/parto_animal/entities/parto_animal.entity';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Injectable()
 export class ServiciosReproductivosService {
@@ -36,7 +37,7 @@ export class ServiciosReproductivosService {
     private dataSource: DataSource,
   ) {}
 
-  async create(createDto: CreateServiciosReproductivoDto) {
+  async create(createDto: CreateServiciosReproductivoDto, cliente: Cliente) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -160,6 +161,7 @@ export class ServiciosReproductivosService {
         exitoso: createDto.exitoso || false,
         observaciones: createDto.observaciones,
         metadata: createDto.metadata,
+        creadoPorId: cliente.id,
       });
 
       const servicioGuardado = await queryRunner.manager.save(servicio);
@@ -407,6 +409,7 @@ export class ServiciosReproductivosService {
   async update(
     id: string,
     updateDto: UpdateServiciosReproductivoDto,
+    cliente: Cliente,
   ): Promise<ServicioReproductivo> {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -613,7 +616,7 @@ export class ServiciosReproductivosService {
           servicio.exitoso = false;
         }
       }
-
+      servicio.actualizadoPorId = cliente.id;
       const servicioActualizado = await queryRunner.manager.save(servicio);
 
       if (updateDto.detalles && updateDto.detalles.length > 0) {

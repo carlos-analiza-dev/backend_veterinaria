@@ -12,14 +12,18 @@ import { CitasService } from './citas.service';
 import { CreateCitaDto } from './dto/create-cita.dto';
 import { UpdateCitaDto } from './dto/update-cita.dto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
+import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Controller('citas')
 export class CitasController {
   constructor(private readonly citasService: CitasService) {}
 
   @Post()
-  create(@Body() createCitaDto: CreateCitaDto) {
-    return this.citasService.create(createCitaDto);
+  @AuthCliente()
+  create(@Body() createCitaDto: CreateCitaDto, @GetCliente() cliente: Cliente) {
+    return this.citasService.create(createCitaDto, cliente);
   }
 
   @Get('horarios/disponibles')
@@ -35,12 +39,13 @@ export class CitasController {
     );
   }
 
-  @Get('usuario/:id')
+  @Get('usuario')
+  @AuthCliente()
   findAllByUser(
-    @Param('id') id: string,
+    @GetCliente() cliente: Cliente,
     @Query() paginationDto: PaginationDto,
   ) {
-    return this.citasService.findAllByUser(id, paginationDto);
+    return this.citasService.findAllByUser(cliente, paginationDto);
   }
 
   @Get('animales/:id')
@@ -83,8 +88,13 @@ export class CitasController {
   }
  */
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCitaDto: UpdateCitaDto) {
-    return this.citasService.update(id, updateCitaDto);
+  @AuthCliente()
+  update(
+    @Param('id') id: string,
+    @Body() updateCitaDto: UpdateCitaDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.citasService.update(id, updateCitaDto, cliente);
   }
 
   /* @Delete(':id')

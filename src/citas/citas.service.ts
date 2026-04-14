@@ -29,6 +29,8 @@ import { MailService } from 'src/mail/mail.service';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { parseISO } from 'date-fns';
 import { toZonedTime, format } from 'date-fns-tz';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class CitasService {
@@ -50,7 +52,8 @@ export class CitasService {
     private readonly email_service: MailService,
   ) {}
 
-  async create(createCitaDto: CreateCitaDto) {
+  async create(createCitaDto: CreateCitaDto, cliente: Cliente) {
+    const clienteId = getPropietarioId(cliente);
     const {
       medicoId,
       fecha,
@@ -62,7 +65,6 @@ export class CitasService {
       subServicioId,
       totalPagar,
       totalFinal,
-      clienteId,
     } = createCitaDto;
 
     const [horas, minutos] = horaInicio.split(':').map(Number);
@@ -172,6 +174,7 @@ export class CitasService {
       totalPagar,
       totalFinal,
       cliente: usuario_exist,
+      creadoPorId: cliente.id,
     });
 
     try {
@@ -284,11 +287,14 @@ export class CitasService {
     );
   }
 
-  async findAllByUser(id: string, paginationDto: PaginationDto) {
+  async findAllByUser(cliente: Cliente, paginationDto: PaginationDto) {
+    const clienteId = getPropietarioId(cliente);
     const { limit = 10, offset = 0 } = paginationDto;
 
     try {
-      const cliente_existe = await this.cliente_repo.findOne({ where: { id } });
+      const cliente_existe = await this.cliente_repo.findOne({
+        where: { id: clienteId },
+      });
       if (!cliente_existe)
         throw new NotFoundException('No se encontró el usuario seleccionado.');
 
@@ -307,7 +313,7 @@ export class CitasService {
           'precio.paisId = :paisId',
           { paisId: cliente_existe.pais.id },
         )
-        .where('cita.clienteId = :id', { id })
+        .where('cita.clienteId = :clienteId', { clienteId })
         .take(limit)
         .skip(offset)
         .orderBy('cita.fecha', 'DESC');
@@ -818,7 +824,7 @@ export class CitasService {
     };
   }
 
-  async update(id: string, updateCitaDto: UpdateCitaDto) {
+  async update(id: string, updateCitaDto: UpdateCitaDto, cliente: Cliente) {
     const cita = await this.citas_repo.findOne({
       where: { id },
       relations: ['medico', 'cliente', 'finca', 'subServicio'],
@@ -961,7 +967,10 @@ export class CitasService {
       cita.motivoCancelacion = motivoCancelacion;
     }
 
-    const citaActualizada = await this.citas_repo.save(cita);
+    const citaActualizada = await this.citas_repo.save({
+      ...cita,
+      actualizadoPorId: cliente.id,
+    });
 
     await this.enviarNotificacionEstadoCita(
       citaActualizada,

@@ -27,9 +27,11 @@ export class InventarioProductosGanaderiaController {
   create(
     @Body()
     createInventarioProductosGanaderiaDto: CreateInventarioProductosGanaderiaDto,
+    @GetCliente() cliente: Cliente,
   ) {
     return this.inventarioProductosGanaderiaService.create(
       createInventarioProductosGanaderiaDto,
+      cliente,
     );
   }
 
@@ -57,10 +59,12 @@ export class InventarioProductosGanaderiaController {
     @Param('id') id: string,
     @Body()
     updateInventarioProductosGanaderiaDto: UpdateInventarioProductosGanaderiaDto,
+    @GetCliente() cliente: Cliente,
   ) {
     return this.inventarioProductosGanaderiaService.update(
       id,
       updateInventarioProductosGanaderiaDto,
+      cliente,
     );
   }
 

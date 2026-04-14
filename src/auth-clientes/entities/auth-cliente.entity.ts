@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   OneToMany,
+  JoinColumn,
 } from 'typeorm';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
@@ -55,7 +56,7 @@ export class Cliente {
     enum: TipoCliente,
     default: TipoCliente.PROPIETARIO,
   })
-  rol: string;
+  rol: TipoCliente;
 
   @ManyToOne(() => Pai, (pais) => pais.cliente, { eager: true })
   pais: Pai;
@@ -130,8 +131,12 @@ export class Cliente {
   @OneToMany(() => Cliente, (cliente) => cliente.propietario)
   trabajadores: Cliente[];
 
+  @Column({ nullable: true })
+  propietarioId: string;
+
   @ManyToOne(() => Cliente, (cliente) => cliente.trabajadores, {
     nullable: true,
   })
+  @JoinColumn({ name: 'propietarioId' })
   propietario: Cliente;
 }

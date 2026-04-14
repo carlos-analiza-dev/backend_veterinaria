@@ -15,6 +15,8 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { instanceToPlain } from 'class-transformer';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class InventarioProductosGanaderiaService {
@@ -29,7 +31,10 @@ export class InventarioProductosGanaderiaService {
     private readonly fincaRepository: Repository<FincasGanadero>,
   ) {}
 
-  async create(createDto: CreateInventarioProductosGanaderiaDto) {
+  async create(
+    createDto: CreateInventarioProductosGanaderiaDto,
+    cliente: Cliente,
+  ) {
     try {
       const producto = await this.productoRepository.findOne({
         where: { id: createDto.productoId },
@@ -80,6 +85,7 @@ export class InventarioProductosGanaderiaService {
         stockMinimo: createDto.stockMinimo,
         producto,
         finca,
+        creadoPorId: cliente.id,
       });
 
       await this.inventarioRepository.save(inventario);
@@ -92,7 +98,7 @@ export class InventarioProductosGanaderiaService {
 
   async findAll(cliente: Cliente, paginationDto: PaginationDto) {
     const { limit = 10, offset = 0, fincaId = '' } = paginationDto;
-    const propietario = cliente.id ?? '';
+    const propietario = getPropietarioId(cliente);
 
     const queryBuilder = this.inventarioRepository
       .createQueryBuilder('inventario')
@@ -134,12 +140,16 @@ export class InventarioProductosGanaderiaService {
   async update(
     id: string,
     updateDto: UpdateInventarioProductosGanaderiaDto,
+    cliente: Cliente,
   ): Promise<InventarioProductosGanaderia> {
     const inventario = await this.findOne(id);
 
     Object.assign(inventario, updateDto);
 
-    return await this.inventarioRepository.save(inventario);
+    return await this.inventarioRepository.save({
+      ...inventario,
+      actualizadoPorId: cliente.id,
+    });
   }
 
   async remove(id: string) {

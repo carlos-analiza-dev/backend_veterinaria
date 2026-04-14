@@ -17,6 +17,8 @@ import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { CategoriaIngreso } from 'src/interfaces/ingresos.enums';
 import { MetodoPago } from 'src/interfaces/gastos.enums';
 import { instanceToPlain } from 'class-transformer';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class IngresosService {
@@ -33,7 +35,7 @@ export class IngresosService {
     private userRepository: Repository<Cliente>,
   ) {}
   async create(createIngresoDto: CreateIngresoDto, cliente: Cliente) {
-    const userId = cliente.id ?? '';
+    const userId = getPropietarioId(cliente);
     try {
       const { fincaId, especieId, razaId, ...rest } = createIngresoDto;
 
@@ -287,7 +289,10 @@ export class IngresosService {
         ingreso.notas = rest.notas;
       }
 
-      const ingresoActualizado = await this.ingresoRepo.save(ingreso);
+      const ingresoActualizado = await this.ingresoRepo.save({
+        ...ingreso,
+        actualizadoPorId: cliente.id,
+      });
       return this.mapToResponseDto(ingresoActualizado);
     } catch (error) {
       if (

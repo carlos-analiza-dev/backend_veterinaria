@@ -49,11 +49,17 @@ export class GananciaPesoRazaController {
   }
 
   @Patch(':id')
+  @AuthCliente()
   update(
     @Param('id') id: string,
     @Body() updateGananciaPesoRazaDto: UpdateGananciaPesoRazaDto,
+    @GetCliente() cliente: Cliente,
   ) {
-    return this.gananciaPesoRazaService.update(id, updateGananciaPesoRazaDto);
+    return this.gananciaPesoRazaService.update(
+      id,
+      updateGananciaPesoRazaDto,
+      cliente,
+    );
   }
 
   @Delete(':id')

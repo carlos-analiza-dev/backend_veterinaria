@@ -33,16 +33,9 @@ export class PedidoDetalleDto {
 }
 
 export class CreatePedidoDto {
-  @IsUUID('4', { message: 'El ID del cliente debe ser un UUID válido.' })
-  id_cliente: string;
-
   @IsUUID('4', { message: 'El ID de la sucursal debe ser un UUID válido.' })
   @IsOptional()
   id_sucursal?: string;
-
-  // ---------------------------
-  // CAMPOS CONTABLES NUEVOS
-  // ---------------------------
 
   @IsNumber({}, { message: 'El subtotal debe ser un número válido.' })
   @Min(0, { message: 'El subtotal no puede ser negativo.' })

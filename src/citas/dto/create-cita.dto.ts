@@ -22,12 +22,6 @@ export class CreateCitaDto {
   @IsNotEmpty({ message: 'Debe seleccionar al menos un animal' })
   animalesId: string[];
 
-  @IsString({ message: 'El usuario debe ser válido.' })
-  @IsNotEmpty({
-    message: 'No se encontro el usuario que realiza esta solicitud.',
-  })
-  clienteId: string;
-
   @IsString({ message: 'El ID de la finca debe ser un UUID válido.' })
   @IsNotEmpty({ message: 'El campo finca es obligatorio.' })
   fincaId: string;

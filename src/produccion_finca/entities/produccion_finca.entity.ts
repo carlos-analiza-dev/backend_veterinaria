@@ -88,16 +88,23 @@ export class ProduccionFinca {
   @Column({ type: 'bool', default: false })
   produccion_venta: boolean;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'fecha_registro' })
   fecha_registro: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'fecha_actualizacion' })
   fecha_actualizacion: Date;
 
-  @ManyToOne(() => Cliente, { nullable: true })
-  creado_por: Cliente;
+  @Column({ nullable: true })
+  creadoPorId: string;
 
   @ManyToOne(() => Cliente, { nullable: true })
-  @JoinColumn({ name: 'actualizado_por_id' })
+  @JoinColumn({ name: 'creadoPorId' })
+  creado_por: Cliente;
+
+  @Column({ nullable: true })
+  actualizadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'actualizadoPorId' })
   actualizado_por: Cliente;
 }

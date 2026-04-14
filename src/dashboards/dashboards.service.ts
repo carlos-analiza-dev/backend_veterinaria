@@ -35,6 +35,7 @@ import {
   ResumenProduccionGanadera,
 } from './interfaces/produccion-ganadera.interface';
 import { PesoHistorial } from 'src/peso_historial/entities/peso_historial.entity';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class DashboardService {
@@ -428,20 +429,22 @@ export class DashboardService {
 
   //ANIMALES
   async getTotalAnimales(cliente: Cliente) {
+    const clienteId = getPropietarioId(cliente);
     return await this.animalRepository.count({
       where: {
-        propietario: { id: cliente.id, animales: { animal_muerte: false } },
+        propietario: { id: clienteId, animales: { animal_muerte: false } },
       },
     });
   }
 
   async getAnimalesPorSexo(cliente: Cliente) {
+    const clienteId = getPropietarioId(cliente);
     const result = await this.animalRepository
       .createQueryBuilder('animal')
       .innerJoin('animal.propietario', 'propietario')
       .select('animal.sexo', 'sexo')
       .addSelect('COUNT(*)', 'total')
-      .where('propietario.id = :id', { id: cliente.id })
+      .where('propietario.id = :id', { id: clienteId })
       .groupBy('animal.sexo')
       .getRawMany();
 
@@ -449,6 +452,7 @@ export class DashboardService {
   }
 
   async getVivosVsMuertos(cliente: Cliente) {
+    const clienteId = getPropietarioId(cliente);
     const result = await this.animalRepository
       .createQueryBuilder('animal')
       .innerJoin('animal.propietario', 'propietario')
@@ -460,13 +464,14 @@ export class DashboardService {
         `SUM(CASE WHEN animal.animal_muerte = false THEN 1 ELSE 0 END)`,
         'vivos',
       )
-      .where('propietario.id = :id', { id: cliente.id })
+      .where('propietario.id = :id', { id: clienteId })
       .getRawOne();
 
     return result;
   }
 
   async getCompradosVsNacidos(cliente: Cliente) {
+    const clienteId = getPropietarioId(cliente);
     const result = await this.animalRepository
       .createQueryBuilder('animal')
       .innerJoin('animal.propietario', 'propietario')
@@ -478,7 +483,7 @@ export class DashboardService {
         `SUM(CASE WHEN animal.compra_animal = false THEN 1 ELSE 0 END)`,
         'nacidos',
       )
-      .where('propietario.id = :id', { id: cliente.id })
+      .where('propietario.id = :id', { id: clienteId })
       .getRawOne();
 
     return result;
@@ -561,14 +566,16 @@ export class DashboardService {
 
   //FINCA
   async getTotalFincas(cliente: Cliente) {
+    const clienteId = getPropietarioId(cliente);
     return await this.fincaRepository.count({
       where: {
-        propietario: { id: cliente.id },
+        propietario: { id: clienteId },
       },
     });
   }
 
   async getFincasPorTipoExplotacion(cliente: Cliente) {
+    const clienteId = getPropietarioId(cliente);
     return await this.fincaRepository
       .createQueryBuilder('f')
       .select(
@@ -576,14 +583,15 @@ export class DashboardService {
         'tipo',
       )
       .addSelect('COUNT(*)', 'total')
-      .where('f.propietario = :clienteId', { clienteId: cliente.id })
+      .where('f.propietario = :clienteId', { clienteId: clienteId })
       .groupBy("jsonb_array_elements(f.tipo_explotacion)->>'tipo_explotacion'")
       .getRawMany();
   }
 
   async getFincasPorEspecie(cliente: Cliente): Promise<EspeciesFincaDto[]> {
+    const clienteId = getPropietarioId(cliente);
     const fincas = await this.fincaRepository.find({
-      where: { isActive: true, propietario: { id: cliente.id } },
+      where: { isActive: true, propietario: { id: clienteId } },
       relations: ['propietario'],
       select: {
         id: true,
@@ -613,11 +621,12 @@ export class DashboardService {
   async getProduccionGanaderaPorFinca(
     cliente: Cliente,
   ): Promise<ResumenProduccionGanadera> {
+    const clienteId = getPropietarioId(cliente);
     const fincasConProduccion = await this.produccionFincaRepository
       .createQueryBuilder('produccionFinca')
       .innerJoinAndSelect('produccionFinca.finca', 'finca')
       .leftJoinAndSelect('produccionFinca.ganadera', 'ganadera')
-      .where('finca.propietario = :clienteId', { clienteId: cliente.id })
+      .where('finca.propietario = :clienteId', { clienteId: clienteId })
       .andWhere('finca.isActive = :isActive', { isActive: true })
       .getMany();
 
@@ -682,9 +691,10 @@ export class DashboardService {
 
   //CITAS
   async getTotalCitas(cliente: Cliente) {
+    const clienteId = getPropietarioId(cliente);
     return await this.citasRepository.count({
       where: {
-        cliente: { id: cliente.id },
+        cliente: { id: clienteId },
         estado: EstadoCita.COMPLETADA,
       },
     });

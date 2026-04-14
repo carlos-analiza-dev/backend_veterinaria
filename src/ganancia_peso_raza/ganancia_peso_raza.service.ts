@@ -14,6 +14,8 @@ import { CreateGananciaPesoRazaDto } from './dto/create-ganancia_peso_raza.dto';
 import { UpdateGananciaPesoRazaDto } from './dto/update-ganancia_peso_raza.dto';
 import { RazaAnimal } from 'src/raza_animal/entities/raza_animal.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class GananciaPesoRazaService {
@@ -32,7 +34,7 @@ export class GananciaPesoRazaService {
     createGananciaPesoRazaDto: CreateGananciaPesoRazaDto,
     cliente: Cliente,
   ) {
-    const clienteId = cliente.id;
+    const clienteId = getPropietarioId(cliente);
 
     try {
       if (
@@ -100,13 +102,16 @@ export class GananciaPesoRazaService {
       }
 
       const gananciaPesoRaza = this.gananciaPesoRazaRepository.create({
-        cliente,
+        cliente: { id: clienteId },
         raza,
         gananciaMinima: createGananciaPesoRazaDto.gananciaMinima,
         gananciaMaxima: createGananciaPesoRazaDto.gananciaMaxima,
       });
 
-      await this.gananciaPesoRazaRepository.save(gananciaPesoRaza);
+      await this.gananciaPesoRazaRepository.save({
+        ...gananciaPesoRaza,
+        creadoPorId: cliente.id,
+      });
 
       return 'Ganancia Registrada con Exito';
     } catch (error) {
@@ -131,7 +136,7 @@ export class GananciaPesoRazaService {
   }
 
   async findByCliente(cliente: Cliente) {
-    const clienteId = cliente.id ?? '';
+    const clienteId = getPropietarioId(cliente);
 
     const cliente_exist = await this.clienteRepository.findOne({
       where: { id: clienteId, isActive: true },
@@ -205,15 +210,9 @@ export class GananciaPesoRazaService {
   async update(
     id: string,
     updateGananciaPesoRazaDto: UpdateGananciaPesoRazaDto,
-    userId?: string,
+    cliente: Cliente,
   ) {
     const gananciaPesoRaza = await this.findOne(id);
-
-    if (userId && gananciaPesoRaza.cliente.id !== userId) {
-      throw new ForbiddenException(
-        'No tienes permiso para modificar esta configuración',
-      );
-    }
 
     if (
       updateGananciaPesoRazaDto.gananciaMinima !== undefined ||
@@ -288,7 +287,10 @@ export class GananciaPesoRazaService {
 
     gananciaPesoRaza.updatedAt = new Date();
 
-    return await this.gananciaPesoRazaRepository.save(gananciaPesoRaza);
+    return await this.gananciaPesoRazaRepository.save({
+      ...gananciaPesoRaza,
+      actualizadoPorId: cliente.id,
+    });
   }
 
   async remove(id: string, userId?: string) {

@@ -14,6 +14,7 @@ import { Insumo } from 'src/insumos/entities/insumo.entity';
 import { Inventario } from 'src/inventario/entities/inventario.entity';
 import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
 import { Cliente } from '../auth-clientes/entities/auth-cliente.entity';
+import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 
 @Module({
   controllers: [CitasController],
@@ -31,6 +32,7 @@ import { Cliente } from '../auth-clientes/entities/auth-cliente.entity';
       Inventario,
       CitaProducto,
     ]),
+    AuthClientesModule,
   ],
   providers: [CitasService, MailService],
 })

@@ -8,6 +8,7 @@ import { ServicioReproductivo } from 'src/servicios_reproductivos/entities/servi
 import { CelosAnimal } from 'src/celos_animal/entities/celos_animal.entity';
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { PartoAnimalValidationService } from './parto_animal.validation.service';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Module({
   controllers: [PartoAnimalController],
@@ -17,6 +18,7 @@ import { PartoAnimalValidationService } from './parto_animal.validation.service'
       AnimalFinca,
       ServicioReproductivo,
       CelosAnimal,
+      Cliente,
     ]),
     AuthClientesModule,
   ],

@@ -6,6 +6,9 @@ import {
   Column,
   ManyToOne,
   Unique,
+  CreateDateColumn,
+  UpdateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 
 @Entity('ganancia_peso_raza')
@@ -39,4 +42,24 @@ export class GananciaPesoRaza {
 
   @Column({ type: 'timestamp', nullable: true, onUpdate: 'CURRENT_TIMESTAMP' })
   updatedAt: Date;
+
+  @CreateDateColumn({ name: 'fecha_registro' })
+  fecha_registro: Date;
+
+  @UpdateDateColumn({ name: 'fecha_actualizacion' })
+  fecha_actualizacion: Date;
+
+  @Column({ nullable: true })
+  creadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'creadoPorId' })
+  creado_por: Cliente;
+
+  @Column({ nullable: true })
+  actualizadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'actualizadoPorId' })
+  actualizado_por: Cliente;
 }

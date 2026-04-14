@@ -17,6 +17,7 @@ import { EstadoCeloAnimal } from 'src/interfaces/celos.animal.enum';
 import { EstadoServicio } from 'src/interfaces/servicios-reproductivos.enum';
 import { CelosAnimalValidationService } from './celos-animal-validation.service';
 import { ESPECIE_CONFIG } from 'src/interfaces/especies-config';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class CelosAnimalService {
@@ -30,7 +31,7 @@ export class CelosAnimalService {
     private validationService: CelosAnimalValidationService,
   ) {}
 
-  async create(createCelosAnimalDto: CreateCelosAnimalDto) {
+  async create(createCelosAnimalDto: CreateCelosAnimalDto, cliente: Cliente) {
     const animal = await this.animalRepository.findOne({
       where: { id: createCelosAnimalDto.animalId },
       relations: ['especie', 'celos'],
@@ -85,6 +86,7 @@ export class CelosAnimalService {
       animal: animal,
       fechaInicio: fechaInicio,
       fechaFin: fechaFin,
+      creadoPorId: cliente.id,
     });
 
     await this.celosAnimalRepository.save(nuevoCelo);
@@ -93,7 +95,7 @@ export class CelosAnimalService {
   }
 
   async findAll(paginationDto: PaginationDto, cliente: Cliente) {
-    const propietarioId = cliente.id;
+    const propietarioId = getPropietarioId(cliente);
 
     const {
       animalId,
