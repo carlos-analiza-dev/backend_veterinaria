@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateRazaAnimalDto } from './dto/create-raza_animal.dto';
 import { UpdateRazaAnimalDto } from './dto/update-raza_animal.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -14,39 +18,190 @@ export class RazaAnimalService {
     @InjectRepository(RazaAnimal)
     private readonly razaRepo: Repository<RazaAnimal>,
   ) {}
-  create(createRazaAnimalDto: CreateRazaAnimalDto) {
-    return 'This action adds a new razaAnimal';
-  }
 
-  async findAll(id: string) {
+  async create(createRazaAnimalDto: CreateRazaAnimalDto) {
     try {
-      const especie_existe = await this.especieRepo.findOne({ where: { id } });
-      if (!especie_existe)
-        throw new NotFoundException('No se encontro la especie seleccionada');
-      const razas_especies = await this.razaRepo.find({
-        where: {
-          especie: especie_existe,
-        },
+      const especie = await this.especieRepo.findOne({
+        where: { id: createRazaAnimalDto.especieId },
       });
-      if (!razas_especies || razas_especies.length === 0)
+
+      if (!especie) {
         throw new NotFoundException(
-          ' No se encontraron razas disponibles en este momento',
+          `Especie con ID ${createRazaAnimalDto.especieId} no encontrada`,
         );
-      return razas_especies;
+      }
+
+      const existingRaza = await this.razaRepo.findOne({
+        where: { nombre: createRazaAnimalDto.nombre },
+      });
+
+      if (existingRaza) {
+        throw new BadRequestException(
+          `Ya existe una raza con el nombre: ${createRazaAnimalDto.nombre}`,
+        );
+      }
+
+      const raza = this.razaRepo.create({
+        ...createRazaAnimalDto,
+        especie: especie,
+      });
+
+      return await this.razaRepo.save(raza);
     } catch (error) {
       throw error;
     }
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} razaAnimal`;
+  async findAll() {
+    try {
+      const razas = await this.razaRepo.find({
+        relations: [
+          'especie',
+          'animales',
+          'pesosEsperados',
+          'gananciasPesoRaza',
+        ],
+      });
+
+      if (!razas || razas.length === 0) {
+        throw new NotFoundException(
+          'No se encontraron razas disponibles en este momento',
+        );
+      }
+
+      return razas;
+    } catch (error) {
+      throw error;
+    }
   }
 
-  update(id: number, updateRazaAnimalDto: UpdateRazaAnimalDto) {
-    return `This action updates a #${id} razaAnimal`;
+  async findAllByEspecie(especieId: string) {
+    try {
+      const especie = await this.especieRepo.findOne({
+        where: { id: especieId },
+      });
+
+      if (!especie) {
+        throw new NotFoundException(
+          `No se encontró la especie seleccionada con ID: ${especieId}`,
+        );
+      }
+
+      const razas = await this.razaRepo.find({
+        where: {
+          especie: { id: especieId },
+        },
+        relations: ['especie'],
+      });
+
+      if (!razas || razas.length === 0) {
+        throw new NotFoundException(
+          `No se encontraron razas disponibles para la especie: ${especie.nombre}`,
+        );
+      }
+
+      return razas;
+    } catch (error) {
+      throw error;
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} razaAnimal`;
+  async findOne(id: string) {
+    try {
+      const raza = await this.razaRepo.findOne({
+        where: { id },
+      });
+
+      if (!raza) {
+        throw new NotFoundException(`Raza con ID ${id} no encontrada`);
+      }
+
+      return raza;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async update(id: string, updateRazaAnimalDto: UpdateRazaAnimalDto) {
+    try {
+      const raza = await this.findOne(id);
+
+      if (updateRazaAnimalDto.especieId) {
+        const especie = await this.especieRepo.findOne({
+          where: { id: updateRazaAnimalDto.especieId },
+        });
+
+        if (!especie) {
+          throw new NotFoundException(
+            `Especie con ID ${updateRazaAnimalDto.especieId} no encontrada`,
+          );
+        }
+        raza.especie = especie;
+      }
+
+      if (
+        updateRazaAnimalDto.nombre &&
+        updateRazaAnimalDto.nombre !== raza.nombre
+      ) {
+        const existingRaza = await this.razaRepo.findOne({
+          where: { nombre: updateRazaAnimalDto.nombre },
+        });
+
+        if (existingRaza) {
+          throw new BadRequestException(
+            `Ya existe una raza con el nombre: ${updateRazaAnimalDto.nombre}`,
+          );
+        }
+        raza.nombre = updateRazaAnimalDto.nombre;
+      }
+
+      if (updateRazaAnimalDto.abreviatura !== undefined) {
+        raza.abreviatura = updateRazaAnimalDto.abreviatura;
+      }
+      if (updateRazaAnimalDto.isActive !== undefined) {
+        raza.isActive = updateRazaAnimalDto.isActive;
+      }
+
+      return await this.razaRepo.save(raza);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async remove(id: string) {
+    try {
+      const raza = await this.findOne(id);
+
+      raza.isActive = false;
+      return await this.razaRepo.save(raza);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async restore(id: string) {
+    try {
+      const raza = await this.razaRepo.findOne({
+        where: { id },
+      });
+
+      if (!raza) {
+        throw new NotFoundException(`Raza con ID ${id} no encontrada`);
+      }
+
+      raza.isActive = true;
+      return await this.razaRepo.save(raza);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async hardRemove(id: string) {
+    try {
+      const raza = await this.findOne(id);
+      return await this.razaRepo.remove(raza);
+    } catch (error) {
+      throw error;
+    }
   }
 }

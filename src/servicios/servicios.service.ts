@@ -175,9 +175,19 @@ export class ServiciosService {
 
   async findOne(id: string) {
     try {
-      const servicio = await this.servicioRepo.findOne({ where: { id } });
-      if (!servicio)
-        throw new BadRequestException('No se encontro el servicio.');
+      const servicio = await this.servicioRepo
+        .createQueryBuilder('servicio')
+        .leftJoinAndSelect('servicio.subServicios', 'subServicio')
+        .leftJoinAndSelect('subServicio.preciosPorPais', 'precio')
+        .leftJoinAndSelect('precio.pais', 'pais')
+        .leftJoinAndSelect('servicio.pais', 'servicioPais')
+        .where('servicio.id = :id', { id })
+        .getOne();
+
+      if (!servicio) {
+        throw new BadRequestException('No se encontró el servicio.');
+      }
+
       return servicio;
     } catch (error) {
       throw error;

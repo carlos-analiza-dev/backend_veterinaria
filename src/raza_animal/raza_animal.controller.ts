@@ -20,14 +20,19 @@ export class RazaAnimalController {
     return this.razaAnimalService.create(createRazaAnimalDto);
   }
 
+  @Get()
+  findAll() {
+    return this.razaAnimalService.findAll();
+  }
+
   @Get('/especie/:id')
-  findAll(@Param('id') id: string) {
-    return this.razaAnimalService.findAll(id);
+  findAllEspecieId(@Param('id') id: string) {
+    return this.razaAnimalService.findAllByEspecie(id);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.razaAnimalService.findOne(+id);
+    return this.razaAnimalService.findOne(id);
   }
 
   @Patch(':id')
@@ -35,11 +40,11 @@ export class RazaAnimalController {
     @Param('id') id: string,
     @Body() updateRazaAnimalDto: UpdateRazaAnimalDto,
   ) {
-    return this.razaAnimalService.update(+id, updateRazaAnimalDto);
+    return this.razaAnimalService.update(id, updateRazaAnimalDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.razaAnimalService.remove(+id);
+    return this.razaAnimalService.remove(id);
   }
 }
