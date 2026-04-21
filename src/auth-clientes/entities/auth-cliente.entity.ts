@@ -20,6 +20,7 @@ import { ProductosGanaderia } from 'src/productos_ganaderia/entities/productos_g
 import { GananciaPesoRaza } from 'src/ganancia_peso_raza/entities/ganancia_peso_raza.entity';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cliente_finca_trabajador.entity';
+import { PlanillaTrabajadore } from 'src/planilla_trabajadores/entities/planilla_trabajadore.entity';
 
 @Entity('clientes')
 export class Cliente {
@@ -139,4 +140,7 @@ export class Cliente {
   })
   @JoinColumn({ name: 'propietarioId' })
   propietario: Cliente;
+
+  @OneToMany(() => PlanillaTrabajadore, (planilla) => planilla.propietario)
+  planillas: PlanillaTrabajadore[];
 }

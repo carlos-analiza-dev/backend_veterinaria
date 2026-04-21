@@ -119,6 +119,10 @@ export class PaginationDto {
   intensidad?: string;
 
   @IsOptional()
+  @IsString()
+  mes?: string;
+
+  @IsOptional()
   @IsBoolean()
   activos?: boolean;
 }

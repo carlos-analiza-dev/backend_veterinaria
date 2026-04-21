@@ -466,7 +466,7 @@ export class AuthClientesService {
       );
     }
 
-    const { limit = 10, offset = 0, name, pais } = paginationDto;
+    const { limit = 20, offset = 0, name, pais } = paginationDto;
     try {
       const queryBuilder = this.clienteRepository
         .createQueryBuilder('cliente')

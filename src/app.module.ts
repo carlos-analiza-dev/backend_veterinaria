@@ -93,6 +93,10 @@ import { GastosModule } from './gastos/gastos.module';
 import { IngresosModule } from './ingresos/ingresos.module';
 import { RentabilidadModule } from './rentabilidad/rentabilidad.module';
 import { ClienteFincaTrabajadorModule } from './cliente_finca_trabajador/cliente_finca_trabajador.module';
+import { PlanillaTrabajadoresModule } from './planilla_trabajadores/planilla_trabajadores.module';
+import { DetallePlanillaTrabajadoresModule } from './detalle_planilla_trabajadores/detalle_planilla_trabajadores.module';
+import { JornadaTrabajadoresModule } from './jornada_trabajadores/jornada_trabajadores.module';
+import { ConfiguracionTrabajadoresModule } from './configuracion_trabajadores/configuracion_trabajadores.module';
 
 @Module({
   imports: [
@@ -266,6 +270,14 @@ import { ClienteFincaTrabajadorModule } from './cliente_finca_trabajador/cliente
     RentabilidadModule,
 
     ClienteFincaTrabajadorModule,
+
+    PlanillaTrabajadoresModule,
+
+    DetallePlanillaTrabajadoresModule,
+
+    JornadaTrabajadoresModule,
+
+    ConfiguracionTrabajadoresModule,
   ],
   controllers: [],
   providers: [],
