@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, In } from 'typeorm';
+import { Repository, Between, In, Not } from 'typeorm';
 import { PlanillaTrabajadore } from './entities/planilla_trabajadore.entity';
 import { DetallePlanillaTrabajadore } from '../detalle_planilla_trabajadores/entities/detalle_planilla_trabajadore.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
@@ -39,6 +39,7 @@ export class PlanillaTrabajadoresService {
         propietarioId,
         fechaInicio: createDto.fechaInicio,
         fechaFin: createDto.fechaFin,
+        estado: Not(EstadoPlanilla.ANULADA),
       },
     });
 
@@ -461,7 +462,7 @@ export class PlanillaTrabajadoresService {
     };
 
     return {
-      planilla,
+      planilla: instanceToPlain(planilla),
       resumen,
     };
   }
