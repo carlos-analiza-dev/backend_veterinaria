@@ -12,6 +12,7 @@ import { Repository } from 'typeorm';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { instanceToPlain } from 'class-transformer';
+import { TipoTrabajador } from 'src/interfaces/config-trabajadores.enums';
 
 @Injectable()
 export class ConfiguracionTrabajadoresService {
@@ -23,64 +24,101 @@ export class ConfiguracionTrabajadoresService {
     private readonly clienteRepo: Repository<Cliente>,
   ) {}
 
-  async create(
-    propietario: Cliente,
-    createConfiguracionTrabajadoreDto: CreateConfiguracionTrabajadoreDto,
-  ) {
-    const propietarioId = propietario.id ?? '';
-    try {
-      const { trabajadorId } = createConfiguracionTrabajadoreDto;
+  async create(propietario: Cliente, dto: CreateConfiguracionTrabajadoreDto) {
+    const propietarioId = propietario.id;
 
-      const trabajador = await this.clienteRepo.findOne({
-        where: { id: trabajadorId, rol: TipoCliente.TRABAJADOR },
-      });
+    const {
+      trabajadorId,
+      tipoTrabajador,
+      horaEntrada,
+      horaSalida,
+      diasLaborales,
+      diasTrabajadosSemanal,
+      fechaBaja,
+      motivoBaja,
+    } = dto;
 
-      if (!trabajador) {
-        throw new NotFoundException('El trabajador no existe');
-      }
+    const trabajador = await this.clienteRepo.findOne({
+      where: { id: trabajadorId, rol: TipoCliente.TRABAJADOR },
+    });
 
-      const propietario = await this.clienteRepo.findOne({
-        where: { id: propietarioId },
-      });
-
-      if (!propietario) {
-        throw new NotFoundException('El propietario no existe');
-      }
-
-      const existeActiva = await this.configRepo.findOne({
-        where: {
-          trabajadorId,
-          activo: true,
-        },
-      });
-
-      if (existeActiva) {
-        throw new BadRequestException(
-          'El trabajador ya tiene una configuración activa',
-        );
-      }
-
-      if (
-        createConfiguracionTrabajadoreDto.fechaBaja &&
-        !createConfiguracionTrabajadoreDto.motivoBaja
-      ) {
-        throw new BadRequestException(
-          'Debe especificar el motivo de baja si define una fecha de baja',
-        );
-      }
-
-      const nuevaConfig = this.configRepo.create({
-        ...createConfiguracionTrabajadoreDto,
-        trabajador,
-        propietario,
-      });
-
-      await this.configRepo.save(nuevaConfig);
-
-      return 'Configuracion Guardada Exitosamente';
-    } catch (error) {
-      throw error;
+    if (!trabajador) {
+      throw new NotFoundException('El trabajador no existe');
     }
+
+    const propietarioDB = await this.clienteRepo.findOne({
+      where: { id: propietarioId },
+    });
+
+    if (!propietarioDB) {
+      throw new NotFoundException('El propietario no existe');
+    }
+
+    const existeActiva = await this.configRepo.findOne({
+      where: { trabajadorId, activo: true },
+    });
+
+    if (existeActiva) {
+      throw new BadRequestException(
+        'El trabajador ya tiene una configuración activa',
+      );
+    }
+
+    if (fechaBaja && !motivoBaja) {
+      throw new BadRequestException(
+        'Debe especificar el motivo de baja si define una fecha de baja',
+      );
+    }
+
+    if (horaEntrada && horaSalida) {
+      if (horaSalida <= horaEntrada) {
+        throw new BadRequestException(
+          'La hora de salida debe ser mayor que la hora de entrada',
+        );
+      }
+    }
+
+    if (diasLaborales && diasTrabajadosSemanal) {
+      if (diasLaborales.length !== diasTrabajadosSemanal) {
+        throw new BadRequestException(
+          'Los días laborales deben coincidir con los días trabajados semanal',
+        );
+      }
+    }
+
+    if (tipoTrabajador === TipoTrabajador.PARCIAL) {
+      if (!diasLaborales || diasLaborales.length === 0) {
+        throw new BadRequestException(
+          'Un trabajador parcial debe tener días laborales definidos',
+        );
+      }
+
+      if (diasTrabajadosSemanal >= 6) {
+        throw new BadRequestException(
+          'Un trabajador parcial no puede trabajar 6 o más días',
+        );
+      }
+    }
+
+    if (tipoTrabajador === TipoTrabajador.PERMANENTE) {
+      if (diasTrabajadosSemanal < 5) {
+        throw new BadRequestException(
+          'Un trabajador permanente debe trabajar al menos 5 días',
+        );
+      }
+    }
+
+    const nuevaConfig = this.configRepo.create({
+      ...dto,
+      trabajador,
+      propietario: propietarioDB,
+    });
+
+    await this.configRepo.save(nuevaConfig);
+
+    return {
+      message: 'Configuración guardada exitosamente',
+    };
   }
 
   async findAll(cliente: Cliente, paginationDto: PaginationDto) {
@@ -154,6 +192,44 @@ export class ConfiguracionTrabajadoresService {
         throw new BadRequestException(
           'No se puede reactivar una configuración. Debe crear una nueva.',
         );
+      }
+
+      if (updateConfiguracionTrabajadoreDto.tipoTrabajador) {
+        const tipo = updateConfiguracionTrabajadoreDto.tipoTrabajador;
+
+        if (
+          (tipo === TipoTrabajador.PERMANENTE ||
+            tipo === TipoTrabajador.TEMPORAL) &&
+          updateConfiguracionTrabajadoreDto.diasLaborales?.length < 5
+        ) {
+          throw new BadRequestException(
+            'Un trabajador permanente o temporal debe tener al menos 5 días laborales',
+          );
+        }
+
+        if (
+          tipo === TipoTrabajador.PARCIAL &&
+          (!updateConfiguracionTrabajadoreDto.horaEntrada ||
+            !updateConfiguracionTrabajadoreDto.horaSalida)
+        ) {
+          throw new BadRequestException(
+            'Un trabajador parcial debe tener horario definido',
+          );
+        }
+      }
+
+      if (
+        updateConfiguracionTrabajadoreDto.horaEntrada &&
+        updateConfiguracionTrabajadoreDto.horaSalida
+      ) {
+        if (
+          updateConfiguracionTrabajadoreDto.horaEntrada >=
+          updateConfiguracionTrabajadoreDto.horaSalida
+        ) {
+          throw new BadRequestException(
+            'La hora de salida debe ser mayor que la hora de entrada',
+          );
+        }
       }
 
       if (
@@ -260,6 +336,11 @@ export class ConfiguracionTrabajadoresService {
 
       const camposActualizables = [
         'fechaContratacion',
+        'tipoTrabajador',
+        'diaDescanso',
+        'horaEntrada',
+        'horaSalida',
+        'diasLaborales',
         'cargo',
         'salarioDiario',
         'factorHoraExtraDiurnas',

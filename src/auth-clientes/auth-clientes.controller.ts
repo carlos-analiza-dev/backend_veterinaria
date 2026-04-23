@@ -84,6 +84,12 @@ export class AuthClientesController {
     return this.authClientesService.getTrabajadores(paginationDto, propietario);
   }
 
+  @Get('all-trabajadores')
+  @AuthCliente()
+  getAllTrabajadores(@GetCliente() propietario: Cliente) {
+    return this.authClientesService.getAllTrabajadores(propietario);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.authClientesService.findOne(id);

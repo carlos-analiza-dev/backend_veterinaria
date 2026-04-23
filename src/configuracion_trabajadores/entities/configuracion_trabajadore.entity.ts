@@ -1,5 +1,9 @@
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import {
+  DiaSemana,
+  TipoTrabajador,
+} from 'src/interfaces/config-trabajadores.enums';
+import {
   Column,
   CreateDateColumn,
   Entity,
@@ -32,6 +36,29 @@ export class ConfiguracionTrabajadore {
 
   @Column('date')
   fechaContratacion: Date;
+
+  @Column({
+    type: 'enum',
+    enum: TipoTrabajador,
+    default: TipoTrabajador.PERMANENTE,
+  })
+  tipoTrabajador: TipoTrabajador;
+
+  @Column({
+    type: 'enum',
+    enum: DiaSemana,
+    nullable: true,
+  })
+  diaDescanso: DiaSemana;
+
+  @Column('time', { nullable: true })
+  horaEntrada: string;
+
+  @Column('time', { nullable: true })
+  horaSalida: string;
+
+  @Column('simple-array', { nullable: true })
+  diasLaborales: string[];
 
   @Column('text', { nullable: true })
   cargo: string;

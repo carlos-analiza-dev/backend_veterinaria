@@ -506,6 +506,30 @@ export class AuthClientesService {
     }
   }
 
+  async getAllTrabajadores(propietario: Cliente) {
+    try {
+      const propietarioId = propietario.id ?? '';
+
+      if (propietario.rol !== TipoCliente.PROPIETARIO) {
+        throw new BadRequestException(
+          'Solo los propietarios pueden tener trabajadores',
+        );
+      }
+
+      const trabajadores = await this.clienteRepository.find({
+        where: { propietarioId, rol: TipoCliente.TRABAJADOR },
+      });
+
+      if (!trabajadores)
+        throw new NotFoundException(
+          'No se encontraron trabajadores disponibles',
+        );
+      return trabajadores;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findOne(id: string) {
     const cliente = await this.clienteRepository.findOne({ where: { id } });
     if (!cliente)
