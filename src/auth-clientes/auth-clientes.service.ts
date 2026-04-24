@@ -420,7 +420,7 @@ export class AuthClientesService {
   }
 
   async getClientes(paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0, name, pais } = paginationDto;
+    const { limit = 10, offset = 0, name, pais, rol } = paginationDto;
     try {
       const queryBuilder = this.clienteRepository
         .createQueryBuilder('cliente')
@@ -436,6 +436,10 @@ export class AuthClientesService {
 
       if (pais) {
         queryBuilder.andWhere('pais.nombre ILIKE :pais', { pais: `%${pais}%` });
+      }
+
+      if (rol) {
+        queryBuilder.andWhere('cliente.rol = :rol', { rol });
       }
 
       const [clients, total] = await queryBuilder
@@ -561,6 +565,8 @@ export class AuthClientesService {
       throw new NotFoundException(`Cliente con ID ${id} no encontrado`);
     }
 
+    const isDesactandoCliente = isActive === false && cliente.isActive === true;
+
     if (email && email !== cliente.email) {
       const emailExists = await this.clienteRepository.findOne({
         where: { email },
@@ -648,6 +654,22 @@ export class AuthClientesService {
       if (municipio_existe) cliente.municipio = municipio_existe;
 
       await this.clienteRepository.save(cliente);
+
+      if (isDesactandoCliente) {
+        const trabajadoresActivos = await this.clienteRepository.find({
+          where: {
+            propietarioId: cliente.id,
+            rol: TipoCliente.TRABAJADOR,
+            isActive: true,
+          },
+        });
+        if (trabajadoresActivos.length > 0) {
+          for (const trabajador of trabajadoresActivos) {
+            trabajador.isActive = false;
+            await this.clienteRepository.save(trabajador);
+          }
+        }
+      }
 
       const { password, ...result } = cliente;
 
