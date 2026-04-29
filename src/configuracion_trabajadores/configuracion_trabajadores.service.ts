@@ -8,7 +8,7 @@ import { UpdateConfiguracionTrabajadoreDto } from './dto/update-configuracion_tr
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ConfiguracionTrabajadore } from './entities/configuracion_trabajadore.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { instanceToPlain } from 'class-transformer';
@@ -39,7 +39,7 @@ export class ConfiguracionTrabajadoresService {
     } = dto;
 
     const trabajador = await this.clienteRepo.findOne({
-      where: { id: trabajadorId, rol: TipoCliente.TRABAJADOR },
+      where: { id: trabajadorId, rol: Not(TipoCliente.PROPIETARIO) },
     });
 
     if (!trabajador) {

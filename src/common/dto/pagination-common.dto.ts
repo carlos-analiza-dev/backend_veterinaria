@@ -60,6 +60,10 @@ export class PaginationDto {
 
   @IsOptional()
   @IsString()
+  metodoPago?: string;
+
+  @IsOptional()
+  @IsString()
   numeroFactura?: string;
 
   @IsOptional()
@@ -121,6 +125,10 @@ export class PaginationDto {
   @IsOptional()
   @IsString()
   mes?: string;
+
+  @IsOptional()
+  @IsString()
+  trabajadorId?: string;
 
   @IsOptional()
   @IsBoolean()

@@ -1,0 +1,217 @@
+<html lang='es'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Actividad Completada</title>
+    <style>
+      body {
+        font-family: 'Arial', sans-serif;
+        color: #333;
+        background-color: #f7fafc;
+        margin: 0;
+        padding: 0;
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+      }
+      .header {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 25px;
+      }
+      h1 {
+        color: #2b6cb0;
+        font-size: 24px;
+        margin: 0 0 10px 0;
+      }
+      .logo {
+        max-width: 150px;
+        margin-bottom: 15px;
+      }
+      .success-badge {
+        background-color: #c6f6d5;
+        color: #22543d;
+        padding: 10px;
+        text-align: center;
+        border-radius: 4px;
+        font-weight: bold;
+        margin-bottom: 25px;
+        border-left: 4px solid #38a169;
+      }
+      .activity-card {
+        background-color: #f0fff4;
+        border-left: 4px solid #48bb78;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 25px;
+      }
+      .detail-row {
+        display: flex;
+        margin-bottom: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .detail-label {
+        font-weight: 600;
+        color: #2d3748;
+        width: 140px;
+        font-size: 14px;
+      }
+      .detail-value {
+        color: #2d3748;
+        flex: 1;
+        font-size: 14px;
+      }
+      .check-icon {
+        display: inline-block;
+        width: 40px;
+        height: 40px;
+        background-color: #48bb78;
+        color: white;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 40px;
+        font-size: 24px;
+        margin-bottom: 15px;
+      }
+      .comentario-box {
+        background-color: #f7fafc;
+        padding: 15px;
+        border-radius: 6px;
+        margin-top: 15px;
+        border-left: 3px solid #4299e1;
+        font-style: italic;
+      }
+      .button {
+        display: inline-block;
+        background-color: #48bb78;
+        color: white;
+        text-decoration: none;
+        padding: 12px 24px;
+        border-radius: 6px;
+        font-weight: 500;
+        margin: 20px 0;
+        transition: background-color 0.3s;
+      }
+      .button:hover {
+        background-color: #38a169;
+      }
+      .footer {
+        font-size: 14px;
+        color: #718096;
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+      }
+      .note {
+        font-size: 14px;
+        color: #718096;
+        margin-top: 25px;
+        padding: 10px;
+        background-color: #ebf8ff;
+        border-radius: 4px;
+      }
+      .emoji {
+        font-size: 30px;
+        margin-bottom: 10px;
+      }
+      @media (max-width: 600px) {
+        .container {
+          padding: 20px;
+        }
+        .detail-row {
+          flex-direction: column;
+        }
+        .detail-label {
+          width: 100%;
+          margin-bottom: 5px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <table width='100%' cellspacing='0' cellpadding='0' border='0'>
+      <tr>
+        <td align='center'>
+          <div class='container'>
+            <div class='header'>
+              <img
+                src='https://res.cloudinary.com/dbrohvgut/image/upload/v1775580746/logo_munhwl.png'
+                alt='Logo El Sembrador'
+                class='logo'
+              />
+              <div class="emoji">✅</div>
+              <h1>¡Actividad Completada!</h1>
+            </div>
+
+            <div class='success-badge'>
+              ✓ El trabajador ha completado la actividad asignada
+            </div>
+
+            <p>Hola <strong>{{nombre_propietario}}</strong>,</p>
+            <p>Te informamos que el trabajador <strong>{{nombre_trabajador}}</strong> ha completado la siguiente actividad:</p>
+
+            <div class='activity-card'>
+              <div class='detail-row'>
+                <span class='detail-label'>📋 Tipo de Actividad:</span>
+                <span class='detail-value'>{{tipo_actividad}}</span>
+              </div>
+              <div class='detail-row'>
+                <span class='detail-label'>📅 Fecha Programada:</span>
+                <span class='detail-value'>{{fecha_actividad}}</span>
+              </div>
+              <div class='detail-row'>
+                <span class='detail-label'>✅ Estado:</span>
+                <span class='detail-value'>
+                  <span style="color: #38a169; font-weight: bold;">Completada</span>
+                </span>
+              </div>
+            </div>
+
+            {{#if comentario}}
+              <div class='comentario-box'>
+                <strong>💬 Comentario del trabajador:</strong>
+                <p style="margin-top: 10px; margin-bottom: 0;">{{comentario}}</p>
+              </div>
+            {{/if}}
+
+            <div style="text-align: center;">
+              <a href='{{app_url}}/actividades' class='button'>
+                Ver todas las actividades
+              </a>
+            </div>
+
+            <div class='note'>
+              <strong>💡 Próximos pasos:</strong>
+              <ul style="margin-top: 10px; margin-bottom: 0;">
+                <li>Revisa la calidad del trabajo realizado</li>
+                <li>Si es necesario, agenda una reunión de seguimiento</li>
+                <li>Puedes calificar el desempeño del trabajador desde la plataforma</li>
+              </ul>
+            </div>
+
+            <p class='note'>
+              <strong>📊 Nota:</strong> Esta actividad ha sido registrada como completada en el sistema. Puedes consultar el historial completo de actividades desde tu panel de control.
+            </p>
+
+            <div class='footer'>
+              <p>© {{year}} El Sembrador - Gestión Ganadera. Todos los derechos reservados.</p>
+              <p style="font-size: 12px; margin-top: 10px;">
+                Este correo es una notificación automática de actividad completada en tu finca.
+              </p>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

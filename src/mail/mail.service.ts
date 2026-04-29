@@ -107,8 +107,6 @@ export class MailService {
     }
   }
 
-  // En tu archivo mail.service.ts
-
   async sendCitaConfirmadaCliente(
     email_cliente: string,
     nombre_cliente: string,
@@ -222,6 +220,83 @@ export class MailService {
       return { message: 'Correo de cita completada enviado al cliente' };
     } catch (error) {
       throw new Error(`Fallo al enviar correo de cita completada`);
+    }
+  }
+
+  async sendNuevaActividadTrabajador(
+    email_trabajador: string,
+    nombre_trabajador: string,
+    nombre_propietario: string,
+    nombre_finca: string,
+    titulo_actividad: string,
+    tipo_actividad: string,
+    fecha_programada: string,
+    frecuencia: string,
+    descripcion?: string,
+  ) {
+    if (!email_trabajador) {
+      console.warn('No se proporcionó un correo para el trabajador');
+      return { message: 'No se envió notificación: correo no proporcionado' };
+    }
+
+    try {
+      await this.mailerService.sendMail({
+        to: email_trabajador,
+        subject: '📋 Nueva Actividad Asignada - El Sembrador',
+        template: './nueva-actividad',
+        context: {
+          nombre_trabajador: nombre_trabajador || 'Trabajador',
+          nombre_propietario: nombre_propietario || 'Propietario',
+          nombre_finca: nombre_finca || 'No especificada',
+          titulo_actividad: titulo_actividad || 'Actividad',
+          tipo_actividad: tipo_actividad || 'General',
+          fecha_programada:
+            fecha_programada || new Date().toISOString().split('T')[0],
+          frecuencia: frecuencia || 'Única',
+          descripcion: descripcion || '',
+          app_url: process.env.APP_URL || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Notificación de actividad enviada al trabajador' };
+    } catch (error) {
+      return { message: 'No se pudo enviar la notificación por correo' };
+    }
+  }
+  async sendActividadCompletada(
+    email_propietario: string,
+    nombre_propietario: string,
+    nombre_trabajador: string,
+    tipo_actividad: string,
+    fecha_actividad: string,
+    comentario?: string,
+  ) {
+    if (!email_propietario)
+      throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email_propietario,
+        subject: '✅ Actividad Completada - El Sembrador',
+        template: './actividad-completada',
+        context: {
+          nombre_propietario,
+          nombre_trabajador,
+          tipo_actividad,
+          fecha_actividad,
+          comentario: comentario || '',
+          year: new Date().getFullYear(),
+          app_url: process.env.APP_URL || 'https://app.elsembrador.com',
+        },
+      });
+
+      return {
+        message: 'Notificación de actividad completada enviada al propietario',
+      };
+    } catch (error) {
+      console.error('Error en sendActividadCompletada:', error);
+      throw new Error(`Fallo al enviar notificación de actividad completada: `);
     }
   }
 }

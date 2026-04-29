@@ -94,7 +94,10 @@ export class AnimalFincaService {
           }
           propietario = propietarioEncontrado;
         }
-      } else if (cliente.rol === TipoCliente.TRABAJADOR) {
+      } else if (
+        cliente.rol === TipoCliente.TRABAJADOR ||
+        cliente.rol === TipoCliente.SUPERVISOR
+      ) {
         if (!cliente.propietario) {
           throw new BadRequestException(
             'El trabajador no tiene un propietario asignado',
@@ -348,7 +351,10 @@ export class AnimalFincaService {
         query.andWhere('animal.propietarioId = :clienteId', {
           clienteId: cliente.id,
         });
-      } else if (cliente.rol === TipoCliente.TRABAJADOR) {
+      } else if (
+        cliente.rol === TipoCliente.TRABAJADOR ||
+        cliente.rol === TipoCliente.SUPERVISOR
+      ) {
         query
           .innerJoin('animal.finca', 'fincaTrabajador')
           .innerJoin('fincaTrabajador.asignaciones', 'asignaciones')
@@ -536,7 +542,10 @@ export class AnimalFincaService {
             'No tienes permiso para editar este animal',
           );
         }
-      } else if (cliente.rol === TipoCliente.TRABAJADOR) {
+      } else if (
+        cliente.rol === TipoCliente.TRABAJADOR ||
+        cliente.rol === TipoCliente.SUPERVISOR
+      ) {
         const tieneAcceso = await this.fincaRepo
           .createQueryBuilder('finca')
           .innerJoin('finca.asignaciones', 'asignaciones')

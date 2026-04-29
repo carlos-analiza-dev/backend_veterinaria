@@ -21,6 +21,7 @@ import { GananciaPesoRaza } from 'src/ganancia_peso_raza/entities/ganancia_peso_
 import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cliente_finca_trabajador.entity';
 import { PlanillaTrabajadore } from 'src/planilla_trabajadores/entities/planilla_trabajadore.entity';
+import { ActividadesDiaria } from 'src/actividades_diarias/entities/actividades_diaria.entity';
 
 @Entity('clientes')
 export class Cliente {
@@ -143,4 +144,10 @@ export class Cliente {
 
   @OneToMany(() => PlanillaTrabajadore, (planilla) => planilla.propietario)
   planillas: PlanillaTrabajadore[];
+
+  @OneToMany(() => ActividadesDiaria, (actividad) => actividad.trabajador)
+  actividadesRealizadas: ActividadesDiaria[];
+
+  @OneToMany(() => ActividadesDiaria, (actividad) => actividad.propietario)
+  actividadesAsignadas: ActividadesDiaria[];
 }

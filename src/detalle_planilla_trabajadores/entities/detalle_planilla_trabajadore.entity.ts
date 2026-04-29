@@ -1,4 +1,5 @@
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { MetodoPago } from 'src/interfaces/planillas.enums';
 import { PlanillaTrabajadore } from 'src/planilla_trabajadores/entities/planilla_trabajadore.entity';
 import {
   Column,
@@ -118,8 +119,12 @@ export class DetallePlanillaTrabajadore {
   @Column('timestamp', { nullable: true })
   fechaPago: Date;
 
-  @Column('text', { nullable: true })
-  metodoPago: string;
+  @Column({
+    type: 'enum',
+    enum: MetodoPago,
+    nullable: true,
+  })
+  metodoPago: MetodoPago;
 
   @Column('text', { nullable: true })
   observaciones: string;

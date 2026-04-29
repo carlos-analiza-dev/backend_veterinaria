@@ -8,7 +8,7 @@ import { CreateClienteFincaTrabajadorDto } from './dto/create-cliente_finca_trab
 import { UpdateClienteFincaTrabajadorDto } from './dto/update-cliente_finca_trabajador.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { ClienteFincaTrabajador } from './entities/cliente_finca_trabajador.entity';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
@@ -34,7 +34,10 @@ export class ClienteFincaTrabajadorService {
 
       if (!trabajador) throw new NotFoundException('Trabajador no encontrado');
 
-      if (trabajador.rol !== TipoCliente.TRABAJADOR)
+      if (
+        trabajador.rol !== TipoCliente.TRABAJADOR &&
+        trabajador.rol !== TipoCliente.SUPERVISOR
+      )
         throw new BadRequestException('El cliente no es trabajador');
 
       const finca = await this.fincasRepo.findOne({
@@ -79,7 +82,7 @@ export class ClienteFincaTrabajadorService {
   async findAll(trabajadorId: string) {
     try {
       const trabajador = await this.clienteRepo.findOne({
-        where: { id: trabajadorId, rol: TipoCliente.TRABAJADOR },
+        where: { id: trabajadorId, rol: Not(TipoCliente.PROPIETARIO) },
       });
       if (!trabajador)
         throw new NotFoundException(

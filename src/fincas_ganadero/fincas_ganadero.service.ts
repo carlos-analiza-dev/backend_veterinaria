@@ -180,7 +180,7 @@ export class FincasGanaderoService {
         });
       }
 
-      if (cliente.rol === TipoCliente.TRABAJADOR) {
+      if (cliente.rol !== TipoCliente.PROPIETARIO) {
         query
           .innerJoin('finca.asignaciones', 'asignaciones')
           .innerJoin('asignaciones.trabajador', 'trabajador')

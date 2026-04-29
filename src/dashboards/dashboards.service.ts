@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
 
@@ -36,6 +40,8 @@ import {
 } from './interfaces/produccion-ganadera.interface';
 import { PesoHistorial } from 'src/peso_historial/entities/peso_historial.entity';
 import { getPropietarioId } from 'src/utils/get-propietario-id';
+import { DetallePlanillaTrabajadore } from 'src/detalle_planilla_trabajadores/entities/detalle_planilla_trabajadore.entity';
+import { PlanillaTrabajadore } from 'src/planilla_trabajadores/entities/planilla_trabajadore.entity';
 
 @Injectable()
 export class DashboardService {
@@ -64,6 +70,10 @@ export class DashboardService {
     private readonly produccionGanaderaRepository: Repository<ProduccionGanadera>,
     @InjectRepository(PesoHistorial)
     private readonly pesoHistorialRepo: Repository<PesoHistorial>,
+    @InjectRepository(DetallePlanillaTrabajadore)
+    private readonly detallePlanilla: Repository<DetallePlanillaTrabajadore>,
+    @InjectRepository(PlanillaTrabajadore)
+    private readonly planillaRepository: Repository<PlanillaTrabajadore>,
   ) {}
 
   async getIngresosTotales(user: User, paginationDto: PaginationDto) {
@@ -698,5 +708,127 @@ export class DashboardService {
         estado: EstadoCita.COMPLETADA,
       },
     });
+  }
+
+  //PLANILLA
+  async getTotalPagadoPorRango(paginationDto: PaginationDto) {
+    const { fechaInicio, fechaFin, metodoPago } = paginationDto;
+
+    const query = this.detallePlanilla
+      .createQueryBuilder('detalle')
+      .select('SUM(detalle.totalAPagar)', 'totalPagado')
+      .where('detalle.pagado = :pagado', { pagado: true });
+
+    if (fechaInicio && fechaFin) {
+      query.andWhere(
+        'DATE(detalle.fechaPago) BETWEEN DATE(:inicio) AND DATE(:fin)',
+        {
+          inicio: fechaInicio,
+          fin: fechaFin,
+        },
+      );
+    }
+
+    if (metodoPago) {
+      query.andWhere('detalle.metodoPago = :metodoPago', { metodoPago });
+    }
+
+    const result = await query.getRawOne();
+
+    return {
+      totalPagado: Number(result?.totalPagado) || 0,
+      fechaInicio: fechaInicio || 'TODAS',
+      fechaFin: fechaFin || 'TODAS',
+      metodoPago: metodoPago || 'TODOS',
+    };
+  }
+
+  async getResumenPorEstado() {
+    const resumen = await this.planillaRepository
+      .createQueryBuilder('planilla')
+      .select('planilla.estado', 'estado')
+      .addSelect('COUNT(planilla.id)', 'cantidad')
+      .addSelect('SUM(planilla.totalNeto)', 'totalNeto')
+      .addSelect('SUM(planilla.totalSalarios)', 'totalSalarios')
+      .addSelect('SUM(planilla.totalHorasExtras)', 'totalHorasExtras')
+      .addSelect('SUM(planilla.totalBonificaciones)', 'totalBonificaciones')
+      .addSelect('SUM(planilla.totalDeducciones)', 'totalDeducciones')
+      .groupBy('planilla.estado')
+      .getRawMany();
+
+    return resumen;
+  }
+
+  async getAnalisisHorasExtras(paginationDto: PaginationDto) {
+    const { fechaInicio, fechaFin } = paginationDto;
+    const query = this.detallePlanilla
+      .createQueryBuilder('detalle')
+      .select('SUM(detalle.horasExtraDiurnas)', 'totalHorasDiurnas')
+      .addSelect('SUM(detalle.horasExtraNocturnas)', 'totalHorasNocturnas')
+      .addSelect('SUM(detalle.horasExtraFestivas)', 'totalHorasFestivas')
+      .addSelect('SUM(detalle.totalHorasExtras)', 'montoTotalHorasExtras')
+      .addSelect(
+        'COUNT(DISTINCT detalle.trabajadorId)',
+        'trabajadoresConHorasExtras',
+      )
+      .where('detalle.pagado = :pagado', { pagado: true });
+
+    if (fechaInicio && fechaFin) {
+      query.andWhere(
+        'DATE(detalle.fechaPago) BETWEEN DATE(:inicio) AND DATE(:fin)',
+        {
+          inicio: fechaInicio,
+          fin: fechaFin,
+        },
+      );
+    }
+
+    const result = await query.getRawOne();
+
+    return {
+      ...result,
+      totalHorasExtras:
+        Number(result.totalHorasDiurnas || 0) +
+        Number(result.totalHorasNocturnas || 0) +
+        Number(result.totalHorasFestivas || 0),
+    };
+  }
+
+  async getReporteMetodosPago(paginationDto: PaginationDto) {
+    const { fechaInicio, fechaFin } = paginationDto;
+    const query = this.detallePlanilla
+      .createQueryBuilder('detalle')
+      .select('detalle.metodoPago', 'metodoPago')
+      .addSelect('COUNT(detalle.id)', 'cantidadPagos')
+      .addSelect('SUM(detalle.totalAPagar)', 'totalPagado')
+      .addSelect('AVG(detalle.totalAPagar)', 'promedioPorPago')
+      .where('detalle.pagado = :pagado', { pagado: true })
+      .groupBy('detalle.metodoPago');
+
+    if (fechaInicio && fechaFin) {
+      query.andWhere(
+        'DATE(detalle.fechaPago) BETWEEN DATE(:inicio) AND DATE(:fin)',
+        {
+          inicio: fechaInicio,
+          fin: fechaFin,
+        },
+      );
+    }
+
+    const resultados = await query.getRawMany();
+
+    const totalGeneral = resultados.reduce(
+      (sum, r) => sum + Number(r.totalPagado),
+      0,
+    );
+
+    return resultados.map((r) => ({
+      metodoPago: r.metodoPago || 'NO ESPECIFICADO',
+      cantidadPagos: Number(r.cantidadPagos),
+      totalPagado: Number(r.totalPagado),
+      promedioPorPago: Number(r.promedioPorPago),
+      porcentajeDelTotal:
+        ((Number(r.totalPagado) / totalGeneral) * 100).toFixed(2) + '%',
+    }));
   }
 }

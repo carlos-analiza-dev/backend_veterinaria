@@ -10,3 +10,9 @@ export enum EstadoPlanilla {
   PAGADA = 'pagada',
   ANULADA = 'anulada',
 }
+
+export enum MetodoPago {
+  EFECTIVO = 'efectivo',
+  TRANSFERENCIA = 'transferencia',
+  CHEQUE = 'cheque',
+}

@@ -152,4 +152,25 @@ export class DashboardsController {
   async getTotalCitas(@GetCliente() cliente: Cliente) {
     return await this.dashboardService.getTotalCitas(cliente);
   }
+
+  //PLANILLAS
+  @Get('total-pagado')
+  async getTotalPagado(@Query() paginationDto: PaginationDto) {
+    return this.dashboardService.getTotalPagadoPorRango(paginationDto);
+  }
+
+  @Get('resumen-estados')
+  async getResumenEstados() {
+    return this.dashboardService.getResumenPorEstado();
+  }
+
+  @Get('horas-extras')
+  async getHorasExtras(@Query() paginationDto: PaginationDto) {
+    return this.dashboardService.getAnalisisHorasExtras(paginationDto);
+  }
+
+  @Get('metodos-pago')
+  async getMetodosPago(@Query() paginationDto: PaginationDto) {
+    return this.dashboardService.getReporteMetodosPago(paginationDto);
+  }
 }

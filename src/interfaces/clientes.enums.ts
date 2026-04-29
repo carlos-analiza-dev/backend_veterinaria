@@ -1,4 +1,5 @@
 export enum TipoCliente {
   PROPIETARIO = 'PROPIETARIO',
+  SUPERVISOR = 'SUPERVISOR',
   TRABAJADOR = 'TRABAJADOR',
 }

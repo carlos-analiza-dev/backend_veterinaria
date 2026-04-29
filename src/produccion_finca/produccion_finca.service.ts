@@ -93,7 +93,10 @@ export class ProduccionFincaService {
           propietarioId = userId;
           esAccesoPermitido = true;
         }
-      } else if (cliente.rol === TipoCliente.TRABAJADOR) {
+      } else if (
+        cliente.rol === TipoCliente.TRABAJADOR ||
+        cliente.rol === TipoCliente.SUPERVISOR
+      ) {
         if (!cliente.propietario) {
           throw new BadRequestException(
             'El trabajador no tiene un propietario asignado',

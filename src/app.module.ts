@@ -97,6 +97,8 @@ import { PlanillaTrabajadoresModule } from './planilla_trabajadores/planilla_tra
 import { DetallePlanillaTrabajadoresModule } from './detalle_planilla_trabajadores/detalle_planilla_trabajadores.module';
 import { JornadaTrabajadoresModule } from './jornada_trabajadores/jornada_trabajadores.module';
 import { ConfiguracionTrabajadoresModule } from './configuracion_trabajadores/configuracion_trabajadores.module';
+import { ActividadesDiariasModule } from './actividades_diarias/actividades_diarias.module';
+import { ActividadFotosModule } from './actividad_fotos/actividad_fotos.module';
 
 @Module({
   imports: [
@@ -278,6 +280,10 @@ import { ConfiguracionTrabajadoresModule } from './configuracion_trabajadores/co
     JornadaTrabajadoresModule,
 
     ConfiguracionTrabajadoresModule,
+
+    ActividadesDiariasModule,
+
+    ActividadFotosModule,
   ],
   controllers: [],
   providers: [],

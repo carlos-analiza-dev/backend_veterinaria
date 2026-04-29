@@ -11,7 +11,7 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { JornadaTrabajadore } from '../jornada_trabajadores/entities/jornada_trabajadore.entity';
 import { CrearPlanillaTrabajadoresDto } from './dto/create-planilla_trabajadore.dto';
 import { UpdatePlanillaTrabajadoreDto } from './dto/update-planilla_trabajadore.dto';
-import { EstadoPlanilla } from 'src/interfaces/planillas.enums';
+import { EstadoPlanilla, MetodoPago } from 'src/interfaces/planillas.enums';
 import { ConfiguracionTrabajadore } from 'src/configuracion_trabajadores/entities/configuracion_trabajadore.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
@@ -385,7 +385,7 @@ export class PlanillaTrabajadoresService {
   async registrarPagos(
     id: string,
     propietarioId: string,
-    pagos: { detalleId: string; metodoPago: string }[],
+    pagos: { detalleId: string; metodoPago: MetodoPago }[],
   ) {
     const planilla = await this.findOne(id, propietarioId);
 
@@ -465,59 +465,5 @@ export class PlanillaTrabajadoresService {
       planilla: instanceToPlain(planilla),
       resumen,
     };
-  }
-
-  async obtenerPlanillasPorRangoFechas(
-    propietarioId: string,
-    fechaInicio: Date,
-    fechaFin: Date,
-  ) {
-    return await this.planillaRepo.find({
-      where: {
-        propietarioId,
-        fechaInicio: Between(fechaInicio, fechaFin),
-      },
-      relations: ['detalles', 'detalles.trabajador'],
-      order: { fechaInicio: 'DESC' },
-    });
-  }
-
-  async obtenerReporteTrabajador(
-    propietarioId: string,
-    trabajadorId: string,
-    fechaInicio: Date,
-    fechaFin: Date,
-  ) {
-    const detalles = await this.detalleRepo.find({
-      where: {
-        trabajadorId,
-        planilla: {
-          propietarioId,
-          fechaInicio: Between(fechaInicio, fechaFin),
-        },
-      },
-      relations: ['planilla'],
-      order: { createdAt: 'DESC' },
-    });
-
-    const resumen = {
-      trabajadorId,
-      totalPeriodos: detalles.length,
-      totalDevengado: detalles.reduce(
-        (sum, d) => sum + Number(d.totalDevengado),
-        0,
-      ),
-      totalDeducciones: detalles.reduce(
-        (sum, d) => sum + Number(d.totalDeduccionesAplicadas),
-        0,
-      ),
-      totalNetoRecibido: detalles.reduce(
-        (sum, d) => sum + Number(d.totalAPagar),
-        0,
-      ),
-      detalles,
-    };
-
-    return resumen;
   }
 }

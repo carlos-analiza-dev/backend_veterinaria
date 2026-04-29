@@ -1,3 +1,4 @@
+import { ActividadesDiaria } from 'src/actividades_diarias/entities/actividades_diaria.entity';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cliente_finca_trabajador.entity';
@@ -103,4 +104,7 @@ export class FincasGanadero {
   //NUEVA RELACION
   @OneToMany(() => ClienteFincaTrabajador, (asignacion) => asignacion.finca)
   asignaciones: ClienteFincaTrabajador[];
+
+  @OneToMany(() => ActividadesDiaria, (actividad) => actividad.finca)
+  actividades: ActividadesDiaria[];
 }

@@ -9,7 +9,7 @@ import {
 import { CreateAuthClienteDto } from './dto/create-auth-cliente.dto';
 import { UpdateAuthClienteDto } from './dto/update-auth-cliente.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { Cliente } from './entities/auth-cliente.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
@@ -27,6 +27,7 @@ import { VerifiedAccountDto } from 'src/auth/dto/verify-account';
 import { NotificacionesAdminsService } from 'src/notificaciones_admins/notificaciones_admins.service';
 import { NotificationType } from 'src/interfaces/nptificaciones.type';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class AuthClientesService {
@@ -112,7 +113,10 @@ export class AuthClientesService {
       );
     }
 
-    if (createClienteDto.rol === TipoCliente.TRABAJADOR) {
+    if (
+      createClienteDto.rol === TipoCliente.TRABAJADOR ||
+      createClienteDto.rol === TipoCliente.SUPERVISOR
+    ) {
       throw new BadRequestException(
         'Los trabajadores deben ser creados por un administrador',
       );
@@ -194,7 +198,10 @@ export class AuthClientesService {
     propietario: Cliente,
   ) {
     try {
-      if (createClienteDto.rol !== TipoCliente.TRABAJADOR) {
+      if (
+        createClienteDto.rol !== TipoCliente.TRABAJADOR &&
+        createClienteDto.rol !== TipoCliente.SUPERVISOR
+      ) {
         throw new BadRequestException('Solo se pueden crear trabajadores');
       }
 
@@ -258,7 +265,7 @@ export class AuthClientesService {
         pais,
         departamento,
         municipio,
-        rol: TipoCliente.TRABAJADOR,
+        rol: createClienteDto.rol ?? TipoCliente.TRABAJADOR,
         isActive: createClienteDto.isActive ?? true,
         verified: createClienteDto.verified ?? false,
         propietario: { id: propietario.id },
@@ -478,7 +485,7 @@ export class AuthClientesService {
         .leftJoinAndSelect('cliente.departamento', 'departamento')
         .leftJoinAndSelect('cliente.municipio', 'municipio')
         .leftJoinAndSelect('cliente.propietario', 'propietario')
-        .where('cliente.rol = :rol', { rol: TipoCliente.TRABAJADOR })
+        .where('cliente.rol != :rol', { rol: TipoCliente.PROPIETARIO })
         .andWhere('propietario.id = :propietarioId', { propietarioId });
 
       if (name) {
@@ -512,16 +519,22 @@ export class AuthClientesService {
 
   async getAllTrabajadores(propietario: Cliente) {
     try {
-      const propietarioId = propietario.id ?? '';
+      const propietarioId = getPropietarioId(propietario);
 
-      if (propietario.rol !== TipoCliente.PROPIETARIO) {
+      if (
+        propietario.rol !== TipoCliente.PROPIETARIO &&
+        propietario.rol !== TipoCliente.SUPERVISOR
+      ) {
         throw new BadRequestException(
-          'Solo los propietarios pueden tener trabajadores',
+          'Ocurrio un error al momento de acceder a los trabajadores',
         );
       }
 
       const trabajadores = await this.clienteRepository.find({
-        where: { propietarioId, rol: TipoCliente.TRABAJADOR },
+        where: {
+          propietarioId,
+          rol: Not(TipoCliente.PROPIETARIO),
+        },
       });
 
       if (!trabajadores)
@@ -659,7 +672,7 @@ export class AuthClientesService {
         const trabajadoresActivos = await this.clienteRepository.find({
           where: {
             propietarioId: cliente.id,
-            rol: TipoCliente.TRABAJADOR,
+            rol: Not(TipoCliente.PROPIETARIO),
             isActive: true,
           },
         });
@@ -696,11 +709,12 @@ export class AuthClientesService {
         sexo,
         isActive,
         verified,
+        rol,
         password,
       } = updateAuthClienteDto;
 
       const trabajador = await this.clienteRepository.findOne({
-        where: { id, rol: TipoCliente.TRABAJADOR },
+        where: { id, rol: Not(TipoCliente.PROPIETARIO) },
         relations: ['pais', 'departamento', 'municipio', 'propietario'],
       });
 
@@ -782,6 +796,7 @@ export class AuthClientesService {
       if (identificacion) trabajador.identificacion = identificacion;
       if (telefono) trabajador.telefono = telefono;
       if (sexo) trabajador.sexo = sexo;
+      if (rol) trabajador.rol = rol;
       if (typeof isActive === 'boolean') trabajador.isActive = isActive;
       if (typeof verified === 'boolean') trabajador.verified = verified;
 

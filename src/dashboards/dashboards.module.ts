@@ -17,6 +17,8 @@ import { Cita } from 'src/citas/entities/cita.entity';
 import { ProduccionFinca } from 'src/produccion_finca/entities/produccion_finca.entity';
 import { ProduccionGanadera } from 'src/produccion_ganadera/entities/produccion_ganadera.entity';
 import { PesoHistorial } from 'src/peso_historial/entities/peso_historial.entity';
+import { DetallePlanillaTrabajadore } from 'src/detalle_planilla_trabajadores/entities/detalle_planilla_trabajadore.entity';
+import { PlanillaTrabajadore } from 'src/planilla_trabajadores/entities/planilla_trabajadore.entity';
 
 @Module({
   controllers: [DashboardsController],
@@ -35,6 +37,8 @@ import { PesoHistorial } from 'src/peso_historial/entities/peso_historial.entity
       ProduccionFinca,
       ProduccionGanadera,
       PesoHistorial,
+      DetallePlanillaTrabajadore,
+      PlanillaTrabajadore,
     ]),
     AuthModule,
     AuthClientesModule,

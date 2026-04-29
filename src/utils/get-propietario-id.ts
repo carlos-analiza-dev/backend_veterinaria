@@ -2,7 +2,10 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
 
 export const getPropietarioId = (cliente: Cliente): string => {
-  if (cliente.rol === TipoCliente.TRABAJADOR) {
+  if (
+    cliente.rol === TipoCliente.TRABAJADOR ||
+    cliente.rol === TipoCliente.SUPERVISOR
+  ) {
     if (!cliente.propietarioId) {
       throw new Error('El trabajador no tiene propietario asignado');
     }

@@ -132,32 +132,4 @@ export class PlanillaTrabajadoresController {
       anularPlanillaDto.motivo,
     );
   }
-
-  @Get('reportes/rango-fechas')
-  obtenerPorRangoFechas(
-    @GetCliente() propietario: Cliente,
-    @Query('fechaInicio') fechaInicio: string,
-    @Query('fechaFin') fechaFin: string,
-  ) {
-    return this.planillaTrabajadoresService.obtenerPlanillasPorRangoFechas(
-      propietario.id,
-      new Date(fechaInicio),
-      new Date(fechaFin),
-    );
-  }
-
-  @Get('reportes/trabajador/:trabajadorId')
-  obtenerReporteTrabajador(
-    @GetCliente() propietario: Cliente,
-    @Param('trabajadorId', ParseUUIDPipe) trabajadorId: string,
-    @Query('fechaInicio') fechaInicio: string,
-    @Query('fechaFin') fechaFin: string,
-  ) {
-    return this.planillaTrabajadoresService.obtenerReporteTrabajador(
-      propietario.id,
-      trabajadorId,
-      new Date(fechaInicio),
-      new Date(fechaFin),
-    );
-  }
 }
