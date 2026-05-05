@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateFincasGanaderoDto } from './dto/create-fincas_ganadero.dto';
 import { UpdateFincasGanaderoDto } from './dto/update-fincas_ganadero.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -75,6 +79,12 @@ export class FincasGanaderoService {
       const pais = await this.paisRepo.findOneBy({ id: pais_id });
       if (!pais) {
         throw new NotFoundException('El pais no existe');
+      }
+
+      if (Number(area_ganaderia) > Number(tamaño_total)) {
+        throw new BadRequestException(
+          'El area de ganaderia no puede ser mayor al area total de la finca',
+        );
       }
 
       const finca = this.fincasRepo.create({
@@ -296,6 +306,12 @@ export class FincasGanaderoService {
           throw new NotFoundException('El país no existe');
         }
         finca.pais_id = pais;
+      }
+
+      if (Number(area_ganaderia) > Number(tamaño_total)) {
+        throw new BadRequestException(
+          'El area de ganaderia no puede ser mayor al area total de la finca',
+        );
       }
 
       finca.nombre_finca = nombre_finca ?? finca.nombre_finca;

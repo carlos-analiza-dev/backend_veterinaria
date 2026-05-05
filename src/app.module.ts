@@ -99,6 +99,10 @@ import { JornadaTrabajadoresModule } from './jornada_trabajadores/jornada_trabaj
 import { ConfiguracionTrabajadoresModule } from './configuracion_trabajadores/configuracion_trabajadores.module';
 import { ActividadesDiariasModule } from './actividades_diarias/actividades_diarias.module';
 import { ActividadFotosModule } from './actividad_fotos/actividad_fotos.module';
+import { EquipoMaquinariaModule } from './equipo_maquinaria/equipo_maquinaria.module';
+import { MantenimientoEquipoModule } from './mantenimiento_equipo/mantenimiento_equipo.module';
+import { UsoEquipoModule } from './uso_equipo/uso_equipo.module';
+import { ConsumoEquipoModule } from './consumo_equipo/consumo_equipo.module';
 
 @Module({
   imports: [
@@ -284,6 +288,14 @@ import { ActividadFotosModule } from './actividad_fotos/actividad_fotos.module';
     ActividadesDiariasModule,
 
     ActividadFotosModule,
+
+    EquipoMaquinariaModule,
+
+    MantenimientoEquipoModule,
+
+    UsoEquipoModule,
+
+    ConsumoEquipoModule,
   ],
   controllers: [],
   providers: [],
