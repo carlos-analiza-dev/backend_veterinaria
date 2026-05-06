@@ -129,6 +129,25 @@ export class EquipoMaquinariaService {
     };
   }
 
+  async findActivos(cliente: Cliente) {
+    const propietarioId = getPropietarioId(cliente);
+    try {
+      const equipos = await this.equipoMaquinariaRepository.find({
+        where: {
+          finca: { propietario: { id: propietarioId } },
+          estado: EstadoMaquinaria.ACTIVO,
+        },
+      });
+      if (!equipos)
+        throw new NotFoundException(
+          'No se encontraron equipos disponibles en este momento',
+        );
+      return equipos;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findOne(id: string) {
     try {
       const equipo = await this.equipoMaquinariaRepository.findOne({

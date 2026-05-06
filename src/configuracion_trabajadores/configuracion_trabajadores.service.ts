@@ -13,6 +13,7 @@ import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { instanceToPlain } from 'class-transformer';
 import { TipoTrabajador } from 'src/interfaces/config-trabajadores.enums';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class ConfiguracionTrabajadoresService {
@@ -25,7 +26,7 @@ export class ConfiguracionTrabajadoresService {
   ) {}
 
   async create(propietario: Cliente, dto: CreateConfiguracionTrabajadoreDto) {
-    const propietarioId = propietario.id;
+    const propietarioId = getPropietarioId(propietario);
 
     const {
       trabajadorId,
@@ -122,7 +123,7 @@ export class ConfiguracionTrabajadoresService {
   }
 
   async findAll(cliente: Cliente, paginationDto: PaginationDto) {
-    const propietarioId = cliente.id ?? '';
+    const propietarioId = getPropietarioId(cliente);
     const { limit = 10, offset = 0 } = paginationDto;
 
     try {
@@ -131,6 +132,7 @@ export class ConfiguracionTrabajadoresService {
         .leftJoinAndSelect('config.trabajador', 'trabajador')
         .leftJoinAndSelect('config.propietario', 'propietario')
         .where('config.propietarioId = :propietarioId', { propietarioId })
+        .andWhere('trabajador.id != :usuarioId', { usuarioId: cliente.id })
         .orderBy('config.createdAt', 'DESC')
         .take(limit)
         .skip(offset);
@@ -143,10 +145,8 @@ export class ConfiguracionTrabajadoresService {
         );
       }
 
-      const config_trabajadores = instanceToPlain(configuraciones);
-
       return {
-        configuraciones: config_trabajadores,
+        configuraciones: instanceToPlain(configuraciones),
         total,
         limit,
         offset,
@@ -173,7 +173,7 @@ export class ConfiguracionTrabajadoresService {
     propietario: Cliente,
     updateConfiguracionTrabajadoreDto: UpdateConfiguracionTrabajadoreDto,
   ) {
-    const propietarioId = propietario.id ?? '';
+    const propietarioId = getPropietarioId(propietario);
 
     try {
       const configExistente = await this.configRepo.findOne({

@@ -16,15 +16,21 @@ export class MantenimientoEquipo {
   @Column({ type: 'text' })
   descripcion: string;
 
-  @Column({ type: 'date' })
-  fecha_inicio: string;
+  @Column({ type: 'timestamptz' })
+  fecha_inicio: Date;
 
-  @Column({ type: 'date' })
-  fecha_final: string;
+  @Column({ type: 'timestamptz' })
+  fecha_final: Date;
 
   @Column({ type: 'decimal', nullable: true })
   costo: number;
 
   @Column({ type: 'date', nullable: true })
-  proximoMantenimiento: string;
+  proximoMantenimiento: Date;
+
+  @Column({ type: 'boolean', default: false })
+  notificado_mantenimiento_proximo: boolean;
+
+  @Column({ type: 'boolean', default: false })
+  notificadoFinalizacion: boolean;
 }

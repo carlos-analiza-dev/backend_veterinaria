@@ -60,7 +60,7 @@ export class PlanillaTrabajadoresController {
   ) {
     return this.planillaTrabajadoresService.obtenerDetallePlanilla(
       id,
-      propietario.id,
+      propietario,
     );
   }
 
@@ -72,7 +72,7 @@ export class PlanillaTrabajadoresController {
   ) {
     return this.planillaTrabajadoresService.update(
       id,
-      propietario.id,
+      propietario,
       updatePlanillaTrabajadoreDto,
     );
   }
@@ -92,7 +92,7 @@ export class PlanillaTrabajadoresController {
   ) {
     return this.planillaTrabajadoresService.generarPlanillaDesdeJornadas(
       id,
-      propietario.id,
+      propietario,
     );
   }
 
@@ -101,10 +101,7 @@ export class PlanillaTrabajadoresController {
     @Param('id', ParseUUIDPipe) id: string,
     @GetCliente() propietario: Cliente,
   ) {
-    return this.planillaTrabajadoresService.confirmarPlanilla(
-      id,
-      propietario.id,
-    );
+    return this.planillaTrabajadoresService.confirmarPlanilla(id, propietario);
   }
 
   @Post(':id/pagos')
@@ -115,7 +112,7 @@ export class PlanillaTrabajadoresController {
   ) {
     return this.planillaTrabajadoresService.registrarPagos(
       id,
-      propietario.id,
+      propietario,
       registrarPagosDto.pagos,
     );
   }
@@ -128,7 +125,7 @@ export class PlanillaTrabajadoresController {
   ) {
     return this.planillaTrabajadoresService.anularPlanilla(
       id,
-      propietario.id,
+      propietario,
       anularPlanillaDto.motivo,
     );
   }

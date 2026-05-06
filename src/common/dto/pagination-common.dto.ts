@@ -60,6 +60,10 @@ export class PaginationDto {
 
   @IsOptional()
   @IsString()
+  tipoMantenimiento?: string;
+
+  @IsOptional()
+  @IsString()
   metodoPago?: string;
 
   @IsOptional()

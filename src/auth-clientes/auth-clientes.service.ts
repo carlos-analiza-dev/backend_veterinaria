@@ -198,6 +198,7 @@ export class AuthClientesService {
     propietario: Cliente,
   ) {
     try {
+      const propietarioId = getPropietarioId(propietario);
       if (
         createClienteDto.rol !== TipoCliente.TRABAJADOR &&
         createClienteDto.rol !== TipoCliente.SUPERVISOR
@@ -268,7 +269,7 @@ export class AuthClientesService {
         rol: createClienteDto.rol ?? TipoCliente.TRABAJADOR,
         isActive: createClienteDto.isActive ?? true,
         verified: createClienteDto.verified ?? false,
-        propietario: { id: propietario.id },
+        propietario: { id: propietarioId },
       });
 
       await this.clienteRepository.save(trabajador);
@@ -469,64 +470,58 @@ export class AuthClientesService {
   }
 
   async getTrabajadores(paginationDto: PaginationDto, propietario: Cliente) {
-    const propietarioId = propietario.id ?? '';
+    const propietarioId = getPropietarioId(propietario);
 
-    if (propietario.rol !== TipoCliente.PROPIETARIO) {
-      throw new BadRequestException(
-        'Solo los propietarios pueden tener trabajadores',
-      );
+    if (!propietarioId) {
+      throw new BadRequestException('Propietario inválido');
     }
 
     const { limit = 20, offset = 0, name, pais } = paginationDto;
-    try {
-      const queryBuilder = this.clienteRepository
-        .createQueryBuilder('cliente')
-        .leftJoinAndSelect('cliente.pais', 'pais')
-        .leftJoinAndSelect('cliente.departamento', 'departamento')
-        .leftJoinAndSelect('cliente.municipio', 'municipio')
-        .leftJoinAndSelect('cliente.propietario', 'propietario')
-        .where('cliente.rol != :rol', { rol: TipoCliente.PROPIETARIO })
-        .andWhere('propietario.id = :propietarioId', { propietarioId });
 
-      if (name) {
-        queryBuilder.andWhere('cliente.nombre ILIKE :nombre', {
-          name: `%${name}%`,
-        });
-      }
+    const queryBuilder = this.clienteRepository
+      .createQueryBuilder('cliente')
+      .leftJoinAndSelect('cliente.pais', 'pais')
+      .leftJoinAndSelect('cliente.departamento', 'departamento')
+      .leftJoinAndSelect('cliente.municipio', 'municipio')
+      .leftJoin('cliente.propietario', 'propietario')
+      .where('cliente.rol != :rol', { rol: TipoCliente.PROPIETARIO })
+      .andWhere('propietario.id = :propietarioId', { propietarioId })
+      .andWhere('cliente.id != :usuarioId', { usuarioId: propietario.id });
 
-      if (pais) {
-        queryBuilder.andWhere('pais.nombre ILIKE :pais', { pais: `%${pais}%` });
-      }
-
-      const [clients, total] = await queryBuilder
-        .orderBy('cliente.nombre', 'ASC')
-        .skip(offset)
-        .take(limit)
-        .getManyAndCount();
-
-      if (!clients || clients.length === 0) {
-        throw new NotFoundException(
-          'No se encontraron clientes en este momento.',
-        );
-      }
-
-      const clientes = instanceToPlain(clients);
-      return { trabajadores: clientes, total };
-    } catch (error) {
-      throw error;
+    if (name) {
+      queryBuilder.andWhere('cliente.nombre ILIKE :name', {
+        name: `%${name}%`,
+      });
     }
+
+    if (pais) {
+      queryBuilder.andWhere('pais.nombre ILIKE :pais', {
+        pais: `%${pais}%`,
+      });
+    }
+
+    const [clients, total] = await queryBuilder
+      .orderBy('cliente.nombre', 'ASC')
+      .skip(offset)
+      .take(limit)
+      .getManyAndCount();
+
+    return {
+      trabajadores: instanceToPlain(clients),
+      total,
+    };
   }
 
-  async getAllTrabajadores(propietario: Cliente) {
+  async getAllTrabajadores(usuario: Cliente) {
     try {
-      const propietarioId = getPropietarioId(propietario);
+      const propietarioId = getPropietarioId(usuario);
 
       if (
-        propietario.rol !== TipoCliente.PROPIETARIO &&
-        propietario.rol !== TipoCliente.SUPERVISOR
+        usuario.rol !== TipoCliente.PROPIETARIO &&
+        usuario.rol !== TipoCliente.SUPERVISOR
       ) {
         throw new BadRequestException(
-          'Ocurrio un error al momento de acceder a los trabajadores',
+          'No tienes permisos para ver los trabajadores',
         );
       }
 
@@ -534,13 +529,16 @@ export class AuthClientesService {
         where: {
           propietarioId,
           rol: Not(TipoCliente.PROPIETARIO),
+          id: Not(usuario.id),
         },
       });
 
-      if (!trabajadores)
+      if (trabajadores.length === 0) {
         throw new NotFoundException(
           'No se encontraron trabajadores disponibles',
         );
+      }
+
       return trabajadores;
     } catch (error) {
       throw error;

@@ -299,4 +299,62 @@ export class MailService {
       throw new Error(`Fallo al enviar notificación de actividad completada: `);
     }
   }
+
+  async sendMantenimientoProximo(
+    email: string,
+    nombre_propietario: string,
+    nombre_equipo: string,
+    codigo: string,
+    nombre_finca: string,
+    fecha: string,
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: '⚠️ Mantenimiento próximo de equipo',
+        template: './mantenimiento-proximo',
+        context: {
+          nombre_propietario,
+          nombre_equipo,
+          codigo,
+          nombre_finca,
+          fecha,
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de mantenimiento enviado' };
+    } catch (error) {
+      throw new Error('Error enviando correo de mantenimiento');
+    }
+  }
+
+  async sendMantenimientoPorFinalizar(
+    email: string,
+    nombre_propietario: string,
+    nombre_equipo: string,
+    fecha_final: string,
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: '⏰ Mantenimiento por finalizar',
+        template: './mantenimiento-finalizar',
+        context: {
+          nombre_propietario,
+          nombre_equipo,
+          fecha_final,
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de mantenimiento por finalizar enviado' };
+    } catch (error) {
+      throw new Error('Error enviando correo de mantenimiento por finalizar');
+    }
+  }
 }

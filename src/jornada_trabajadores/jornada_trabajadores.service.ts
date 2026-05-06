@@ -9,9 +9,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { Repository } from 'typeorm';
 import { JornadaTrabajadore } from './entities/jornada_trabajadore.entity';
-import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class JornadaTrabajadoresService {
@@ -22,11 +22,7 @@ export class JornadaTrabajadoresService {
     private readonly jornadaRepo: Repository<JornadaTrabajadore>,
   ) {}
   async create(propietario: Cliente, dto: CreateJornadaTrabajadoreDto) {
-    if (propietario.rol !== TipoCliente.PROPIETARIO) {
-      throw new BadRequestException(
-        'Solamente los propietarios pueden ejecutar esta accion',
-      );
-    }
+    const propietarioId = getPropietarioId(propietario);
     try {
       const trabajador = await this.clienteRepo.findOne({
         where: { id: dto.trabajadorId },
@@ -74,7 +70,7 @@ export class JornadaTrabajadoresService {
 
       const jornada = this.jornadaRepo.create({
         ...dto,
-        propietarioId: propietario.id,
+        propietarioId: propietarioId,
         sincronizado: false,
       });
 
@@ -87,6 +83,8 @@ export class JornadaTrabajadoresService {
   }
 
   async findAll(propietario: Cliente, paginationDto: PaginationDto) {
+    const propietarioId = getPropietarioId(propietario);
+
     const {
       limit = 10,
       offset = 0,
@@ -100,8 +98,9 @@ export class JornadaTrabajadoresService {
       .createQueryBuilder('j')
       .leftJoinAndSelect('j.trabajador', 't')
       .where('j.propietarioId = :propietarioId', {
-        propietarioId: propietario.id,
-      });
+        propietarioId,
+      })
+      .andWhere('t.id != :usuarioId', { usuarioId: propietario.id });
 
     if (name) {
       query.andWhere('LOWER(t.nombre) LIKE LOWER(:name)', {
@@ -164,7 +163,11 @@ export class JornadaTrabajadoresService {
     propietario: Cliente,
     dto: UpdateJornadaTrabajadoreDto,
   ) {
-    const jornada = await this.findOne(id, propietario);
+    const propietarioId = getPropietarioId(propietario);
+    const propietario_activo = await this.clienteRepo.findOne({
+      where: { id: propietarioId },
+    });
+    const jornada = await this.findOne(id, propietario_activo);
 
     if (dto.trabajo === false) {
       if (

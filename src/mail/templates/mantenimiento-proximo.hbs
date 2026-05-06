@@ -1,0 +1,108 @@
+<html lang='es'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Mantenimiento Próximo</title>
+    <style>
+      body {
+        font-family: 'Arial', sans-serif;
+        color: #333;
+        background-color: #f7fafc;
+        margin: 0;
+        padding: 0;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+      }
+      .header {
+        text-align: center;
+        margin-bottom: 20px;
+      }
+      h1 {
+        color: #dd6b20;
+        font-size: 22px;
+      }
+      .alert {
+        background-color: #fffaf0;
+        border-left: 5px solid #ed8936;
+        padding: 15px;
+        margin-bottom: 20px;
+        border-radius: 6px;
+      }
+      .card {
+        background-color: #f7fafc;
+        padding: 20px;
+        border-radius: 8px;
+      }
+      .row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 6px;
+      }
+      .label {
+        font-weight: bold;
+      }
+      .footer {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 13px;
+        color: #718096;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class='container'>
+      <div class='header'>
+        <img
+          src='https://res.cloudinary.com/dbrohvgut/image/upload/v1775580746/logo_munhwl.png'
+          width='120'
+        />
+        <h1>⚠️ Mantenimiento Próximo</h1>
+      </div>
+
+      <p>Hola <strong>{{nombre_propietario}}</strong>,</p>
+
+      <div class='alert'>
+        El equipo <strong>{{nombre_equipo}}</strong> está próximo a su mantenimiento.
+      </div>
+
+      <div class='card'>
+        <div class='row'>
+          <span class='label'>🔧 Equipo:</span>
+          <span>{{nombre_equipo}}</span>
+        </div>
+
+        <div class='row'>
+          <span class='label'>🏷 Código:</span>
+          <span>{{codigo}}</span>
+        </div>
+
+        <div class='row'>
+          <span class='label'>📍 Finca:</span>
+          <span>{{nombre_finca}}</span>
+        </div>
+
+        <div class='row'>
+          <span class='label'>📅 Próximo mantenimiento:</span>
+          <span>{{fecha}}</span>
+        </div>
+      </div>
+
+      <p style='margin-top:20px'>
+        Te recomendamos programar el mantenimiento lo antes posible para evitar fallas.
+      </p>
+
+      <div class='footer'>
+        © {{year}} El Sembrador - Gestión Ganadera
+      </div>
+    </div>
+  </body>
+</html>

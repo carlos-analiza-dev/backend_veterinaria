@@ -37,6 +37,12 @@ export class EquipoMaquinariaController {
     return this.equipoMaquinariaService.findAll(cliente, paginationDto);
   }
 
+  @Get('/activos')
+  @AuthCliente()
+  findActivos(@GetCliente() cliente: Cliente) {
+    return this.equipoMaquinariaService.findActivos(cliente);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.equipoMaquinariaService.findOne(id);

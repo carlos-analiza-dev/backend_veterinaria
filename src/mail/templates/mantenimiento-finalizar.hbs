@@ -1,0 +1,128 @@
+<html lang='es'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Mantenimiento por Finalizar</title>
+
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f7fafc;
+        margin: 0;
+        padding: 0;
+      }
+
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+      }
+
+      .header {
+        text-align: center;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 20px;
+      }
+
+      h1 {
+        color: #d69e2e;
+        font-size: 22px;
+      }
+
+      .alert {
+        background: #fffaf0;
+        border-left: 5px solid #ed8936;
+        padding: 15px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+      }
+
+      .card {
+        background: #f7fafc;
+        padding: 20px;
+        border-radius: 8px;
+      }
+
+      .row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #e2e8f0;
+      }
+
+      .label {
+        font-weight: bold;
+        color: #2d3748;
+      }
+
+      .value {
+        color: #2d3748;
+      }
+
+      .warning {
+        margin-top: 20px;
+        padding: 10px;
+        background: #fed7d7;
+        border-left: 4px solid #e53e3e;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+
+      .footer {
+        text-align: center;
+        margin-top: 25px;
+        font-size: 12px;
+        color: #718096;
+      }
+
+      .icon {
+        font-size: 28px;
+        margin-bottom: 10px;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class='container'>
+
+      <div class='header'>
+        <img
+          src='https://res.cloudinary.com/dbrohvgut/image/upload/v1775580746/logo_munhwl.png'
+          width='120'
+        />
+        <div class="icon">⏰</div>
+        <h1>Mantenimiento por Finalizar</h1>
+      </div>
+
+      <p>Hola <strong>{{nombre_propietario}}</strong>,</p>
+
+      <div class='alert'>
+        El mantenimiento del equipo está por finalizar en pocas horas.
+      </div>
+
+      <div class='card'>
+        <div class='row'>
+          <span class='label'>🔧 Equipo:</span>
+          <span class='value'>{{nombre_equipo}}</span>
+        </div>
+
+        <div class='row'>
+          <span class='label'>📅 Fecha final:</span>
+          <span class='value'>{{fecha_final}}</span>
+        </div>
+      </div>
+
+      <div class='warning'>
+        ⚠️ Recomendación: verifica el estado del equipo y confirma si el mantenimiento fue completado correctamente.
+      </div>
+
+      <div class='footer'>
+        © {{year}} El Sembrador - Gestión Ganadera
+      </div>
+
+    </div>
+  </body>
+</html>

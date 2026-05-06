@@ -15,6 +15,7 @@ import { EstadoPlanilla, MetodoPago } from 'src/interfaces/planillas.enums';
 import { ConfiguracionTrabajadore } from 'src/configuracion_trabajadores/entities/configuracion_trabajadore.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class PlanillaTrabajadoresService {
@@ -32,7 +33,7 @@ export class PlanillaTrabajadoresService {
   ) {}
 
   async create(propietario: Cliente, createDto: CrearPlanillaTrabajadoresDto) {
-    const propietarioId = propietario.id;
+    const propietarioId = getPropietarioId(propietario);
 
     const existePlanilla = await this.planillaRepo.findOne({
       where: {
@@ -66,7 +67,7 @@ export class PlanillaTrabajadoresService {
       mes,
     } = paginationDto;
 
-    const propietarioId = propietario.id ?? '';
+    const propietarioId = getPropietarioId(propietario);
 
     const query = this.planillaRepo
       .createQueryBuilder('p')
@@ -130,9 +131,10 @@ export class PlanillaTrabajadoresService {
 
   async update(
     id: string,
-    propietarioId: string,
+    propietario: Cliente,
     updateDto: UpdatePlanillaTrabajadoreDto,
   ) {
+    const propietarioId = getPropietarioId(propietario);
     const planilla = await this.findOne(id, propietarioId);
 
     if (planilla.estado !== EstadoPlanilla.BORRADOR) {
@@ -161,7 +163,8 @@ export class PlanillaTrabajadoresService {
     return { message: 'Planilla eliminada exitosamente' };
   }
 
-  async generarPlanillaDesdeJornadas(id: string, propietarioId: string) {
+  async generarPlanillaDesdeJornadas(id: string, propietario: Cliente) {
+    const propietarioId = getPropietarioId(propietario);
     const planilla = await this.findOne(id, propietarioId);
 
     if (planilla.estado !== EstadoPlanilla.BORRADOR) {
@@ -361,7 +364,8 @@ export class PlanillaTrabajadoresService {
     });
   }
 
-  async confirmarPlanilla(id: string, propietarioId: string) {
+  async confirmarPlanilla(id: string, propietario: Cliente) {
+    const propietarioId = getPropietarioId(propietario);
     const planilla = await this.findOne(id, propietarioId);
 
     if (planilla.estado !== EstadoPlanilla.BORRADOR) {
@@ -384,9 +388,10 @@ export class PlanillaTrabajadoresService {
 
   async registrarPagos(
     id: string,
-    propietarioId: string,
+    propietario: Cliente,
     pagos: { detalleId: string; metodoPago: MetodoPago }[],
   ) {
+    const propietarioId = getPropietarioId(propietario);
     const planilla = await this.findOne(id, propietarioId);
 
     if (planilla.estado !== EstadoPlanilla.CONFIRMADA) {
@@ -429,7 +434,8 @@ export class PlanillaTrabajadoresService {
     };
   }
 
-  async anularPlanilla(id: string, propietarioId: string, motivo: string) {
+  async anularPlanilla(id: string, propietario: Cliente, motivo: string) {
+    const propietarioId = getPropietarioId(propietario);
     const planilla = await this.findOne(id, propietarioId);
 
     if (planilla.estado === EstadoPlanilla.PAGADA) {
@@ -446,7 +452,8 @@ export class PlanillaTrabajadoresService {
     return { message: 'Planilla anulada exitosamente', planilla };
   }
 
-  async obtenerDetallePlanilla(id: string, propietarioId: string) {
+  async obtenerDetallePlanilla(id: string, propietario: Cliente) {
+    const propietarioId = getPropietarioId(propietario);
     const planilla = await this.findOne(id, propietarioId);
 
     const resumen = {
