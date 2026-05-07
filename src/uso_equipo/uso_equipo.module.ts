@@ -5,7 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsoEquipo } from './entities/uso_equipo.entity';
 import { EquipoMaquinaria } from 'src/equipo_maquinaria/entities/equipo_maquinaria.entity';
 import { ActividadesDiaria } from 'src/actividades_diarias/entities/actividades_diaria.entity';
-import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cliente_finca_trabajador.entity';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 
 @Module({
   controllers: [UsoEquipoController],
@@ -14,8 +15,9 @@ import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cl
       UsoEquipo,
       EquipoMaquinaria,
       ActividadesDiaria,
-      ClienteFincaTrabajador,
+      Cliente,
     ]),
+    AuthClientesModule,
   ],
   providers: [UsoEquipoService],
 })

@@ -4,6 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
 import { MantenimientoEquipo } from './entities/mantenimiento_equipo.entity';
 import { MailService } from 'src/mail/mail.service';
+import { formatDateTimeLocal } from 'helpers/dateTimeLocal';
 
 @Injectable()
 export class MantenimientoDisparadoresService {
@@ -44,19 +45,11 @@ export class MantenimientoDisparadoresService {
 
           const propietario = equipo.finca.propietario;
 
-          const fechaFormateada = new Date(
-            mantenimiento.fecha_final,
-          ).toLocaleString('es-HN', {
-            timeZone: 'America/Tegucigalpa',
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          });
-
           await this.mailService.sendMantenimientoPorFinalizar(
             propietario.email,
             propietario.nombre,
             equipo.nombre,
-            fechaFormateada,
+            formatDateTimeLocal(mantenimiento.fecha_final),
           );
 
           mantenimiento.notificadoFinalizacion = true;
@@ -105,21 +98,13 @@ export class MantenimientoDisparadoresService {
 
           const propietario = equipo.finca.propietario;
 
-          const fechaFormateada = new Date(
-            mantenimiento.fecha_final,
-          ).toLocaleString('es-HN', {
-            timeZone: 'America/Tegucigalpa',
-            dateStyle: 'medium',
-            timeStyle: 'short',
-          });
-
           await this.mailService.sendMantenimientoProximo(
             propietario.email,
             propietario.nombre,
             equipo.nombre,
             equipo.codigoInterno || 'N/A',
             equipo.finca.nombre_finca,
-            fechaFormateada,
+            formatDateTimeLocal(mantenimiento.fecha_final),
           );
 
           mantenimiento.notificado_mantenimiento_proximo = true;

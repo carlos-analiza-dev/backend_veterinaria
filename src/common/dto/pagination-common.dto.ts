@@ -104,6 +104,10 @@ export class PaginationDto {
 
   @IsOptional()
   @IsDateString()
+  fecha?: string;
+
+  @IsOptional()
+  @IsDateString()
   fechaInicio?: string;
 
   @IsOptional()
@@ -133,6 +137,18 @@ export class PaginationDto {
   @IsOptional()
   @IsString()
   trabajadorId?: string;
+
+  @IsOptional()
+  @IsString()
+  equipoId: string;
+
+  @IsOptional()
+  @IsString()
+  actividadId: string;
+
+  @IsOptional()
+  @IsString()
+  operadorId: string;
 
   @IsOptional()
   @IsBoolean()

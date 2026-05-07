@@ -242,6 +242,32 @@ export class ActividadesDiariasService {
       offset,
     };
   }
+
+  async findAllByTrabajador(id: string, paginationDto: PaginationDto) {
+    const { fecha } = paginationDto;
+
+    const query = this.actividadesRepo
+      .createQueryBuilder('actividad')
+      .leftJoinAndSelect('actividad.finca', 'finca')
+      .leftJoinAndSelect('actividad.fotos', 'fotos')
+      .leftJoinAndSelect('actividad.trabajador', 'trabajador')
+      .where('actividad.trabajadorId = :id', { id });
+
+    if (fecha) {
+      query.andWhere('actividad.fecha = :fecha', { fecha });
+    }
+
+    const actividades_data = await query
+      .orderBy('actividad.createdAt', 'DESC')
+      .getMany();
+
+    const mappedData = actividades_data.map((actividad) =>
+      this.mappingData(actividad),
+    );
+
+    return mappedData;
+  }
+
   async findOne(id: string) {
     try {
       const actividad = await this.actividadesRepo.findOne({ where: { id } });
@@ -383,19 +409,5 @@ export class ActividadesDiariasService {
 
       fotos: actividad.fotos ?? [],
     };
-  }
-
-  private getTipoActividadTexto(tipo: TipoActividad): string {
-    const tipos = {
-      [TipoActividad.SIEMBRA]: '🌱 Siembra',
-      [TipoActividad.REPARACION]: '🔧 Reparación',
-      [TipoActividad.LIMPIEZA]: '🧹 Limpieza',
-      [TipoActividad.MANTENIMIENTO]: '⚙️ Mantenimiento',
-      [TipoActividad.ALIMENTACION]: '🍖 Alimentación',
-      [TipoActividad.VACUNACION]: '💉 Vacunación',
-      [TipoActividad.COSECHA]: '🌾 Cosecha',
-      [TipoActividad.OTRO]: '📋 Otro',
-    };
-    return tipos[tipo] || tipo;
   }
 }

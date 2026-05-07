@@ -43,6 +43,18 @@ export class ActividadesDiariasController {
     return this.actividadesDiariasService.findAll(cliente, paginationDto);
   }
 
+  @Get('trabajador/:id')
+  @AuthCliente()
+  findAllByTrabajador(
+    @Param('id') id: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.actividadesDiariasService.findAllByTrabajador(
+      id,
+      paginationDto,
+    );
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.actividadesDiariasService.findOne(id);
