@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Between, Repository } from 'typeorm';
 import { MantenimientoEquipo } from './entities/mantenimiento_equipo.entity';
 import { MailService } from 'src/mail/mail.service';
-import { formatDateTimeLocal } from 'helpers/dateTimeLocal';
+import { formatDateTimeLocal } from 'src/helpers/dateTimeLocal';
 
 @Injectable()
 export class MantenimientoDisparadoresService {

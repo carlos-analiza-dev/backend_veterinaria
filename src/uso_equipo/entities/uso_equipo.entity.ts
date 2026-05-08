@@ -17,10 +17,10 @@ export class UsoEquipo {
   @ManyToOne(() => Cliente, { nullable: true })
   operador: Cliente;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'timestamptz' })
   fechaInicio: Date;
 
-  @Column({ type: 'timestamp' })
+  @Column({ type: 'timestamptz' })
   fechaFin: Date;
 
   @Column({ type: 'decimal' })

@@ -1,4 +1,4 @@
-export function formatDateTimeLocal(date: string | Date): string {
+export const formatDateTimeLocal = (date: string | Date): string => {
   if (!date) return 'N/A';
 
   const d = new Date(date);
@@ -29,4 +29,4 @@ export function formatDateTimeLocal(date: string | Date): string {
   ];
 
   return `${day.toString().padStart(2, '0')} de ${monthNames[month]} de ${year}, ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')} ${ampm}`;
-}
+};
