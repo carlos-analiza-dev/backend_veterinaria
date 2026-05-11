@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsBoolean,
   IsDateString,
@@ -153,4 +153,9 @@ export class PaginationDto {
   @IsOptional()
   @IsBoolean()
   activos?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true')
+  @IsBoolean()
+  activo?: boolean;
 }

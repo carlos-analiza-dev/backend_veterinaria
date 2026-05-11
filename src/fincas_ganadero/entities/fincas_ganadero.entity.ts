@@ -2,6 +2,7 @@ import { ActividadesDiaria } from 'src/actividades_diarias/entities/actividades_
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cliente_finca_trabajador.entity';
+import { Cultivo } from 'src/cultivos/entities/cultivo.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
@@ -54,6 +55,9 @@ export class FincasGanadero {
   @Column({ type: 'varchar', length: 255, nullable: true })
   area_ganaderia: string;
 
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  area_agricola: string;
+
   @Column({ type: 'varchar', length: 255, default: 'ha' })
   medida_finca: string;
 
@@ -101,10 +105,12 @@ export class FincasGanadero {
   })
   produccion: ProduccionFinca;
 
-  //NUEVA RELACION
   @OneToMany(() => ClienteFincaTrabajador, (asignacion) => asignacion.finca)
   asignaciones: ClienteFincaTrabajador[];
 
   @OneToMany(() => ActividadesDiaria, (actividad) => actividad.finca)
   actividades: ActividadesDiaria[];
+
+  @OneToMany(() => Cultivo, (cultivo) => cultivo.finca)
+  cultivos: Cultivo[];
 }

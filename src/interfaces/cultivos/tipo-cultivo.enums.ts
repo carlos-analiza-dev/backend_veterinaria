@@ -1,0 +1,15 @@
+export enum TipoCultivoEnum {
+  MAIZ = 'Maíz',
+  FRIJOL = 'Frijol',
+  ARROZ = 'Arroz',
+  SORGO = 'Sorgo',
+  CAFE = 'Café',
+  PAPA = 'Papa',
+  TOMATE = 'Tomate',
+  CEBOLLA = 'Cebolla',
+  AJO = 'Ajo',
+  YUCA = 'Yuca',
+  HORTALIZAS = 'Hortalizas',
+  FRUTAS = 'Frutas',
+  OTROS = 'Otros',
+}

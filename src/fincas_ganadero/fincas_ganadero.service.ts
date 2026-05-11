@@ -43,6 +43,7 @@ export class FincasGanaderoService {
       cantidad_animales,
       abreviatura,
       area_ganaderia,
+      area_agricola,
       tamaño_total,
       tipo_explotacion,
       ubicacion,
@@ -81,9 +82,30 @@ export class FincasGanaderoService {
         throw new NotFoundException('El pais no existe');
       }
 
+      if (!area_ganaderia && !area_agricola) {
+        throw new BadRequestException(
+          'Debe ingresar al menos un área: ganadería o agrícola',
+        );
+      }
+
       if (Number(area_ganaderia) > Number(tamaño_total)) {
         throw new BadRequestException(
           'El area de ganaderia no puede ser mayor al area total de la finca',
+        );
+      }
+
+      if (Number(area_agricola) > Number(tamaño_total)) {
+        throw new BadRequestException(
+          'El area de agricultura no puede ser mayor al area total de la finca',
+        );
+      }
+
+      if (
+        Number(area_ganaderia) + Number(area_agricola) >
+        Number(tamaño_total)
+      ) {
+        throw new BadRequestException(
+          'La suma del área ganadera y agrícola no puede ser mayor al tamaño total de la finca',
         );
       }
 
@@ -247,6 +269,7 @@ export class FincasGanaderoService {
       cantidad_animales,
       abreviatura,
       area_ganaderia,
+      area_agricola,
       tamaño_total,
       tipo_explotacion,
       ubicacion,
@@ -314,10 +337,26 @@ export class FincasGanaderoService {
         );
       }
 
+      if (Number(area_agricola) > Number(tamaño_total)) {
+        throw new BadRequestException(
+          'El area de agricultura no puede ser mayor al area total de la finca',
+        );
+      }
+
+      if (
+        Number(area_ganaderia) + Number(area_agricola) >
+        Number(tamaño_total)
+      ) {
+        throw new BadRequestException(
+          'La suma del área ganadera y agrícola no puede ser mayor al tamaño total de la finca',
+        );
+      }
+
       finca.nombre_finca = nombre_finca ?? finca.nombre_finca;
       finca.cantidad_animales = cantidad_animales ?? finca.cantidad_animales;
       finca.abreviatura = abreviatura ?? finca.abreviatura;
       finca.area_ganaderia = area_ganaderia ?? finca.area_ganaderia;
+      finca.area_agricola = area_agricola ?? finca.area_agricola;
       finca.tamaño_total = tamaño_total ?? finca.tamaño_total;
       finca.tipo_explotacion = tipo_explotacion ?? finca.tipo_explotacion;
       finca.ubicacion = ubicacion ?? finca.ubicacion;

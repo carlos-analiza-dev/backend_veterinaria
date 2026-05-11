@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   IsString,
   IsOptional,
@@ -69,9 +69,16 @@ export class CreateFincasGanaderoDto {
   tamaño_total?: string;
 
   @IsOptional()
+  @Transform(({ value }) => value || '0')
   @IsString()
   @Length(0, 255)
   area_ganaderia?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => value || '0')
+  @IsString()
+  @Length(0, 255)
+  area_agricola?: string;
 
   @IsArray()
   @ValidateNested({ each: true })
