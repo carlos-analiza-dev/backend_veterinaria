@@ -1,6 +1,11 @@
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
-import { TipoCultivoEnum } from 'src/interfaces/cultivos/tipo-cultivo.enums';
+import {
+  MetodoSiembra,
+  TipoCultivoEnum,
+  TipoSistemaRiego,
+  TipoSuelo,
+} from 'src/interfaces/cultivos/cultivo.enums';
 import {
   Column,
   Entity,
@@ -37,6 +42,42 @@ export class Cultivo {
 
   @Column({ nullable: true })
   temporada: string;
+
+  @Column({ type: 'enum', enum: TipoSuelo })
+  tipo_suelo: TipoSuelo;
+
+  @Column({ nullable: true })
+  ph_suelo: string;
+
+  @Column({ type: 'enum', enum: MetodoSiembra })
+  metodo_siembra: MetodoSiembra;
+
+  @Column({ type: 'enum', enum: TipoSistemaRiego })
+  sistema_riego: TipoSistemaRiego;
+
+  @Column({ type: 'decimal', nullable: true })
+  produccion_estimada: number;
+
+  @Column({ nullable: true })
+  unidad_produccion: string;
+
+  @Column({ type: 'decimal', default: 0 })
+  costo_semilla: number;
+
+  @Column({ type: 'decimal', default: 0 })
+  costo_fertilizantes: number;
+
+  @Column({ type: 'decimal', default: 0 })
+  costo_mano_obra: number;
+
+  @Column({ type: 'decimal', default: 0 })
+  otros_costos: number;
+
+  @Column({ type: 'decimal', nullable: true })
+  ingreso_estimado: number;
+
+  @Column({ type: 'decimal', nullable: true })
+  ganancia_estimada: number;
 
   @Column({ default: true })
   isActive: boolean;

@@ -104,6 +104,7 @@ import { MantenimientoEquipoModule } from './mantenimiento_equipo/mantenimiento_
 import { UsoEquipoModule } from './uso_equipo/uso_equipo.module';
 import { ConsumoEquipoModule } from './consumo_equipo/consumo_equipo.module';
 import { CultivosModule } from './cultivos/cultivos.module';
+import { TipoProductoModule } from './tipo_producto/tipo_producto.module';
 
 @Module({
   imports: [
@@ -299,6 +300,8 @@ import { CultivosModule } from './cultivos/cultivos.module';
     ConsumoEquipoModule,
 
     CultivosModule,
+
+    TipoProductoModule,
   ],
   controllers: [],
   providers: [],

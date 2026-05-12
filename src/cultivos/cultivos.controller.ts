@@ -5,7 +5,6 @@ import {
   Body,
   Patch,
   Param,
-  Delete,
   Query,
 } from '@nestjs/common';
 import { CultivosService } from './cultivos.service';
@@ -36,15 +35,6 @@ export class CultivosController {
     @GetCliente() cliente: Cliente,
   ) {
     return this.cultivosService.findAll(paginationDto, cliente);
-  }
-
-  @Get('estadisticas/resumen')
-  @AuthCliente()
-  async getEstadisticas(
-    @GetCliente() cliente: Cliente,
-    @Query('fincaId') fincaId?: string,
-  ) {
-    return this.cultivosService.getEstadisticas(cliente, fincaId);
   }
 
   @Get(':id')

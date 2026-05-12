@@ -42,6 +42,7 @@ import { PesoHistorial } from 'src/peso_historial/entities/peso_historial.entity
 import { getPropietarioId } from 'src/utils/get-propietario-id';
 import { DetallePlanillaTrabajadore } from 'src/detalle_planilla_trabajadores/entities/detalle_planilla_trabajadore.entity';
 import { PlanillaTrabajadore } from 'src/planilla_trabajadores/entities/planilla_trabajadore.entity';
+import { Cultivo } from 'src/cultivos/entities/cultivo.entity';
 
 @Injectable()
 export class DashboardService {
@@ -74,6 +75,8 @@ export class DashboardService {
     private readonly detallePlanilla: Repository<DetallePlanillaTrabajadore>,
     @InjectRepository(PlanillaTrabajadore)
     private readonly planillaRepository: Repository<PlanillaTrabajadore>,
+    @InjectRepository(Cultivo)
+    private readonly cultivoRepository: Repository<Cultivo>,
   ) {}
 
   async getIngresosTotales(user: User, paginationDto: PaginationDto) {
@@ -830,5 +833,116 @@ export class DashboardService {
       porcentajeDelTotal:
         ((Number(r.totalPagado) / totalGeneral) * 100).toFixed(2) + '%',
     }));
+  }
+
+  //CULTIVOS
+  async obtenerResumen(cliente: Cliente) {
+    const propietarioId = getPropietarioId(cliente);
+
+    const cultivos = await this.cultivoRepository
+      .createQueryBuilder('cultivo')
+      .leftJoin('cultivo.finca', 'finca')
+      .leftJoin('finca.propietario', 'propietario')
+      .where('propietario.id = :propietarioId', { propietarioId })
+      .andWhere('cultivo.isActive = false')
+      .getMany();
+
+    const totalCultivos = cultivos.length;
+
+    const areaTotalSembrada = cultivos.reduce(
+      (sum, cultivo) => sum + Number(cultivo.area_sembrada || 0),
+      0,
+    );
+
+    const produccionEstimada = cultivos.reduce(
+      (sum, cultivo) => sum + Number(cultivo.produccion_estimada || 0),
+      0,
+    );
+
+    const costoTotal = cultivos.reduce((sum, cultivo) => {
+      return (
+        sum +
+        Number(cultivo.costo_semilla || 0) +
+        Number(cultivo.costo_fertilizantes || 0) +
+        Number(cultivo.costo_mano_obra || 0) +
+        Number(cultivo.otros_costos || 0)
+      );
+    }, 0);
+
+    const ingresoTotal = cultivos.reduce(
+      (sum, cultivo) => sum + Number(cultivo.ingreso_estimado || 0),
+      0,
+    );
+
+    const gananciaTotal = ingresoTotal - costoTotal;
+
+    return {
+      totalCultivos,
+      areaTotalSembrada,
+      produccionEstimada,
+      costoTotal,
+      ingresoTotal,
+      gananciaTotal,
+    };
+  }
+
+  async cultivosPorTipo(cliente: Cliente) {
+    const propietarioId = getPropietarioId(cliente);
+
+    return this.cultivoRepository
+      .createQueryBuilder('cultivo')
+      .select('cultivo.tipo_cultivo', 'tipo_cultivo')
+      .addSelect('COUNT(cultivo.id)', 'total')
+      .leftJoin('cultivo.finca', 'finca')
+      .leftJoin('finca.propietario', 'propietario')
+      .where('propietario.id = :propietarioId', { propietarioId })
+      .andWhere('cultivo.isActive = false')
+      .groupBy('cultivo.tipo_cultivo')
+      .getRawMany();
+  }
+
+  async areaSembradaPorFinca(cliente: Cliente) {
+    const propietarioId = getPropietarioId(cliente);
+
+    return this.cultivoRepository
+      .createQueryBuilder('cultivo')
+      .select('finca.nombre_finca', 'finca')
+      .addSelect('SUM(cultivo.area_sembrada)', 'area_total')
+      .addSelect('cultivo.unidad_medida', 'unidad_medida')
+      .leftJoin('cultivo.finca', 'finca')
+      .leftJoin('finca.propietario', 'propietario')
+      .where('propietario.id = :propietarioId', { propietarioId })
+      .andWhere('cultivo.isActive = true')
+      .groupBy('finca.nombre_finca')
+      .addGroupBy('cultivo.unidad_medida')
+      .getRawMany();
+  }
+
+  async costosPorCultivo(cliente: Cliente) {
+    const propietarioId = getPropietarioId(cliente);
+
+    const cultivos = await this.cultivoRepository
+      .createQueryBuilder('cultivo')
+      .leftJoin('cultivo.finca', 'finca')
+      .leftJoin('finca.propietario', 'propietario')
+      .where('propietario.id = :propietarioId', { propietarioId })
+      .andWhere('cultivo.isActive = true')
+      .getMany();
+
+    return cultivos.map((cultivo) => {
+      const costoTotal =
+        Number(cultivo.costo_semilla || 0) +
+        Number(cultivo.costo_fertilizantes || 0) +
+        Number(cultivo.costo_mano_obra || 0) +
+        Number(cultivo.otros_costos || 0);
+
+      return {
+        cultivo: cultivo.nombre_cultivo,
+        tipo_cultivo: cultivo.tipo_cultivo,
+        costoTotal,
+        ingreso: Number(cultivo.ingreso_estimado || 0),
+        ganancia: Number(cultivo.ingreso_estimado || 0) - costoTotal,
+      };
+    });
   }
 }

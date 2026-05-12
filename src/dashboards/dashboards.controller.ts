@@ -173,4 +173,29 @@ export class DashboardsController {
   async getMetodosPago(@Query() paginationDto: PaginationDto) {
     return this.dashboardService.getReporteMetodosPago(paginationDto);
   }
+
+  //CULTIVOS
+  @Get('resumen-cultivos')
+  @AuthCliente()
+  resumen(@GetCliente() cliente: Cliente) {
+    return this.dashboardService.obtenerResumen(cliente);
+  }
+
+  @Get('tipos-cultivos')
+  @AuthCliente()
+  cultivosPorTipo(@GetCliente() cliente: Cliente) {
+    return this.dashboardService.cultivosPorTipo(cliente);
+  }
+
+  @Get('area-por-finca')
+  @AuthCliente()
+  areaPorFinca(@GetCliente() cliente: Cliente) {
+    return this.dashboardService.areaSembradaPorFinca(cliente);
+  }
+
+  @Get('costos-cultivos')
+  @AuthCliente()
+  costos(@GetCliente() cliente: Cliente) {
+    return this.dashboardService.costosPorCultivo(cliente);
+  }
 }

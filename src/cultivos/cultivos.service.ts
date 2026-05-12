@@ -290,10 +290,24 @@ export class CultivosService {
       const camposActualizables = [
         'nombre_cultivo',
         'variedad',
+        'tipo_cultivo',
         'area_sembrada',
+        'unidad_medida',
         'fecha_siembra',
         'fecha_cosecha_estimada',
-        'observaciones',
+        'temporada',
+        'tipo_suelo',
+        'ph_suelo',
+        'metodo_siembra',
+        'sistema_riego',
+        'produccion_estimada',
+        'unidad_produccion',
+        'costo_semilla',
+        'costo_fertilizantes',
+        'costo_mano_obra',
+        'otros_costos',
+        'ingreso_estimado',
+        'ganancia_estimada',
         'isActive',
       ];
 
@@ -314,97 +328,6 @@ export class CultivosService {
     }
   }
 
-  async getEstadisticas(cliente: Cliente, fincaId?: string) {
-    const propietarioId = getPropietarioId(cliente);
-
-    const query = this.cultivoRepository
-      .createQueryBuilder('cultivo')
-      .leftJoin('cultivo.finca', 'finca')
-      .leftJoin('finca.propietario', 'propietario')
-      .where('propietario.id = :propietarioId', { propietarioId })
-      .andWhere('cultivo.isActive = true');
-
-    if (fincaId) {
-      query.andWhere('finca.id = :fincaId', { fincaId });
-    }
-
-    const cultivos = await query.getMany();
-
-    const cultivosPorTipo = cultivos.reduce((acc, c) => {
-      acc[c.tipo_cultivo] = (acc[c.tipo_cultivo] || 0) + 1;
-      return acc;
-    }, {});
-
-    const areaPorTipo = cultivos.reduce((acc, c) => {
-      acc[c.tipo_cultivo] =
-        (acc[c.tipo_cultivo] || 0) + Number(c.area_sembrada);
-      return acc;
-    }, {});
-
-    const totalArea = cultivos.reduce(
-      (sum, c) => sum + Number(c.area_sembrada),
-      0,
-    );
-
-    const cultivosPorTemporada = cultivos.reduce((acc, c) => {
-      if (c.temporada) {
-        acc[c.temporada] = (acc[c.temporada] || 0) + 1;
-      }
-      return acc;
-    }, {});
-
-    const fechaActual = new Date();
-    const cultivosActivos = cultivos.filter(
-      (c) =>
-        !c.fecha_cosecha_estimada ||
-        new Date(c.fecha_cosecha_estimada) >= fechaActual,
-    ).length;
-
-    const cultivosCompletados = cultivos.filter(
-      (c) =>
-        c.fecha_cosecha_estimada &&
-        new Date(c.fecha_cosecha_estimada) < fechaActual,
-    ).length;
-
-    const variedadesMap = new Map();
-    cultivos.forEach((c) => {
-      if (c.variedad) {
-        const key = `${c.nombre_cultivo}-${c.variedad}`;
-        variedadesMap.set(key, (variedadesMap.get(key) || 0) + 1);
-      }
-    });
-
-    const variedadesMasComunes = Array.from(variedadesMap.entries())
-      .map(([nombre, cantidad]) => ({ nombre, cantidad }))
-      .sort((a, b) => b.cantidad - a.cantidad)
-      .slice(0, 5);
-
-    return {
-      total_cultivos: cultivos.length,
-      total_area_sembrada: totalArea,
-      promedio_area_sembrada:
-        cultivos.length > 0 ? totalArea / cultivos.length : 0,
-
-      cultivos_por_tipo: cultivosPorTipo,
-      area_por_tipo: areaPorTipo,
-
-      cultivos_en_curso: cultivosActivos,
-      cultivos_completados: cultivosCompletados,
-
-      cultivos_por_temporada: cultivosPorTemporada,
-
-      variedades_destacadas: variedadesMasComunes,
-
-      resumen_por_tipo: Object.keys(cultivosPorTipo).map((tipo) => ({
-        tipo,
-        cantidad: cultivosPorTipo[tipo],
-        area_total: areaPorTipo[tipo],
-        porcentaje_del_total:
-          ((cultivosPorTipo[tipo] / cultivos.length) * 100).toFixed(2) + '%',
-      })),
-    };
-  }
-
   private mappingCultivos(cultivo: Cultivo) {
     return {
       id: cultivo.id,
@@ -416,6 +339,23 @@ export class CultivosService {
       fecha_siembra: cultivo.fecha_siembra,
       fecha_cosecha_estimada: cultivo.fecha_cosecha_estimada,
       temporada: cultivo.temporada,
+
+      tipo_suelo: cultivo.tipo_suelo,
+      ph_suelo: cultivo.ph_suelo,
+      metodo_siembra: cultivo.metodo_siembra,
+      sistema_riego: cultivo.sistema_riego,
+
+      produccion_estimada: cultivo.produccion_estimada,
+      unidad_produccion: cultivo.unidad_produccion,
+
+      costo_semilla: cultivo.costo_semilla,
+      costo_fertilizantes: cultivo.costo_fertilizantes,
+      costo_mano_obra: cultivo.costo_mano_obra,
+      otros_costos: cultivo.otros_costos,
+
+      ingreso_estimado: cultivo.ingreso_estimado,
+      ganancia_estimada: cultivo.ganancia_estimada,
+
       isActive: cultivo.isActive,
 
       finca: cultivo.finca

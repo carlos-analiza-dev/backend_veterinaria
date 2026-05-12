@@ -19,6 +19,7 @@ import { ProduccionGanadera } from 'src/produccion_ganadera/entities/produccion_
 import { PesoHistorial } from 'src/peso_historial/entities/peso_historial.entity';
 import { DetallePlanillaTrabajadore } from 'src/detalle_planilla_trabajadores/entities/detalle_planilla_trabajadore.entity';
 import { PlanillaTrabajadore } from 'src/planilla_trabajadores/entities/planilla_trabajadore.entity';
+import { Cultivo } from 'src/cultivos/entities/cultivo.entity';
 
 @Module({
   controllers: [DashboardsController],
@@ -39,6 +40,7 @@ import { PlanillaTrabajadore } from 'src/planilla_trabajadores/entities/planilla
       PesoHistorial,
       DetallePlanillaTrabajadore,
       PlanillaTrabajadore,
+      Cultivo,
     ]),
     AuthModule,
     AuthClientesModule,
