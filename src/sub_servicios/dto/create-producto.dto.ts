@@ -1,4 +1,5 @@
 import {
+  IsArray,
   IsBoolean,
   IsEnum,
   IsNotEmpty,
@@ -8,8 +9,31 @@ import {
   IsUUID,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
 import { TipoSubServicio, UnidadVenta } from '../entities/sub_servicio.entity';
+import { Type } from 'class-transformer';
+
+export class ComponenteDto {
+  @IsString({
+    message: 'El nombre del componente debe ser una cadena de texto.',
+  })
+  @IsNotEmpty({ message: 'El nombre del componente es obligatorio.' })
+  @MaxLength(150, {
+    message: 'El nombre del componente no debe exceder los 150 caracteres.',
+  })
+  nombre: string;
+
+  @IsString({ message: 'La cantidad debe ser una cadena de texto.' })
+  @IsOptional()
+  @MaxLength(50, { message: 'La cantidad no debe exceder los 50 caracteres.' })
+  cantidad?: string;
+
+  @IsString({ message: 'La unidad debe ser una cadena de texto.' })
+  @IsOptional()
+  @MaxLength(50, { message: 'La unidad no debe exceder los 50 caracteres.' })
+  unidad?: string;
+}
 
 export class CreateProductoDto {
   @IsString({ message: 'El nombre debe ser una cadena de texto.' })
@@ -53,13 +77,8 @@ export class CreateProductoDto {
   })
   disponible?: boolean;
 
-  @IsString({ message: 'El código debe ser una cadena de texto.' })
-  @IsNotEmpty({ message: 'El código es obligatorio.' })
-  @MaxLength(20, { message: 'El código no debe superar los 20 caracteres.' })
-  codigo: string;
-
-  /* @IsUUID('4', { message: 'El marcaId debe ser un UUID válido.' })
-  @IsNotEmpty({ message: 'La marca es obligatoria para los productos.' }) */
+  @IsUUID('4', { message: 'La marca válido.' })
+  @IsNotEmpty({ message: 'La marca es obligatoria para los productos.' })
   @IsOptional()
   marcaId?: string;
 
@@ -70,6 +89,18 @@ export class CreateProductoDto {
   @IsUUID('4', { message: 'La categoria debe ser un UUID válido.' })
   @IsNotEmpty({ message: 'La categoria es obligatoria para los productos.' })
   categoriaId?: string;
+
+  @IsUUID('4', { message: 'La sub categoria debe ser un UUID válido.' })
+  @IsNotEmpty({
+    message: 'La sub categoria es obligatoria para los productos.',
+  })
+  subcategoriaId?: string;
+
+  @IsUUID('4', { message: 'El tipo de producto debe ser valido.' })
+  @IsNotEmpty({
+    message: 'El tipo de producto es obligatoria para los productos.',
+  })
+  tipo_producto_id?: string;
 
   @IsString({ message: 'El código de barra debe ser una cadena de texto.' })
   @MaxLength(20, {
@@ -142,4 +173,36 @@ export class CreateProductoDto {
   @IsNumber({}, { message: 'El contenido debe ser un número válido.' })
   @Min(1, { message: 'La contenido debe ser al menos 1.' })
   contenido?: number;
+
+  @IsArray({ message: 'Los componentes deben ser un array.' })
+  @ValidateNested({
+    each: true,
+    message: 'Cada componente debe tener un formato válido.',
+  })
+  @Type(() => ComponenteDto)
+  @IsOptional()
+  componentes?: ComponenteDto[];
+
+  @IsArray({ message: 'Los tipos de uso deben ser un array.' })
+  @IsString({
+    each: true,
+    message: 'Cada tipo de uso debe ser una cadena de texto.',
+  })
+  @IsOptional()
+  tipos_uso?: string[];
+
+  @IsString({ message: 'La forma de uso debe ser una cadena de texto.' })
+  @IsOptional()
+  @MaxLength(1000, {
+    message: 'La forma de uso no debe exceder los 1000 caracteres.',
+  })
+  forma_uso?: string;
+
+  @IsArray({ message: 'Las indicaciones deben ser un array.' })
+  @IsString({
+    each: true,
+    message: 'Cada indicación debe ser una cadena de texto.',
+  })
+  @IsOptional()
+  indicaciones?: string[];
 }

@@ -95,7 +95,13 @@ export class SubcategoriasService {
   }
 
   async findAll(searchSubcategoriaDto: SearchSubcategoriaDto) {
-    const { limit = 10, offset = 0, search, isActive, categoriaId } = searchSubcategoriaDto;
+    const {
+      limit = 10,
+      offset = 0,
+      search,
+      isActive,
+      categoriaId,
+    } = searchSubcategoriaDto;
 
     try {
       const query = this.subcategoria_repo
@@ -111,16 +117,15 @@ export class SubcategoriasService {
         search?: string;
       } = {};
 
-      // Filtro por estado activo/inactivo si se proporciona específicamente
       if (isActive !== undefined) {
         whereConditions.push('subcategoria.is_active = :isActive');
         parameters.isActive = isActive;
       }
 
-      // Filtro por categoría si se proporciona
       if (categoriaId) {
-        // Verificar que la categoría existe
-        const categoria = await this.categoria_repo.findOneBy({ id: categoriaId });
+        const categoria = await this.categoria_repo.findOneBy({
+          id: categoriaId,
+        });
         if (!categoria) {
           throw new NotFoundException('Categoría no encontrada');
         }
@@ -128,18 +133,16 @@ export class SubcategoriasService {
         parameters.categoriaId = categoriaId;
       }
 
-      // Búsqueda por nombre, descripción o código
       if (search && search.trim() !== '') {
         whereConditions.push(
           '(LOWER(subcategoria.nombre) LIKE LOWER(:search) OR ' +
-          'LOWER(subcategoria.descripcion) LIKE LOWER(:search) OR ' +
-          'LOWER(subcategoria.codigo) LIKE LOWER(:search) OR ' +
-          'LOWER(categoria.nombre) LIKE LOWER(:search))'
+            'LOWER(subcategoria.descripcion) LIKE LOWER(:search) OR ' +
+            'LOWER(subcategoria.codigo) LIKE LOWER(:search) OR ' +
+            'LOWER(categoria.nombre) LIKE LOWER(:search))',
         );
         parameters.search = `%${search}%`;
       }
 
-      // Aplicar condiciones WHERE
       if (whereConditions.length > 0) {
         query.where(whereConditions.join(' AND '), parameters);
       }

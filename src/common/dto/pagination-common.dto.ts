@@ -28,6 +28,22 @@ export class PaginationDto {
 
   @IsOptional()
   @IsString()
+  subcategoria?: string;
+
+  @IsOptional()
+  @IsString()
+  tipo_producto?: string;
+
+  @IsOptional()
+  @IsString()
+  indicaciones?: string;
+
+  @IsOptional()
+  @IsString()
+  tipo_uso?: string;
+
+  @IsOptional()
+  @IsString()
   marca?: string;
 
   @IsOptional()

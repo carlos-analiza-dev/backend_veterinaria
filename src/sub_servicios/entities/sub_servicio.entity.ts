@@ -25,6 +25,8 @@ import { EscalasProducto } from 'src/escalas_producto/entities/escalas_producto.
 import { DescuentosProducto } from 'src/descuentos_producto/entities/descuentos_producto.entity';
 import { DescuentosInsumo } from 'src/descuentos_insumos/entities/descuentos_insumo.entity';
 import { ProductoOpinione } from 'src/producto_opiniones/entities/producto_opinione.entity';
+import { TipoProducto } from 'src/tipo_producto/entities/tipo_producto.entity';
+import { Subcategoria } from 'src/subcategorias/entities/subcategoria.entity';
 
 export enum UnidadVenta {
   UNIDAD = 'unidad',
@@ -128,6 +130,22 @@ export class SubServicio {
   @Column({ type: 'int', default: 1, name: 'venta_minima' })
   venta_minima: number;
 
+  @Column({ type: 'json', nullable: true })
+  componentes: {
+    nombre: string;
+    cantidad?: string;
+    unidad?: string;
+  }[];
+
+  @Column({ type: 'simple-array', nullable: true })
+  tipos_uso: string[];
+
+  @Column({ type: 'text', nullable: true })
+  forma_uso: string;
+
+  @Column({ type: 'simple-array', nullable: true })
+  indicaciones: string[];
+
   @CreateDateColumn()
   createdAt: Date;
 
@@ -154,6 +172,24 @@ export class SubServicio {
 
   @Column({ name: 'categoria_id', nullable: true })
   categoriaId: string | null;
+
+  @ManyToOne(() => Subcategoria, (subcategoria) => subcategoria.productos, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'subcategoria_id' })
+  subcategoria: Subcategoria | null;
+
+  @Column({ name: 'subcategoria_id', nullable: true })
+  subcategoriaId: string | null;
+
+  @ManyToOne(() => TipoProducto, (tipo) => tipo.productos, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'tipo_producto_id' })
+  tipo_producto: TipoProducto | null;
+
+  @Column({ name: 'tipo_producto_id', nullable: true })
+  tipo_producto_id: string | null;
 
   @ManyToOne(() => Servicio, (servicio) => servicio.subServicios, {
     nullable: true,

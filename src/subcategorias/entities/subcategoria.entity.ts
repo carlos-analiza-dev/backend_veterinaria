@@ -6,9 +6,11 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from 'src/auth/entities/auth.entity';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 
 @Entity('subcategorias')
 export class Subcategoria {
@@ -37,6 +39,9 @@ export class Subcategoria {
   @ManyToOne(() => Categoria, { eager: true })
   @JoinColumn({ name: 'categoriaId' })
   categoria: Categoria;
+
+  @OneToMany(() => SubServicio, (producto) => producto.categoria)
+  productos: SubServicio[];
 
   // Campos de auditoría
   @ManyToOne(() => User, { eager: false })

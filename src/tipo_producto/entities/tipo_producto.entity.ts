@@ -1,4 +1,5 @@
 import { User } from 'src/auth/entities/auth.entity';
+import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { Subcategoria } from 'src/subcategorias/entities/subcategoria.entity';
 import {
   Column,
@@ -6,6 +7,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -41,4 +43,7 @@ export class TipoProducto {
   @ManyToOne(() => User, { eager: false })
   @JoinColumn({ name: 'updatedById' })
   updated_by: User;
+
+  @OneToMany(() => SubServicio, (producto) => producto.tipo_producto)
+  productos: SubServicio[];
 }

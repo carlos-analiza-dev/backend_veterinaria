@@ -5,19 +5,15 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { UpdateSubServicioDto } from './dto/update-sub_servicio.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SubServicio, TipoSubServicio } from './entities/sub_servicio.entity';
-import { In, Repository, SelectQueryBuilder } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Servicio } from 'src/servicios/entities/servicio.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { Marca } from 'src/marcas/entities/marca.entity';
 import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
-import {
-  Categoria,
-  TipoCategoria,
-} from 'src/categorias/entities/categoria.entity';
+import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { ServiciosPai } from 'src/servicios_pais/entities/servicios_pai.entity';
 import { instanceToPlain } from 'class-transformer';
 import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
@@ -29,6 +25,8 @@ import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.en
 import { Insumo } from 'src/insumos/entities/insumo.entity';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { TipoProducto } from 'src/tipo_producto/entities/tipo_producto.entity';
+import { Subcategoria } from 'src/subcategorias/entities/subcategoria.entity';
 
 @Injectable()
 export class SubServiciosService {
@@ -53,6 +51,10 @@ export class SubServiciosService {
     private readonly servicioInsumoRepo: Repository<ServicioInsumo>,
     @InjectRepository(Insumo)
     private readonly insumoRepo: Repository<Insumo>,
+    @InjectRepository(TipoProducto)
+    private readonly tipoProductoRepo: Repository<TipoProducto>,
+    @InjectRepository(Subcategoria)
+    private readonly subCategoriaRepo: Repository<Subcategoria>,
   ) {}
   async createServicio(createServicioDto: CreateServicioDto) {
     const {
@@ -139,12 +141,12 @@ export class SubServiciosService {
       marcaId,
       proveedorId,
       categoriaId,
+      subcategoriaId,
       atributos,
       codigo_barra,
       precio,
       costo,
       paisId,
-      codigo,
       taxId,
       compra_minima,
       distribucion_minima,
@@ -153,6 +155,10 @@ export class SubServiciosService {
       contenido,
       tipo_fraccionamiento,
       unidad_fraccionamiento,
+      componentes,
+      tipos_uso,
+      forma_uso,
+      indicaciones,
     } = dto;
 
     try {
@@ -180,13 +186,6 @@ export class SubServiciosService {
         throw new BadRequestException(
           'Los productos deben tener un costo válido mayor a 0',
         );
-      }
-
-      const productoExistente = await this.sub_servicio_repo.findOne({
-        where: { codigo },
-      });
-      if (productoExistente) {
-        throw new ConflictException('Ya existe un producto con este código');
       }
 
       const codigoExistente = await this.sub_servicio_repo.findOne({
@@ -242,14 +241,54 @@ export class SubServiciosService {
         throw new NotFoundException('Categoría no encontrada o inactiva');
       }
 
+      const subcategoria = await this.subCategoriaRepo.findOne({
+        where: { id: subcategoriaId, is_active: true },
+      });
+      if (!subcategoria) {
+        throw new NotFoundException('Sub Categoría no encontrada o inactiva');
+      }
+
+      const categoriaCode =
+        categoria.nombre?.substring(0, 3).toUpperCase() || 'CAT';
+
+      let tipoProducto = null;
+
+      if (dto.tipo_producto_id) {
+        tipoProducto = await this.tipoProductoRepo.findOne({
+          where: { id: dto.tipo_producto_id },
+        });
+
+        if (!tipoProducto) {
+          throw new NotFoundException(
+            'Tipo de producto no encontrado o inactivo',
+          );
+        }
+      }
+
+      const tipoCode =
+        tipoProducto.nombre?.substring(0, 3).toUpperCase() || 'GEN';
+
+      const total = await this.sub_servicio_repo.count({
+        where: {
+          categoriaId,
+          tipo_producto_id: dto.tipo_producto_id,
+          tipo: TipoSubServicio.PRODUCTO,
+        },
+      });
+
+      const correlativo = String(total + 1).padStart(4, '0');
+
+      const codigo_generated = `${categoriaCode}-${tipoCode}-${correlativo}`;
+
       const producto = this.sub_servicio_repo.create({
         nombre,
-        codigo,
+        codigo: codigo_generated,
         tipo: TipoSubServicio.PRODUCTO,
         unidad_venta,
         marca,
         proveedor,
         categoria,
+        subcategoria,
         codigo_barra,
         atributos,
         tax: taxeExistente,
@@ -260,6 +299,11 @@ export class SubServiciosService {
         contenido,
         tipo_fraccionamiento,
         unidad_fraccionamiento,
+        componentes: componentes || null,
+        tipos_uso: tipos_uso || null,
+        forma_uso: forma_uso || null,
+        indicaciones: indicaciones || null,
+        tipo_producto_id: dto.tipo_producto_id || null,
       });
 
       const savedProducto = await this.sub_servicio_repo.save(producto);
@@ -278,9 +322,7 @@ export class SubServiciosService {
 
       return 'Producto Creado Exitosamente';
     } catch (error) {
-      {
-        throw error;
-      }
+      throw error;
     }
   }
 
@@ -303,6 +345,8 @@ export class SubServiciosService {
         .leftJoinAndSelect('producto.marca', 'marca')
         .leftJoinAndSelect('producto.proveedor', 'proveedor')
         .leftJoinAndSelect('producto.categoria', 'categoria')
+        .leftJoinAndSelect('producto.subcategoria', 'subcategoria')
+        .leftJoinAndSelect('producto.tipo_producto', 'tipo_producto')
         .leftJoinAndSelect('producto.tax', 'tax')
         .leftJoinAndSelect('producto.imagenes', 'imagenes')
         .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
@@ -397,11 +441,14 @@ export class SubServiciosService {
       throw error;
     }
   }
-  async findAllProductosDisponibles(user: User) {
+
+  async findAllProductosDisponibles(paginationDto: PaginationDto, user: User) {
     const paisId = user.pais.id;
+    const { categoria, subcategoria, tipo_producto, indicaciones, tipo_uso } =
+      paginationDto;
 
     try {
-      const productosDisponibles = await this.sub_servicio_repo
+      const queryBuilder = this.sub_servicio_repo
         .createQueryBuilder('producto')
         .leftJoinAndSelect(
           'producto.preciosPorPais',
@@ -412,18 +459,77 @@ export class SubServiciosService {
         .leftJoinAndSelect('producto.marca', 'marca')
         .leftJoinAndSelect('producto.proveedor', 'proveedor')
         .leftJoinAndSelect('producto.categoria', 'categoria')
+        .leftJoinAndSelect('producto.subcategoria', 'subcategoria')
+        .leftJoinAndSelect('producto.tipo_producto', 'tipo_producto')
         .leftJoinAndSelect('producto.tax', 'tax')
         .where('producto.tipo = :tipo', { tipo: TipoSubServicio.PRODUCTO })
         .andWhere('producto.disponible = :disponible', { disponible: true })
         .andWhere('producto.isActive = :isActive', { isActive: true })
-        .andWhere('precio.paisId IS NOT NULL')
+        .andWhere('precio.paisId IS NOT NULL');
+
+      if (categoria) {
+        queryBuilder.andWhere('categoria.id = :categoriaId', {
+          categoriaId: categoria,
+        });
+      }
+
+      if (subcategoria) {
+        queryBuilder.andWhere('subcategoria.id = :subcategoriaId', {
+          subcategoriaId: subcategoria,
+        });
+      }
+
+      if (tipo_producto) {
+        queryBuilder.andWhere('tipo_producto.id = :tipoProductoId', {
+          tipoProductoId: tipo_producto,
+        });
+      }
+
+      if (indicaciones) {
+        const indicacionesArray = Array.isArray(indicaciones)
+          ? indicaciones
+          : [indicaciones];
+        if (indicacionesArray.length > 0) {
+          const condiciones = indicacionesArray
+            .map(
+              (_, index) => `producto.indicaciones LIKE :indicacion_${index}`,
+            )
+            .join(' OR ');
+
+          const parametros: any = {};
+          indicacionesArray.forEach((ind, index) => {
+            parametros[`indicacion_${index}`] = `%${ind}%`;
+          });
+
+          queryBuilder.andWhere(`(${condiciones})`, parametros);
+        }
+      }
+
+      if (tipo_uso) {
+        const tiposUsoArray = Array.isArray(tipo_uso) ? tipo_uso : [tipo_uso];
+        if (tiposUsoArray.length > 0) {
+          const condiciones = tiposUsoArray
+            .map((_, index) => `producto.tipos_uso LIKE :tipo_uso_${index}`)
+            .join(' OR ');
+
+          const parametros: any = {};
+          tiposUsoArray.forEach((tipo, index) => {
+            parametros[`tipo_uso_${index}`] = `%${tipo}%`;
+          });
+
+          queryBuilder.andWhere(`(${condiciones})`, parametros);
+        }
+      }
+
+      const productos = await queryBuilder
+        .orderBy('producto.createdAt', 'DESC')
         .getMany();
 
-      if (!productosDisponibles || productosDisponibles.length === 0) {
+      if (!productos || productos.length === 0) {
         throw new NotFoundException('No se encontraron productos disponibles');
       }
 
-      return { productos: productosDisponibles };
+      return { productos };
     } catch (error) {
       throw error;
     }
@@ -929,6 +1035,7 @@ export class SubServiciosService {
       unidad_venta,
       atributos,
       categoriaId,
+      subcategoriaId,
       codigo_barra,
       costo,
       marcaId,
@@ -936,7 +1043,6 @@ export class SubServiciosService {
       precio,
       proveedorId,
       taxId,
-      codigo,
       compra_minima,
       distribucion_minima,
       es_compra_bodega,
@@ -944,11 +1050,17 @@ export class SubServiciosService {
       contenido,
       tipo_fraccionamiento,
       unidad_fraccionamiento,
+      componentes,
+      tipos_uso,
+      forma_uso,
+      indicaciones,
+      tipo_producto_id,
     } = updateProductoDto;
 
     try {
       const producto = await this.sub_servicio_repo.findOne({
         where: { id, tipo: TipoSubServicio.PRODUCTO },
+        relations: ['marca', 'proveedor', 'categoria', 'tax'],
       });
 
       if (!producto) {
@@ -972,12 +1084,24 @@ export class SubServiciosService {
         );
       }
 
-      if (nombre !== undefined) producto.nombre = nombre;
+      if (
+        codigo_barra !== undefined &&
+        codigo_barra !== producto.codigo_barra
+      ) {
+        const codigoExistente = await this.sub_servicio_repo.findOne({
+          where: { codigo_barra },
+        });
+        if (codigoExistente) {
+          throw new ConflictException(
+            'Ya existe un producto con este código de barra',
+          );
+        }
+      }
 
+      if (nombre !== undefined) producto.nombre = nombre;
       if (isActive !== undefined) producto.isActive = isActive;
       if (disponible !== undefined) producto.disponible = disponible;
       if (unidad_venta !== undefined) producto.unidad_venta = unidad_venta;
-      if (codigo !== undefined) producto.codigo = codigo;
       if (codigo_barra !== undefined) producto.codigo_barra = codigo_barra;
       if (atributos !== undefined) producto.atributos = atributos;
       if (compra_minima !== undefined) producto.compra_minima = compra_minima;
@@ -992,46 +1116,106 @@ export class SubServiciosService {
       if (unidad_fraccionamiento !== undefined)
         producto.unidad_fraccionamiento = unidad_fraccionamiento;
 
-      if (marcaId) {
-        const marca = await this.marcaRepo.findOne({
-          where: { id: marcaId, is_active: true },
-        });
-        if (!marca)
-          throw new NotFoundException('Marca no encontrada o inactiva');
-        producto.marca = marca;
+      if (componentes !== undefined) producto.componentes = componentes;
+      if (tipos_uso !== undefined) producto.tipos_uso = tipos_uso;
+      if (forma_uso !== undefined) producto.forma_uso = forma_uso;
+      if (indicaciones !== undefined) producto.indicaciones = indicaciones;
+
+      if (tipo_producto_id !== undefined) {
+        if (tipo_producto_id === null) {
+          producto.tipo_producto_id = null;
+        } else {
+          const tipoProducto = await this.tipoProductoRepo.findOne({
+            where: { id: tipo_producto_id },
+          });
+          if (!tipoProducto) {
+            throw new NotFoundException(
+              'Tipo de producto no encontrado o inactivo',
+            );
+          }
+          producto.tipo_producto_id = tipo_producto_id;
+        }
       }
 
-      if (proveedorId) {
-        const proveedor = await this.proveedorRepo.findOne({
-          where: { id: proveedorId, is_active: true },
-        });
-        if (!proveedor)
-          throw new NotFoundException('Proveedor no encontrado o inactivo');
-        producto.proveedor = proveedor;
+      if (marcaId !== undefined) {
+        if (marcaId === null) {
+          producto.marca = null;
+        } else {
+          const marca = await this.marcaRepo.findOne({
+            where: { id: marcaId, is_active: true },
+          });
+          if (!marca) {
+            throw new NotFoundException('Marca no encontrada o inactiva');
+          }
+          producto.marca = marca;
+        }
       }
 
-      if (categoriaId) {
-        const categoria = await this.categoriaRepo.findOne({
-          where: { id: categoriaId, is_active: true },
-        });
-        if (!categoria)
-          throw new NotFoundException('Categoría no encontrada o inactiva');
-        producto.categoria = categoria;
+      if (proveedorId !== undefined) {
+        if (proveedorId === null) {
+          producto.proveedor = null;
+        } else {
+          const proveedor = await this.proveedorRepo.findOne({
+            where: { id: proveedorId, is_active: true },
+          });
+          if (!proveedor) {
+            throw new NotFoundException('Proveedor no encontrado o inactivo');
+          }
+          producto.proveedor = proveedor;
+        }
       }
 
-      if (taxId) {
-        const tax = await this.taxesPaiRepo.findOne({
-          where: { id: taxId },
-        });
-        if (!tax) throw new NotFoundException('Tax o impuesto no encontrado');
-        producto.tax = tax;
+      if (categoriaId !== undefined) {
+        if (categoriaId === null) {
+          producto.categoria = null;
+        } else {
+          const categoria = await this.categoriaRepo.findOne({
+            where: { id: categoriaId, is_active: true },
+          });
+          if (!categoria) {
+            throw new NotFoundException('Categoría no encontrada o inactiva');
+          }
+          producto.categoria = categoria;
+        }
+      }
+
+      if (subcategoriaId !== undefined) {
+        if (subcategoriaId === null) {
+          producto.subcategoria = null;
+        } else {
+          const subcategoria = await this.subCategoriaRepo.findOne({
+            where: { id: subcategoriaId, is_active: true },
+          });
+          if (!subcategoria) {
+            throw new NotFoundException(
+              'Sub Categoría no encontrada o inactiva',
+            );
+          }
+          producto.subcategoria = subcategoria;
+        }
+      }
+
+      if (taxId !== undefined) {
+        if (taxId === null) {
+          producto.tax = null;
+        } else {
+          const tax = await this.taxesPaiRepo.findOne({
+            where: { id: taxId },
+          });
+          if (!tax) {
+            throw new NotFoundException('Tax o impuesto no encontrado');
+          }
+          producto.tax = tax;
+        }
       }
 
       if (paisId && (precio !== undefined || costo !== undefined)) {
         const pais = await this.paisRepo.findOne({
           where: { id: paisId, isActive: true },
         });
-        if (!pais) throw new NotFoundException('País no encontrado o inactivo');
+        if (!pais) {
+          throw new NotFoundException('País no encontrado o inactivo');
+        }
 
         let precioPais = await this.serviciosPaiRepo.findOne({
           where: {
@@ -1041,21 +1225,23 @@ export class SubServiciosService {
         });
 
         if (!precioPais) {
-          precioPais = this.serviciosPaiRepo.create({
-            subServicio: producto,
-            pais,
-            precio: precio || 0,
-            costo: costo || 0,
-            tiempo: null,
-            cantidadMin: null,
-            cantidadMax: null,
-          });
+          if (precio !== undefined || costo !== undefined) {
+            precioPais = this.serviciosPaiRepo.create({
+              subServicio: producto,
+              pais,
+              precio: precio !== undefined ? precio : 0,
+              costo: costo !== undefined ? costo : 0,
+              tiempo: null,
+              cantidadMin: null,
+              cantidadMax: null,
+            });
+            await this.serviciosPaiRepo.save(precioPais);
+          }
         } else {
           if (precio !== undefined) precioPais.precio = precio;
           if (costo !== undefined) precioPais.costo = costo;
+          await this.serviciosPaiRepo.save(precioPais);
         }
-
-        await this.serviciosPaiRepo.save(precioPais);
       }
 
       await this.sub_servicio_repo.save(producto);
@@ -1064,7 +1250,8 @@ export class SubServiciosService {
     } catch (error) {
       if (
         error instanceof NotFoundException ||
-        error instanceof BadRequestException
+        error instanceof BadRequestException ||
+        error instanceof ConflictException
       ) {
         throw error;
       }

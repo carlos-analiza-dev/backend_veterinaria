@@ -302,6 +302,8 @@ import { TipoProductoModule } from './tipo_producto/tipo_producto.module';
     CultivosModule,
 
     TipoProductoModule,
+
+    
   ],
   controllers: [],
   providers: [],

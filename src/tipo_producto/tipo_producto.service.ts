@@ -53,12 +53,32 @@ export class TipoProductoService {
     const [data, total] = await queryBuilder.getManyAndCount();
 
     return {
-      data,
+      tipos: data,
       total,
       limit,
       offset,
-      totalPages: Math.ceil(total / limit),
     };
+  }
+
+  async findAllBySubCategoria(id: string) {
+    try {
+      const subcategoria_existe = await this.subCategoriaRepo.findOne({
+        where: { id },
+      });
+      if (!subcategoria_existe)
+        throw new NotFoundException('No se encontro la subcategoria');
+      const tipos_producto = await this.tipoRepository.find({
+        where: { sub_categoria: { id } },
+        relations: ['sub_categoria'],
+      });
+      if (!tipos_producto)
+        throw new NotFoundException(
+          'No se encontraron tipos pertenecientes a esta sub categoria',
+        );
+      return tipos_producto;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async findOne(id: string) {

@@ -17,6 +17,8 @@ import { User } from 'src/auth/entities/auth.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { TipoProducto } from 'src/tipo_producto/entities/tipo_producto.entity';
+import { Subcategoria } from 'src/subcategorias/entities/subcategoria.entity';
 
 @Module({
   controllers: [SubServiciosController],
@@ -35,6 +37,8 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
       User,
       Cliente,
       Insumo,
+      TipoProducto,
+      Subcategoria,
     ]),
     AuthModule,
     AuthClientesModule,
