@@ -488,16 +488,23 @@ export class SubServiciosService {
       if (indicaciones) {
         const indicacionesArray = Array.isArray(indicaciones)
           ? indicaciones
-          : [indicaciones];
-        if (indicacionesArray.length > 0) {
-          const condiciones = indicacionesArray
+          : indicaciones.split(',');
+
+        const indicacionesLimpias = indicacionesArray
+          .map((ind) => ind.trim())
+          .filter((ind) => ind.length > 0);
+
+        if (indicacionesLimpias.length > 0) {
+          const condiciones = indicacionesLimpias
             .map(
-              (_, index) => `producto.indicaciones LIKE :indicacion_${index}`,
+              (_, index) =>
+                `LOWER(producto.indicaciones) LIKE LOWER(:indicacion_${index})`,
             )
             .join(' OR ');
 
-          const parametros: any = {};
-          indicacionesArray.forEach((ind, index) => {
+          const parametros: Record<string, string> = {};
+
+          indicacionesLimpias.forEach((ind, index) => {
             parametros[`indicacion_${index}`] = `%${ind}%`;
           });
 
@@ -506,14 +513,25 @@ export class SubServiciosService {
       }
 
       if (tipo_uso) {
-        const tiposUsoArray = Array.isArray(tipo_uso) ? tipo_uso : [tipo_uso];
-        if (tiposUsoArray.length > 0) {
-          const condiciones = tiposUsoArray
-            .map((_, index) => `producto.tipos_uso LIKE :tipo_uso_${index}`)
+        const tiposUsoArray = Array.isArray(tipo_uso)
+          ? tipo_uso
+          : tipo_uso.split(',');
+
+        const tiposUsoLimpios = tiposUsoArray
+          .map((tipo) => tipo.trim())
+          .filter((tipo) => tipo.length > 0);
+
+        if (tiposUsoLimpios.length > 0) {
+          const condiciones = tiposUsoLimpios
+            .map(
+              (_, index) =>
+                `LOWER(producto.tipos_uso) LIKE LOWER(:tipo_uso_${index})`,
+            )
             .join(' OR ');
 
-          const parametros: any = {};
-          tiposUsoArray.forEach((tipo, index) => {
+          const parametros: Record<string, string> = {};
+
+          tiposUsoLimpios.forEach((tipo, index) => {
             parametros[`tipo_uso_${index}`] = `%${tipo}%`;
           });
 
