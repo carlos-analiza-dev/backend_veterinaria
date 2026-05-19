@@ -102,6 +102,15 @@ export class PedidosController {
     return this.pedidosService.updateEstado(id, estado, cliente);
   }
 
+  @Patch(':id/estado-admin/:estado')
+  @Auth()
+  updateEstadoAdmin(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('estado') estado: EstadoPedido,
+  ) {
+    return this.pedidosService.updateEstadoAdmin(id, estado);
+  }
+
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseUUIDPipe) id: string) {

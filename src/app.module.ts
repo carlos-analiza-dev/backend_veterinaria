@@ -105,6 +105,10 @@ import { UsoEquipoModule } from './uso_equipo/uso_equipo.module';
 import { ConsumoEquipoModule } from './consumo_equipo/consumo_equipo.module';
 import { CultivosModule } from './cultivos/cultivos.module';
 import { TipoProductoModule } from './tipo_producto/tipo_producto.module';
+import { PaquetesModule } from './paquetes/paquetes.module';
+import { PaquetePaisModule } from './paquete_pais/paquete_pais.module';
+import { PaquetePermisosModule } from './paquete_permisos/paquete_permisos.module';
+import { ClientePaquetesModule } from './cliente_paquetes/cliente_paquetes.module';
 
 @Module({
   imports: [
@@ -302,6 +306,14 @@ import { TipoProductoModule } from './tipo_producto/tipo_producto.module';
     CultivosModule,
 
     TipoProductoModule,
+
+    PaquetesModule,
+
+    PaquetePaisModule,
+
+    PaquetePermisosModule,
+
+    ClientePaquetesModule,
 
     
   ],

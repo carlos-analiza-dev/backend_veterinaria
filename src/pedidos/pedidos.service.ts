@@ -453,6 +453,31 @@ export class PedidosService {
     }
   }
 
+  async updateEstadoAdmin(id: string, estado: EstadoPedido): Promise<Pedido> {
+    try {
+      const pedido = await this.pedido_repo.findOne({ where: { id } });
+
+      if (!pedido) {
+        throw new NotFoundException(`Pedido con ID ${id} no encontrado`);
+      }
+
+      pedido.estado = estado;
+      await this.pedido_repo.save({ ...pedido });
+
+      return await this.pedido_repo.findOne({
+        where: { id },
+        relations: ['cliente', 'sucursal', 'detalles', 'detalles.producto'],
+      });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new InternalServerErrorException(
+        'Error al actualizar el estado del pedido',
+      );
+    }
+  }
+
   async remove(id: string): Promise<void> {
     try {
       const result = await this.pedido_repo.delete(id);

@@ -22,6 +22,7 @@ import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cliente_finca_trabajador.entity';
 import { PlanillaTrabajadore } from 'src/planilla_trabajadores/entities/planilla_trabajadore.entity';
 import { ActividadesDiaria } from 'src/actividades_diarias/entities/actividades_diaria.entity';
+import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
 
 @Entity('clientes')
 export class Cliente {
@@ -150,4 +151,7 @@ export class Cliente {
 
   @OneToMany(() => ActividadesDiaria, (actividad) => actividad.propietario)
   actividadesAsignadas: ActividadesDiaria[];
+
+  @OneToMany(() => ClientePaquete, (clientePaquete) => clientePaquete.cliente)
+  paquetes: ClientePaquete[];
 }

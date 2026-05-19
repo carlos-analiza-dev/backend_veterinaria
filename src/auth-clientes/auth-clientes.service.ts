@@ -28,6 +28,8 @@ import { NotificacionesAdminsService } from 'src/notificaciones_admins/notificac
 import { NotificationType } from 'src/interfaces/nptificaciones.type';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { getPropietarioId } from 'src/utils/get-propietario-id';
+import { PermisosInterface } from 'src/interfaces/permisos/permisos.interface';
+import { formatearFecha } from 'src/helpers/format-date';
 
 @Injectable()
 export class AuthClientesService {
@@ -293,13 +295,17 @@ export class AuthClientesService {
         .leftJoinAndSelect('departamento.municipios', 'dpt_municipios')
         .leftJoinAndSelect('cliente.municipio', 'municipio')
         .leftJoinAndSelect('cliente.profileImages', 'profileImages')
-        .leftJoinAndSelect('cliente.clientePermisos', 'clientePermisos')
-        .leftJoinAndSelect('clientePermisos.permiso', 'permiso')
         .leftJoinAndSelect('cliente.asignacionesTrabajador', 'asignaciones')
         .leftJoinAndSelect('asignaciones.finca', 'finca')
         .leftJoinAndSelect('finca.departamento', 'finca_departamento')
         .leftJoinAndSelect('finca.municipio', 'finca_municipio')
         .leftJoinAndSelect('asignaciones.asignadoPor', 'asignadoPor')
+        .leftJoinAndSelect('cliente.paquetes', 'clientePaquete')
+        .leftJoinAndSelect('clientePaquete.paquete', 'paquete')
+        .leftJoinAndSelect('paquete.permisos', 'paquetePermisos')
+        .leftJoinAndSelect('paquetePermisos.permiso', 'permisoPaquete')
+        .leftJoinAndSelect('cliente.clientePermisos', 'clientePermisos')
+        .leftJoinAndSelect('clientePermisos.permiso', 'permiso')
         .where('cliente.email = :email', { email })
         .orderBy('profileImages.createdAt', 'DESC')
         .getOne();
@@ -312,21 +318,118 @@ export class AuthClientesService {
           'Credenciales incorrectas (contrasena)',
         );
 
-      if (cliente.isActive === false)
+      if (!cliente.isActive)
         throw new UnauthorizedException(
-          'Credenciales incorrectas, usario desactivado.',
+          'Credenciales incorrectas, usuario desactivado.',
         );
 
-      if (cliente.verified === false)
+      if (!cliente.verified)
         throw new UnauthorizedException(
           'El usuario no ha sido verificado, revisa tu correo electronico.',
         );
 
       const token = this.getJwtToken({ id: cliente.id });
-
       delete cliente.password;
 
-      return { ...instanceToPlain(cliente), token };
+      const ahora = new Date();
+
+      const paqueteActivoData = cliente.paquetes?.find(
+        (cp: any) =>
+          cp.activo === true && (!cp.fechaFin || new Date(cp.fechaFin) > ahora),
+      );
+
+      let permisosFinal = [];
+      let paqueteActivoInfo = null;
+
+      if (paqueteActivoData && cliente.rol === TipoCliente.PROPIETARIO) {
+        if (paqueteActivoData.paquete?.permisos) {
+          const permisosSet = new Map();
+          paqueteActivoData.paquete.permisos.forEach((pp: any) => {
+            if (pp.permiso && !permisosSet.has(pp.permiso.id)) {
+              permisosSet.set(pp.permiso.id, {
+                id: pp.id,
+                ver: pp.ver,
+                crear: pp.crear,
+                editar: pp.editar,
+                eliminar: pp.eliminar,
+                permiso: pp.permiso,
+              });
+            }
+          });
+          permisosFinal = Array.from(permisosSet.values());
+        }
+
+        const fechaFin = paqueteActivoData.fechaFin;
+        const fechaInicio = paqueteActivoData.fechaInicio;
+
+        const diasRestantes = fechaFin
+          ? Math.ceil(
+              (new Date(fechaFin).getTime() - ahora.getTime()) /
+                (1000 * 60 * 60 * 24),
+            )
+          : null;
+
+        const diasTotales =
+          fechaInicio && fechaFin
+            ? Math.ceil(
+                (new Date(fechaFin).getTime() -
+                  new Date(fechaInicio).getTime()) /
+                  (1000 * 60 * 60 * 24),
+              )
+            : 0;
+
+        const progreso =
+          fechaInicio && fechaFin && diasTotales > 0
+            ? Math.min(
+                Math.max(
+                  Math.round(
+                    ((ahora.getTime() - new Date(fechaInicio).getTime()) /
+                      (new Date(fechaFin).getTime() -
+                        new Date(fechaInicio).getTime())) *
+                      100,
+                  ),
+                  0,
+                ),
+                100,
+              )
+            : 0;
+
+        paqueteActivoInfo = {
+          id: paqueteActivoData.id,
+          fechaInicio: fechaInicio,
+          fechaFin: fechaFin,
+          fechaInicioFormateada: formatearFecha(fechaInicio),
+          fechaFinFormateada: fechaFin ? formatearFecha(fechaFin) : null,
+          activo: paqueteActivoData.activo,
+          diasRestantes: diasRestantes && diasRestantes > 0 ? diasRestantes : 0,
+          diasTotales: diasTotales,
+          estaVencido: diasRestantes !== null && diasRestantes <= 0,
+          estaPorVencer:
+            diasRestantes !== null && diasRestantes <= 7 && diasRestantes > 0,
+          paquete: {
+            id: paqueteActivoData.paquete?.id,
+            nombre: paqueteActivoData.paquete?.nombre,
+            tipo: paqueteActivoData.paquete?.tipo,
+            maxFincas: paqueteActivoData.paquete?.maxFincas,
+            maxAnimales: paqueteActivoData.paquete?.maxAnimales,
+            maxTrabajadores: paqueteActivoData.paquete?.maxTrabajadores,
+            isActive: paqueteActivoData.paquete?.isActive,
+          },
+        };
+      } else if (cliente.rol !== TipoCliente.PROPIETARIO) {
+        permisosFinal = cliente.clientePermisos || [];
+      }
+
+      const clientePlano = instanceToPlain(cliente);
+      const { paquetes, clientePermisos, ...clienteSinPaquetes } = clientePlano;
+
+      return {
+        ...clienteSinPaquetes,
+        clientePermisos: permisosFinal,
+        paqueteActivo: paqueteActivoInfo,
+        tienePlanActivo: !!paqueteActivoData,
+        token,
+      };
     } catch (error) {
       throw error;
     }
