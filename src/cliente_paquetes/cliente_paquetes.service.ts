@@ -10,6 +10,7 @@ import { ClientePaquete } from './entities/cliente_paquete.entity';
 import { IsNull, Repository } from 'typeorm';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { Paquete } from 'src/paquetes/entities/paquete.entity';
+import { TipoPaquete } from 'src/interfaces/paquetes/paquetes.enum';
 
 @Injectable()
 export class ClientePaquetesService {
@@ -49,6 +50,21 @@ export class ClientePaquetesService {
         );
       }
 
+      if (paquete.tipo === TipoPaquete.FREE) {
+        const yaTuvoPaqueteFree = await this.clientePaqueteRepository.findOne({
+          where: {
+            cliente: { id: clienteId },
+            paquete: { id: paquete.id },
+          },
+        });
+
+        if (yaTuvoPaqueteFree) {
+          throw new BadRequestException(
+            'El paquete FREE solo puede adquirirse una vez',
+          );
+        }
+      }
+
       const startDate = fechaInicio ? new Date(fechaInicio) : new Date();
       const endDate = fechaFin ? new Date(fechaFin) : null;
 
@@ -66,6 +82,16 @@ export class ClientePaquetesService {
         throw new BadRequestException(
           `El cliente ya tiene el paquete "${paquete.nombre}" activo`,
         );
+      }
+
+      const paqueteActivoCliente = await this.clientePaqueteRepository.findOne({
+        where: { cliente: { id: clienteId }, activo: true },
+      });
+
+      if (paqueteActivoCliente) {
+        paqueteActivoCliente.activo = false;
+
+        await this.clientePaqueteRepository.save(paqueteActivoCliente);
       }
 
       const clientePaquete = this.clientePaqueteRepository.create({
@@ -94,11 +120,27 @@ export class ClientePaquetesService {
     });
   }
 
+  async findByClienteHistorial(cliente: Cliente) {
+    const clienteId = cliente.id ?? '';
+    try {
+      const paqueteActivos = await this.clientePaqueteRepository.find({
+        where: { cliente: { id: clienteId } },
+      });
+      if (!paqueteActivos)
+        throw new NotFoundException(
+          'No se encontro paquete activo actualmente',
+        );
+      return paqueteActivos;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findByCliente(cliente: Cliente) {
     const clienteId = cliente.id ?? '';
     try {
       const paqueteActivo = await this.clientePaqueteRepository.findOne({
-        where: { cliente: { id: clienteId } },
+        where: { cliente: { id: clienteId }, activo: true },
       });
       if (!paqueteActivo)
         throw new NotFoundException(

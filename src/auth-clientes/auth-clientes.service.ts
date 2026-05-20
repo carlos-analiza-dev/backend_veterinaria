@@ -28,8 +28,8 @@ import { NotificacionesAdminsService } from 'src/notificaciones_admins/notificac
 import { NotificationType } from 'src/interfaces/nptificaciones.type';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { getPropietarioId } from 'src/utils/get-propietario-id';
-import { PermisosInterface } from 'src/interfaces/permisos/permisos.interface';
-import { formatearFecha } from 'src/helpers/format-date';
+import { formatearFecha, formatearFechaEs } from 'src/helpers/format-date';
+import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
 
 @Injectable()
 export class AuthClientesService {
@@ -42,6 +42,8 @@ export class AuthClientesService {
     private readonly municipioRepo: Repository<MunicipiosDepartamentosPai>,
     @InjectRepository(DepartamentosPai)
     private readonly departamentoRepo: Repository<DepartamentosPai>,
+    @InjectRepository(ClientePaquete)
+    private readonly clientePaquete: Repository<ClientePaquete>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly notificacionService: NotificacionesAdminsService,
@@ -302,10 +304,6 @@ export class AuthClientesService {
         .leftJoinAndSelect('asignaciones.asignadoPor', 'asignadoPor')
         .leftJoinAndSelect('cliente.paquetes', 'clientePaquete')
         .leftJoinAndSelect('clientePaquete.paquete', 'paquete')
-        .leftJoinAndSelect('paquete.permisos', 'paquetePermisos')
-        .leftJoinAndSelect('paquetePermisos.permiso', 'permisoPaquete')
-        .leftJoinAndSelect('cliente.clientePermisos', 'clientePermisos')
-        .leftJoinAndSelect('clientePermisos.permiso', 'permiso')
         .where('cliente.email = :email', { email })
         .orderBy('profileImages.createdAt', 'DESC')
         .getOne();
@@ -331,34 +329,50 @@ export class AuthClientesService {
       const token = this.getJwtToken({ id: cliente.id });
       delete cliente.password;
 
+      const propietarioId =
+        cliente.rol !== TipoCliente.PROPIETARIO
+          ? cliente.propietario?.id
+          : cliente.id;
+
       const ahora = new Date();
 
-      const paqueteActivoData = cliente.paquetes?.find(
-        (cp: any) =>
-          cp.activo === true && (!cp.fechaFin || new Date(cp.fechaFin) > ahora),
-      );
+      const paqueteActivo = await this.clientePaquete.findOne({
+        where: {
+          cliente: { id: propietarioId },
+          activo: true,
+        },
+      });
 
-      let permisosFinal = [];
+      const paqueteVencido =
+        !paqueteActivo ||
+        (paqueteActivo.fechaFin && new Date(paqueteActivo.fechaFin) <= ahora);
+
+      if (cliente.rol !== TipoCliente.PROPIETARIO && paqueteVencido) {
+        throw new UnauthorizedException(
+          'No puedes acceder, el paquete del propietario ha vencido o no existe.',
+        );
+      }
+
+      let paqueteActivoData = null;
       let paqueteActivoInfo = null;
 
-      if (paqueteActivoData && cliente.rol === TipoCliente.PROPIETARIO) {
-        if (paqueteActivoData.paquete?.permisos) {
-          const permisosSet = new Map();
-          paqueteActivoData.paquete.permisos.forEach((pp: any) => {
-            if (pp.permiso && !permisosSet.has(pp.permiso.id)) {
-              permisosSet.set(pp.permiso.id, {
-                id: pp.id,
-                ver: pp.ver,
-                crear: pp.crear,
-                editar: pp.editar,
-                eliminar: pp.eliminar,
-                permiso: pp.permiso,
-              });
-            }
-          });
-          permisosFinal = Array.from(permisosSet.values());
-        }
+      if (cliente.rol === TipoCliente.PROPIETARIO) {
+        paqueteActivoData = cliente.paquetes?.find(
+          (cp: any) =>
+            cp.activo === true &&
+            (!cp.fechaFin || new Date(cp.fechaFin) > ahora),
+        );
+      } else {
+        paqueteActivoData = await this.clientePaquete.findOne({
+          where: {
+            cliente: { id: propietarioId },
+            activo: true,
+          },
+          relations: ['paquete'],
+        });
+      }
 
+      if (paqueteActivoData) {
         const fechaFin = paqueteActivoData.fechaFin;
         const fechaInicio = paqueteActivoData.fechaInicio;
 
@@ -378,28 +392,12 @@ export class AuthClientesService {
               )
             : 0;
 
-        const progreso =
-          fechaInicio && fechaFin && diasTotales > 0
-            ? Math.min(
-                Math.max(
-                  Math.round(
-                    ((ahora.getTime() - new Date(fechaInicio).getTime()) /
-                      (new Date(fechaFin).getTime() -
-                        new Date(fechaInicio).getTime())) *
-                      100,
-                  ),
-                  0,
-                ),
-                100,
-              )
-            : 0;
-
         paqueteActivoInfo = {
           id: paqueteActivoData.id,
           fechaInicio: fechaInicio,
           fechaFin: fechaFin,
-          fechaInicioFormateada: formatearFecha(fechaInicio),
-          fechaFinFormateada: fechaFin ? formatearFecha(fechaFin) : null,
+          fechaInicioFormateada: formatearFechaEs(fechaInicio),
+          fechaFinFormateada: fechaFin ? formatearFechaEs(fechaFin) : null,
           activo: paqueteActivoData.activo,
           diasRestantes: diasRestantes && diasRestantes > 0 ? diasRestantes : 0,
           diasTotales: diasTotales,
@@ -416,18 +414,26 @@ export class AuthClientesService {
             isActive: paqueteActivoData.paquete?.isActive,
           },
         };
-      } else if (cliente.rol !== TipoCliente.PROPIETARIO) {
-        permisosFinal = cliente.clientePermisos || [];
       }
 
       const clientePlano = instanceToPlain(cliente);
-      const { paquetes, clientePermisos, ...clienteSinPaquetes } = clientePlano;
+      const { paquetes, ...clienteSinPaquetes } = clientePlano;
+
+      let propietarioInfo = null;
+      if (cliente.rol !== TipoCliente.PROPIETARIO && cliente.propietario) {
+        propietarioInfo = {
+          id: cliente.propietario.id,
+          nombre: cliente.propietario.nombre,
+          email: cliente.propietario.email,
+          telefono: cliente.propietario.telefono,
+        };
+      }
 
       return {
         ...clienteSinPaquetes,
-        clientePermisos: permisosFinal,
         paqueteActivo: paqueteActivoInfo,
         tienePlanActivo: !!paqueteActivoData,
+        propietario: propietarioInfo,
         token,
       };
     } catch (error) {

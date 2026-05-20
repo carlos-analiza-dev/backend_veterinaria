@@ -11,6 +11,7 @@ import { Paquete } from 'src/paquetes/entities/paquete.entity';
 import { PermisosCliente } from 'src/permisos_clientes/entities/permisos_cliente.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { UpdatePaquetePermisoDto } from './dto/update-permisos.dto';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Injectable()
 export class PaquetePermisosService {
@@ -110,6 +111,47 @@ export class PaquetePermisosService {
       },
       relations: ['permiso'],
     });
+  }
+
+  async findByPaqueteCliente(
+    id: string,
+    cliente: Cliente,
+  ): Promise<PaquetePermiso[]> {
+    const paisId = cliente.pais.id ?? '';
+
+    return await this.paquetePermisoRepository.find({
+      where: {
+        paquete: {
+          id,
+          preciosPorPais: {
+            pais: {
+              id: paisId,
+            },
+          },
+        },
+      },
+      relations: ['permiso'],
+    });
+  }
+
+  async findByPaquetesCliente(id: string, cliente: Cliente) {
+    const paisId = cliente.pais.id ?? '';
+
+    const paquetePermisos = await this.paquetePermisoRepository.find({
+      where: {
+        paquete: {
+          id,
+          preciosPorPais: {
+            pais: {
+              id: paisId,
+            },
+          },
+        },
+      },
+      relations: ['permiso'],
+    });
+
+    return paquetePermisos.map((item) => item.permiso);
   }
 
   async findOne(id: string): Promise<PaquetePermiso> {

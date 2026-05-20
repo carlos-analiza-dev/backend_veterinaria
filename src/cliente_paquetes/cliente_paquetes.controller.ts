@@ -26,6 +26,12 @@ export class ClientePaquetesController {
     return this.clientePaquetesService.findAll();
   }
 
+  @Get('historial')
+  @AuthCliente()
+  findByClienteHistorial(@GetCliente() cliente: Cliente) {
+    return this.clientePaquetesService.findByClienteHistorial(cliente);
+  }
+
   @Get('cliente')
   @AuthCliente()
   findByCliente(@GetCliente() cliente: Cliente) {

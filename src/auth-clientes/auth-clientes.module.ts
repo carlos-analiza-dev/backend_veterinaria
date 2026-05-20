@@ -15,6 +15,7 @@ import { JwtClienteStrategy } from './strategies-client/jwt.strtategy';
 import { User } from 'src/auth/entities/auth.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { NotificacionesAdminsModule } from 'src/notificaciones_admins/notificaciones_admins.module';
+import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
 
 @Module({
   controllers: [AuthClientesController],
@@ -27,6 +28,7 @@ import { NotificacionesAdminsModule } from 'src/notificaciones_admins/notificaci
       MunicipiosDepartamentosPai,
       DepartamentosPai,
       User,
+      ClientePaquete,
     ]),
     AuthModule,
     NotificacionesAdminsModule,

@@ -10,6 +10,7 @@ import { CreateClientePermisoDto } from './dto/create-cliente_permiso.dto';
 import { UpdateClientePermisoDto } from './dto/update-cliente_permiso.dto';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { PermisosCliente } from 'src/permisos_clientes/entities/permisos_cliente.entity';
+import { TipoCliente } from 'src/interfaces/clientes.enums';
 
 @Injectable()
 export class ClientePermisosService {
@@ -103,11 +104,51 @@ export class ClientePermisosService {
     return permisosTransformados;
   }
 
-  async findByCliente(clienteId: string) {
-    return this.clientePermisoRepo.find({
-      where: { cliente: { id: clienteId } },
-      relations: ['permiso'],
-    });
+  async findByCliente(id: string) {
+    const cliente = await this.clienteRepo
+      .createQueryBuilder('cliente')
+      .leftJoinAndSelect('cliente.propietario', 'propietario')
+      .leftJoinAndSelect('propietario.paquetes', 'propietarioPaquetes')
+      .leftJoinAndSelect('propietarioPaquetes.paquete', 'propietarioPaquete')
+      .leftJoinAndSelect('propietarioPaquete.permisos', 'propietarioPermisos')
+      .leftJoinAndSelect('propietarioPermisos.permiso', 'propietarioPermiso')
+      .leftJoinAndSelect('cliente.clientePermisos', 'clientePermisos')
+      .leftJoinAndSelect('clientePermisos.permiso', 'clientePermiso')
+      .where('cliente.id = :id', { id })
+      .getOne();
+
+    if (!cliente) {
+      throw new NotFoundException('Cliente no encontrado');
+    }
+
+    const propietario =
+      cliente.rol !== TipoCliente.PROPIETARIO ? cliente.propietario : cliente;
+
+    if (!propietario) {
+      return [];
+    }
+
+    const ahora = new Date();
+    const paqueteActivoPropietario = propietario.paquetes?.find(
+      (cp: any) =>
+        cp.activo === true && (!cp.fechaFin || new Date(cp.fechaFin) > ahora),
+    );
+
+    if (!paqueteActivoPropietario || !paqueteActivoPropietario.paquete) {
+      return [];
+    }
+
+    const permisosPropietarioSet = new Set(
+      paqueteActivoPropietario.paquete.permisos?.map(
+        (pp: any) => pp.permiso.id,
+      ) || [],
+    );
+
+    const permisosFiltrados = (cliente.clientePermisos || []).filter(
+      (cp: any) => permisosPropietarioSet.has(cp.permiso.id),
+    );
+
+    return permisosFiltrados;
   }
 
   async update(id: string, dto: UpdateClientePermisoDto) {
