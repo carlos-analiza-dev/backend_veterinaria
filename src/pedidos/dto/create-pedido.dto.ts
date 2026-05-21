@@ -18,6 +18,9 @@ export class PedidoDetalleDto {
   @IsUUID('4', { message: 'El ID del producto debe ser un UUID válido.' })
   id_producto: string;
 
+  @IsUUID('4', { message: 'El ID de la sucursal debe ser un UUID válido.' })
+  id_sucursal: string;
+
   @IsNumber({}, { message: 'La cantidad debe ser un número válido.' })
   @IsPositive({ message: 'La cantidad debe ser mayor que cero.' })
   cantidad: number;

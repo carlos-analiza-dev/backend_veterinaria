@@ -3,4 +3,5 @@ export enum ValidRoles {
   Administrador = 'Administrador',
   Secretario = 'Secretario',
   Ganadero = 'Ganadero',
+  Gerente_Sucursal = 'Gerente Sucursal',
 }

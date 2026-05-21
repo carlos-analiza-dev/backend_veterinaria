@@ -61,6 +61,12 @@ export class AuthController {
     return this.authService.getVeterinariosNoAsignados(user);
   }
 
+  @Get('gerentes')
+  @Auth()
+  getGerente(@GetUser() user: User) {
+    return this.authService.getGerente(user);
+  }
+
   @Get('user/:userId')
   @Auth()
   getUserById(@Param('userId') userId: string) {

@@ -142,7 +142,7 @@ export class LotesService {
   async getExistenciaPorProductoSucursal(
     id_producto: string,
     id_sucursal: string,
-  ): Promise<number> {
+  ) {
     const resultado = await this.loteRepo
       .createQueryBuilder('lote')
       .select('SUM(lote.cantidad)', 'total')
@@ -151,10 +151,30 @@ export class LotesService {
       .andWhere('lote.cantidad > 0')
       .getRawOne();
 
-    return parseFloat(resultado.total) || 0;
+    const existencia = parseFloat(resultado?.total) || 0;
+
+    let sucursalesConExistencia = [];
+
+    if (existencia === 0) {
+      sucursalesConExistencia = await this.loteRepo
+        .createQueryBuilder('lote')
+        .leftJoin('lote.sucursal', 'sucursal')
+        .select('sucursal.id', 'id')
+        .addSelect('sucursal.nombre', 'nombre')
+        .addSelect('SUM(lote.cantidad)', 'existencia')
+        .where('lote.id_producto = :id_producto', { id_producto })
+        .andWhere('lote.cantidad > 0')
+        .groupBy('sucursal.id')
+        .addGroupBy('sucursal.nombre')
+        .getRawMany();
+    }
+
+    return {
+      existencia,
+      sucursalesConExistencia,
+    };
   }
 
-  // Reducir inventario usando FIFO (lote más antiguo primero)
   async reducirInventario(
     id_producto: string,
     id_sucursal: string,
@@ -162,7 +182,7 @@ export class LotesService {
   ) {
     const lotes = await this.loteRepo.find({
       where: { id_producto, id_sucursal },
-      order: { id: 'ASC' }, // FIFO - primero el más antiguo
+      order: { id: 'ASC' },
     });
 
     let cantidadPendiente = cantidadSolicitada;

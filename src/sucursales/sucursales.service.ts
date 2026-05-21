@@ -76,6 +76,17 @@ export class SucursalesService {
         );
       }
 
+      const es_Gerente = await this.sucursalRepository.findOne({
+        where: {
+          gerente: { id: gerente.id },
+        },
+      });
+
+      if (es_Gerente)
+        throw new BadRequestException(
+          'Este gerente ya esta asociado a una sucursal',
+        );
+
       const sucursal = this.sucursalRepository.create({
         departamentoId,
         municipioId,
@@ -234,6 +245,19 @@ export class SucursalesService {
           if (!gerente) {
             throw new NotFoundException(
               `Gerente con ID ${updateSucursalDto.gerenteId} no encontrado`,
+            );
+          }
+
+          const esGerenteAsignado = await this.sucursalRepository.findOne({
+            where: {
+              gerente: { id: gerente.id },
+            },
+            relations: ['gerente'],
+          });
+
+          if (esGerenteAsignado && esGerenteAsignado.id !== sucursal.id) {
+            throw new BadRequestException(
+              'Este gerente ya está asociado a otra sucursal',
             );
           }
 

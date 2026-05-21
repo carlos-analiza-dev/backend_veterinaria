@@ -347,7 +347,7 @@ export class AuthService {
         .leftJoinAndSelect('user.role', 'role')
         .leftJoin('medicos', 'medico', 'medico.usuarioId = user.id')
         .where('user.isActive = :isActive', { isActive: true })
-        .andWhere('role.name = :roleName', { roleName: 'Veterinario' })
+        .andWhere('role.name = :roleName', { roleName: ValidRoles.Veterinario })
         .andWhere('medico.id IS NULL')
         .andWhere('user.paisId = :paisId', { paisId })
         .orderBy('user.name', 'ASC')
@@ -364,6 +364,32 @@ export class AuthService {
       throw error;
     }
   }
+
+  async getGerente(user: User) {
+    const paisId = user.pais.id;
+
+    const gerentes = await this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.role', 'role')
+      .leftJoin('medicos', 'medico', 'medico.usuarioId = user.id')
+      .where('user.isActive = :isActive', { isActive: true })
+      .andWhere('role.name = :roleName', {
+        roleName: ValidRoles.Gerente_Sucursal,
+      })
+      .andWhere('medico.id IS NULL')
+      .andWhere('user.paisId = :paisId', { paisId })
+      .orderBy('user.name', 'ASC')
+      .getMany();
+
+    if (!gerentes || gerentes.length === 0) {
+      throw new NotFoundException(
+        'No se encontraron gerentes disponibles en esta sucursal.',
+      );
+    }
+
+    return instanceToPlain(gerentes);
+  }
+
   async getUserById(userId: string) {
     try {
       const usuario = await this.userRepository.findOne({

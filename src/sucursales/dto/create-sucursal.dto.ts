@@ -4,6 +4,7 @@ import {
   IsUUID,
   IsEnum,
   IsOptional,
+  IsNumber,
 } from 'class-validator';
 import { TipoSucursal } from '../entities/sucursal.entity';
 
@@ -34,7 +35,15 @@ export class CreateSucursalDto {
   @IsNotEmpty({ message: 'El país es requerido' })
   paisId: string;
 
+  @IsOptional()
   @IsUUID('4', { message: 'El ID del gerente debe ser un UUID válido' })
-  @IsNotEmpty({ message: 'El gerente es requerido' })
-  gerenteId: string;
+  gerenteId?: string;
+
+  @IsNumber()
+  @IsOptional()
+  latitud?: number;
+
+  @IsNumber()
+  @IsOptional()
+  longitud?: number;
 }

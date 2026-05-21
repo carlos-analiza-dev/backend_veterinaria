@@ -32,11 +32,25 @@ export class Sucursal {
   })
   tipo: TipoSucursal;
 
-  // Dirección - Complemento (dirección específica)
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 8,
+    nullable: true,
+  })
+  latitud: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 11,
+    scale: 8,
+    nullable: true,
+  })
+  longitud: number;
+
   @Column({ type: 'varchar', length: 255 })
   direccion_complemento: string;
 
-  // Relación con País
   @ManyToOne(() => Pai, { eager: true })
   @JoinColumn({ name: 'paisId' })
   pais: Pai;
@@ -44,7 +58,6 @@ export class Sucursal {
   @Column({ type: 'uuid', nullable: true })
   paisId: string;
 
-  // Relación con Departamento
   @ManyToOne(() => DepartamentosPai, { eager: true })
   @JoinColumn({ name: 'departamentoId' })
   departamento: DepartamentosPai;
@@ -52,7 +65,6 @@ export class Sucursal {
   @Column({ type: 'uuid', nullable: true })
   departamentoId: string;
 
-  // Relación con Municipio
   @ManyToOne(() => MunicipiosDepartamentosPai, { eager: true })
   @JoinColumn({ name: 'municipioId' })
   municipio: MunicipiosDepartamentosPai;
@@ -60,7 +72,6 @@ export class Sucursal {
   @Column({ type: 'uuid', nullable: true })
   municipioId: string;
 
-  // Relación con Gerente (Usuario)
   @ManyToOne(() => User, { eager: false })
   @JoinColumn({ name: 'gerenteId' })
   gerente: User;
