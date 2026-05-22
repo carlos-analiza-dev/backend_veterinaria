@@ -9,6 +9,7 @@ import { Compra } from 'src/compras/entities/compra.entity';
 import { Proveedor } from 'src/proveedores/entities/proveedor.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
+import { MovimientosInventario } from 'src/movimientos_inventario/entities/movimientos_inventario.entity';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
       SubServicio,
       Sucursal,
       Compra,
-      Proveedor,
+      Proveedor,MovimientosInventario
     ]),
     AuthModule,
   ],

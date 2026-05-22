@@ -3,10 +3,11 @@ import { PedidoDetallesService } from './pedido_detalles.service';
 import { PedidoDetallesController } from './pedido_detalles.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PedidoDetalle } from './entities/pedido_detalle.entity';
+import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 
 @Module({
   controllers: [PedidoDetallesController],
-  imports: [TypeOrmModule.forFeature([PedidoDetalle])],
+  imports: [TypeOrmModule.forFeature([PedidoDetalle, Sucursal])],
   providers: [PedidoDetallesService],
 })
 export class PedidoDetallesModule {}

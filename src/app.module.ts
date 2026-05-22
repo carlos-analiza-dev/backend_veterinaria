@@ -109,6 +109,7 @@ import { PaquetesModule } from './paquetes/paquetes.module';
 import { PaquetePaisModule } from './paquete_pais/paquete_pais.module';
 import { PaquetePermisosModule } from './paquete_permisos/paquete_permisos.module';
 import { ClientePaquetesModule } from './cliente_paquetes/cliente_paquetes.module';
+import { MovimientosInventarioModule } from './movimientos_inventario/movimientos_inventario.module';
 
 @Module({
   imports: [
@@ -314,6 +315,8 @@ import { ClientePaquetesModule } from './cliente_paquetes/cliente_paquetes.modul
     PaquetePermisosModule,
 
     ClientePaquetesModule,
+
+    MovimientosInventarioModule,
 
     
   ],

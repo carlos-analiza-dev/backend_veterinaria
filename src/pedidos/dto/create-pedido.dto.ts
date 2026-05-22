@@ -19,7 +19,8 @@ export class PedidoDetalleDto {
   id_producto: string;
 
   @IsUUID('4', { message: 'El ID de la sucursal debe ser un UUID válido.' })
-  id_sucursal: string;
+  @IsOptional()
+  id_sucursal?: string;
 
   @IsNumber({}, { message: 'La cantidad debe ser un número válido.' })
   @IsPositive({ message: 'La cantidad debe ser mayor que cero.' })
@@ -36,10 +37,6 @@ export class PedidoDetalleDto {
 }
 
 export class CreatePedidoDto {
-  @IsUUID('4', { message: 'El ID de la sucursal debe ser un UUID válido.' })
-  @IsOptional()
-  id_sucursal?: string;
-
   @IsNumber({}, { message: 'El subtotal debe ser un número válido.' })
   @Min(0, { message: 'El subtotal no puede ser negativo.' })
   sub_total: number;

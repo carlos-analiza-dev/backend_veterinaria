@@ -18,6 +18,7 @@ import { ValidRoles } from 'src/interfaces/valid-roles.interface';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { TransferirProductoDto } from './dto/transferir-producto.dto';
 
 @Controller('lotes')
 export class LotesController {
@@ -28,6 +29,16 @@ export class LotesController {
   create(@Body() createLoteDto: CreateLoteDto) {
     return this.lotesService.create(createLoteDto);
   }
+
+  @Post('transferir')
+@Auth()
+async transferirProducto(
+  @Body() transferirProductoDto: TransferirProductoDto,
+) {
+  return await this.lotesService.transferirProducto(
+    transferirProductoDto,
+  );
+}
 
   @Get()
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
@@ -43,8 +54,8 @@ export class LotesController {
 
   @Get('sucursal/:id_sucursal')
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findBySucursal(@Param('id_sucursal', ParseUUIDPipe) id_sucursal: string) {
-    return this.lotesService.findBySucursal(id_sucursal);
+  findBySucursal(@Param('id_sucursal', ParseUUIDPipe) id_sucursal: string,@Query() paginationDto:PaginationDto) {
+    return this.lotesService.findBySucursal(id_sucursal,paginationDto);
   }
 
   @Get('existencias')

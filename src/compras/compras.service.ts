@@ -64,14 +64,14 @@ export class ComprasService {
       if (!pais_exist)
         throw new NotFoundException('El pais seleccionado no existe');
 
-      // Validar duplicados de productos
+
       const productosIds = createCompraDto.detalles.map((d) => d.productoId);
       const productosUnicos = new Set(productosIds);
       if (productosIds.length !== productosUnicos.size) {
         throw new BadRequestException('Productos duplicados en los detalles');
       }
 
-      // Calcular totales y procesar detalles
+    
       let subtotalCompra = 0;
       let impuestosCompra = 0;
       let descuentosCompra = 0;
@@ -86,7 +86,7 @@ export class ComprasService {
           (Number(detalle.descuentos) || 0) +
           (Number(detalle.impuestos) || 0);
 
-        // Acumular totales de compra
+   
         subtotalCompra += subtotalDetalle;
         impuestosCompra += Number(detalle.impuestos) || 0;
         descuentosCompra += Number(detalle.descuentos) || 0;
@@ -98,7 +98,7 @@ export class ComprasService {
         };
       });
 
-      // Crear la compra
+  
       const compra = this.compraRepository.create({
         ...createCompraDto,
         numero_factura: createCompraDto.numero_factura,
@@ -113,7 +113,7 @@ export class ComprasService {
 
       const compraGuardada = await queryRunner.manager.save(compra);
 
-      // Crear los detalles y lotes (un lote por cada línea de compra)
+  
       for (const detalleCalculado of detallesCalculados) {
         const detalle = this.compraDetalleRepository.create({
           ...detalleCalculado,
@@ -121,11 +121,11 @@ export class ComprasService {
         });
         await queryRunner.manager.save(detalle);
 
-        // Costo por unidad = monto_total_del_detalle / cantidad_total
+  
         const costoRealPorUnidad =
           detalleCalculado.monto_total / detalleCalculado.cantidad_total;
 
-        // Crear lote por cada línea de compra con el costo prorrateado correcto
+      
         const lote = this.loteRepository.create({
           id_producto: detalleCalculado.productoId,
           cantidad: detalleCalculado.cantidad_total,

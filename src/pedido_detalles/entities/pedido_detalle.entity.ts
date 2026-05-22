@@ -8,6 +8,7 @@ import {
 
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { Pedido } from 'src/pedidos/entities/pedido.entity';
+import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 
 @Entity('pedido_detalles')
 export class PedidoDetalle {
@@ -27,6 +28,13 @@ export class PedidoDetalle {
 
   @Column({ type: 'uuid' })
   id_producto: string;
+
+  @ManyToOne(() => Sucursal, { nullable: true, eager: true })
+  @JoinColumn({ name: 'id_sucursal' })
+  sucursal: Sucursal;
+
+  @Column({ type: 'uuid' })
+  id_sucursal: string;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   precio: number;
