@@ -36,6 +36,13 @@ export class Pedido {
   @Column({ type: 'uuid' })
   id_cliente: string;
 
+  @ManyToOne(() => Sucursal, { nullable: true, eager: true })
+  @JoinColumn({ name: 'id_sucursal_cercana' })
+  sucursal: Sucursal;
+
+  @Column({ type: 'uuid' })
+  id_sucursal_cercana: string;
+
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   sub_total: number;
 

@@ -16,6 +16,9 @@ import { Pai } from 'src/pais/entities/pai.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { instanceToPlain } from 'class-transformer';
+import { DistanceSucursalesService } from 'src/distance_sucursales/distance_sucursales.service';
+import { NearbySucursalesDto } from 'src/distance_sucursales/dto/nearby-sucursales.dto';
+import { SucursalCercanaDto } from 'src/distance_sucursales/dto/sucursal-cercana.dto';
 
 @Injectable()
 export class SucursalesService {
@@ -30,6 +33,7 @@ export class SucursalesService {
     private readonly deptoRepository: Repository<DepartamentosPai>,
     @InjectRepository(MunicipiosDepartamentosPai)
     private readonly municipioRepository: Repository<MunicipiosDepartamentosPai>,
+    private distanceService: DistanceSucursalesService,
   ) {}
 
   async create(createSucursalDto: CreateSucursalDto): Promise<Sucursal> {
@@ -207,6 +211,79 @@ export class SucursalesService {
     } catch (error) {
       this.handleDBExceptions(error);
     }
+  }
+
+  //SUCURSALES CERCANAS
+  async findNearbySucursales(
+    nearbyDto: NearbySucursalesDto,
+  ): Promise<SucursalCercanaDto[]> {
+    const { latitud, longitud, limite, radio, usarGoogleMaps } = nearbyDto;
+
+    const sucursales = await this.sucursalRepository.find({
+      where: { isActive: true },
+      relations: ['pais'],
+    });
+
+    const sucursalesConCoordenadas = sucursales.filter(
+      (suc) => suc.latitud !== null && suc.longitud !== null,
+    );
+
+    const sucursalesConDistancia: SucursalCercanaDto[] = [];
+
+    for (const sucursal of sucursalesConCoordenadas) {
+      let distancia = 0;
+      let tiempoEstimado = null;
+
+      if (usarGoogleMaps) {
+        try {
+          const result = await this.distanceService.calculateDistance(
+            latitud,
+            longitud,
+            sucursal.latitud,
+            sucursal.longitud,
+          );
+          distancia = result.distance;
+          tiempoEstimado = result.duration;
+        } catch (error) {
+          distancia = this.distanceService.calculateHaversineDistance(
+            latitud,
+            longitud,
+            sucursal.latitud,
+            sucursal.longitud,
+          );
+        }
+      } else {
+        distancia = this.distanceService.calculateHaversineDistance(
+          latitud,
+          longitud,
+          sucursal.latitud,
+          sucursal.longitud,
+        );
+      }
+
+      const distanciaLineaRecta =
+        this.distanceService.calculateHaversineDistance(
+          latitud,
+          longitud,
+          sucursal.latitud,
+          sucursal.longitud,
+        );
+
+      if (distancia <= radio) {
+        sucursalesConDistancia.push({
+          sucursal,
+          distancia_km: Number(distancia.toFixed(2)),
+          tiempo_estimado_minutos: tiempoEstimado
+            ? Math.round(tiempoEstimado)
+            : undefined,
+          distancia_linea_recta_km: Number(distanciaLineaRecta.toFixed(2)),
+        });
+      }
+    }
+
+    sucursalesConDistancia.sort((a, b) => a.distancia_km - b.distancia_km);
+
+    return sucursalesConDistancia.slice(0, limite);
   }
 
   async update(

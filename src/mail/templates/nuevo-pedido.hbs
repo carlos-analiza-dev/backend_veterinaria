@@ -1,0 +1,345 @@
+<html lang='es'>
+  <head>
+    <meta charset='UTF-8' />
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <title>Confirmación de Pedido - El Sembrador</title>
+    <style>
+      body {
+        font-family: 'Arial', sans-serif;
+        color: #333;
+        background-color: #f7fafc;
+        margin: 0;
+        padding: 0;
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 600px;
+        margin: 20px auto;
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        border: 1px solid #e2e8f0;
+      }
+      .header {
+        text-align: center;
+        padding-bottom: 20px;
+        border-bottom: 1px solid #e2e8f0;
+        margin-bottom: 25px;
+      }
+      h1 {
+        color: #2b6cb0;
+        font-size: 24px;
+        margin: 0 0 10px 0;
+      }
+      .logo {
+        max-width: 150px;
+        margin-bottom: 15px;
+      }
+      .success-badge {
+        background-color: #c6f6d5;
+        color: #22543d;
+        padding: 10px;
+        text-align: center;
+        border-radius: 4px;
+        font-weight: bold;
+        margin-bottom: 25px;
+        border-left: 4px solid #38a169;
+      }
+      .order-card {
+        background-color: #f7fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-bottom: 25px;
+      }
+      .order-header {
+        background-color: #2b6cb0;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 6px;
+        margin: -20px -20px 20px -20px;
+        font-weight: bold;
+        font-size: 16px;
+      }
+      .detail-row {
+        display: flex;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #e2e8f0;
+      }
+      .detail-label {
+        font-weight: 600;
+        color: #4a5568;
+        width: 140px;
+      }
+      .detail-value {
+        color: #2d3748;
+        flex: 1;
+      }
+      .product-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+      }
+      .product-table th {
+        background-color: #edf2f7;
+        padding: 10px;
+        text-align: left;
+        font-size: 14px;
+        color: #4a5568;
+        border-bottom: 2px solid #cbd5e0;
+      }
+      .product-table td {
+        padding: 10px;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 14px;
+      }
+      .product-table tfoot td {
+        border-top: 2px solid #cbd5e0;
+        font-weight: bold;
+        background-color: #f7fafc;
+      }
+      .totals {
+        background-color: #ebf8ff;
+        padding: 15px;
+        border-radius: 6px;
+        margin-top: 15px;
+      }
+      .total-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+      }
+      .total-grand {
+        font-size: 18px;
+        font-weight: bold;
+        color: #2b6cb0;
+        border-top: 2px solid #cbd5e0;
+        padding-top: 10px;
+        margin-top: 10px;
+      }
+      .delivery-info {
+        background-color: #fefcbf;
+        padding: 15px;
+        border-radius: 6px;
+        margin: 15px 0;
+        border-left: 4px solid #ecc94b;
+      }
+      .status-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .status-pendiente {
+        background-color: #fefcbf;
+        color: #744210;
+      }
+      .button {
+        display: inline-block;
+        background-color: #4299e1;
+        color: white;
+        text-decoration: none;
+        padding: 12px 24px;
+        border-radius: 4px;
+        font-weight: 500;
+        margin: 20px 0;
+        text-align: center;
+      }
+      .footer {
+        font-size: 14px;
+        color: #718096;
+        text-align: center;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 1px solid #e2e8f0;
+      }
+      .note {
+        font-size: 14px;
+        color: #718096;
+        margin-top: 25px;
+        padding: 10px;
+        background-color: #f7fafc;
+        border-radius: 4px;
+      }
+      ul {
+        margin: 10px 0;
+        padding-left: 20px;
+      }
+      li {
+        margin-bottom: 5px;
+      }
+      .text-right {
+        text-align: right;
+      }
+      .text-center {
+        text-align: center;
+      }
+      .font-bold {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <table width='100%' cellspacing='0' cellpadding='0' border='0'>
+      <tr>
+        <td align='center'>
+          <div class='container'>
+            <div class='header'>
+              <img
+                src='https://res.cloudinary.com/dbrohvgut/image/upload/v1775580746/logo_munhwl.png'
+                alt='Logo El Sembrador'
+                class='logo'
+              />
+              <h1>¡Pedido Confirmado!</h1>
+            </div>
+
+            <div class='success-badge'>
+              ✅ Su pedido ha sido registrado exitosamente
+            </div>
+
+            <p>Hola <strong>{{nombre_cliente}}</strong>,</p>
+            <p>¡Gracias por su compra! Hemos recibido su pedido y estamos procesándolo. A continuación, los detalles de su orden:</p>
+
+           
+            <div class='order-card'>
+              <div class='order-header'>
+                📋 PEDIDO #{{pedido_id}}
+              </div>
+              
+              <div class='detail-row'>
+                <span class='detail-label'>📅 Fecha del pedido:</span>
+                <span class='detail-value'>{{fecha_pedido}}</span>
+              </div>
+              <div class='detail-row'>
+                <span class='detail-label'>📊 Estado:</span>
+                <span class='detail-value'>
+                  <span class='status-badge status-pendiente'>{{estado_pedido}}</span>
+                </span>
+              </div>
+              <div class='detail-row'>
+                <span class='detail-label'>🚚 Tipo de entrega:</span>
+                <span class='detail-value'>{{tipo_entrega}}</span>
+              </div>
+              {{#if sucursal_asignada}}
+              <div class='detail-row'>
+                <span class='detail-label'>🏢 Sucursal asignada:</span>
+                <span class='detail-value'>{{sucursal_asignada}}</span>
+              </div>
+              {{/if}}
+            </div>
+
+          
+            {{#if direccion_entrega}}
+            <div class='delivery-info'>
+              <strong>📍 Dirección de Entrega:</strong>
+              <p style="margin: 8px 0 0 0;">{{direccion_entrega}}</p>
+              {{#if nombre_finca}}
+              <p style="margin: 5px 0 0 0; font-size: 13px; color: #718096;">
+                <strong>Finca:</strong> {{nombre_finca}}
+              </p>
+              {{/if}}
+            </div>
+            {{/if}}
+
+           
+            <table class='product-table'>
+              <thead>
+                <tr>
+                  <th>Producto</th>
+                  <th class='text-center'>Cantidad</th>
+                  <th class='text-right'>Precio Unit.</th>
+                  <th class='text-right'>Subtotal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {{#each productos}}
+                <tr>
+                  <td>{{nombre_producto}}</td>
+                <td class='text-center'>{{cantidad}}</td>
+      <td class='text-right'>{{../moneda}} {{precio_unitario}}</td>
+      <td class='text-right'>{{../moneda}} {{subtotal}}</td>
+                </tr>
+                {{/each}}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colspan='3' class='text-right font-bold'>Subtotal:</td>
+                <td class='text-right'>{{moneda}} {{sub_total}}</td>
+                </tr>
+                {{#if total_impuestos}}
+                <tr>
+                  <td colspan='3' class='text-right'>Impuestos:</td>
+                  <td class='text-right'>{{moneda}} {{total_impuestos}}</td>
+                </tr>
+                {{/if}}
+                {{#if costo_delivery}}
+                <tr>
+                  <td colspan='3' class='text-right'>Costo de envío:</td>
+                  <td class='text-right'>{{moneda}} {{costo_delivery}}</td>
+                </tr>
+                {{/if}}
+                <tr>
+                  <td colspan='3' class='text-right font-bold'>Total:</td>
+                  <td class='text-right font-bold' style="color: #2b6cb0;">{{moneda}} {{total}}</td>
+                </tr>
+              </tfoot>
+            </table>
+
+           
+            {{#if mostrar_desglose_impuestos}}
+            <div class='totals'>
+              <div class='total-row'>
+                <span>Subtotal:</span>
+                <span>{{moneda}} {{sub_total}}</span>
+              </div>
+              {{#if importe_exento}}
+              <div class='total-row'>
+                <span>Importe Exento:</span>
+                <span>{{moneda}} {{importe_exento}}</span>
+              </div>
+              {{/if}}
+              {{#if isv_15}}
+              <div class='total-row'>
+                <span>ISV 15%:</span>
+                <span>{{moneda}} {{isv_15}}</span>
+              </div>
+              {{/if}}
+              {{#if isv_18}}
+              <div class='total-row'>
+                <span>ISV 18%:</span>
+                <span>{{moneda}} {{isv_18}}</span>
+              </div>
+              {{/if}}
+            </div>
+            {{/if}}
+
+         
+            <p><strong>📌 Próximos pasos:</strong></p>
+            <ul>
+              <li>Su pedido será procesado en las próximas 24 horas.</li>
+              <li>Recibirá una notificación cuando su pedido esté listo para ser entregado o recogido.</li>
+              <li>Para pedidos de delivery, el tiempo de entrega es de 2-3 días hábiles.</li>
+              <li>Puede dar seguimiento a su pedido desde su panel de usuario.</li>
+            </ul>
+
+           
+           
+
+            <div class='note'>
+              <strong>⚠️ Importante:</strong>
+              Este es un mensaje automático de confirmación de pedido. Por favor, guarde este correo como comprobante de su compra.
+            </div>
+
+            <div class='footer'>
+              <p>© {{year}} El Sembrador - Gestión Ganadera. Todos los derechos reservados.</p>
+              <p style="font-size: 12px;">Este correo es una confirmación automática de su pedido.</p>
+            </div>
+          </div>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>

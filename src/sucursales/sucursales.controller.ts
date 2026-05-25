@@ -16,6 +16,8 @@ import { FilterSucursalDto } from './dto/filter-sucursal.dto';
 import { PaginationDto } from '../common/dto/pagination-common.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ValidRoles } from '../interfaces/valid-roles.interface';
+import { NearbySucursalesDto } from 'src/distance_sucursales/dto/nearby-sucursales.dto';
+import { SucursalCercanaDto } from 'src/distance_sucursales/dto/sucursal-cercana.dto';
 
 @Controller('sucursales')
 export class SucursalesController {
@@ -37,6 +39,13 @@ export class SucursalesController {
   @Auth()
   findAllActive(@Query() paginationDto: PaginationDto) {
     return this.sucursalesService.findAllActive(paginationDto);
+  }
+
+  @Get('cercanas')
+  async findNearbySucursales(
+    @Query() nearbyDto: NearbySucursalesDto,
+  ): Promise<SucursalCercanaDto[]> {
+    return this.sucursalesService.findNearbySucursales(nearbyDto);
   }
 
   @Get('pais/:paisId')

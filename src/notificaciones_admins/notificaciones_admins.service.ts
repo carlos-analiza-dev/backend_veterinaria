@@ -35,24 +35,52 @@ export class NotificacionesAdminsService {
     await this.notifitacionRepo.save(notifications);
   }
 
-  async notifyAdmins(type: NotificationType, title: string, message: string) {
+  async notifyAdmins(
+    type: NotificationType,
+    title: string,
+    message: string,
+    gerenteId?: string,
+  ) {
     try {
       const admins = await this.userRepo.find({
-        where: { role: { name: ValidRoles.Administrador } },
+        where: {
+          role: {
+            name: ValidRoles.Administrador,
+          },
+        },
         relations: ['role'],
       });
 
-      const notifications = admins.map((admin) =>
+      const usuariosNotificar = [...admins];
+
+      if (gerenteId) {
+        const gerente = await this.userRepo.findOne({
+          where: {
+            id: gerenteId,
+          },
+        });
+
+        if (gerente) {
+          const existe = usuariosNotificar.some((u) => u.id === gerente.id);
+
+          if (!existe) {
+            usuariosNotificar.push(gerente);
+          }
+        }
+      }
+
+      const notifications = usuariosNotificar.map((usuario) =>
         this.notifitacionRepo.create({
           type,
           title,
           message,
-          user: admin,
+          user: usuario,
         }),
       );
 
       await this.notifitacionRepo.save(notifications);
-      return 'Notificacion enviada con exito';
+
+      return 'Notificaciones enviadas con éxito';
     } catch (error) {
       throw error;
     }

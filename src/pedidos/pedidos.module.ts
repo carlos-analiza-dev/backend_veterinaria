@@ -9,6 +9,8 @@ import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { Lote } from 'src/lotes/entities/lote.entity';
+import { NotificacionesAdminsModule } from 'src/notificaciones_admins/notificaciones_admins.module';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
   controllers: [PedidosController],
@@ -23,6 +25,8 @@ import { Lote } from 'src/lotes/entities/lote.entity';
     ]),
     AuthClientesModule,
     AuthModule,
+    NotificacionesAdminsModule,
+    MailModule,
   ],
   providers: [PedidosService],
 })

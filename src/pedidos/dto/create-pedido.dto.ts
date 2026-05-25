@@ -10,6 +10,7 @@ import {
   Min,
   IsString,
   MaxLength,
+  IsNotEmpty,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { EstadoPedido, TipoEntrega } from '../entities/pedido.entity';
@@ -19,8 +20,8 @@ export class PedidoDetalleDto {
   id_producto: string;
 
   @IsUUID('4', { message: 'El ID de la sucursal debe ser un UUID válido.' })
-  @IsOptional()
-  id_sucursal?: string;
+  @IsNotEmpty({ message: 'La sucursal es obligatoria' })
+  id_sucursal: string;
 
   @IsNumber({}, { message: 'La cantidad debe ser un número válido.' })
   @IsPositive({ message: 'La cantidad debe ser mayor que cero.' })
@@ -37,6 +38,12 @@ export class PedidoDetalleDto {
 }
 
 export class CreatePedidoDto {
+  @IsUUID('4', { message: 'El ID de la sucursal debe ser un UUID válido.' })
+  @IsNotEmpty({
+    message: 'La sucursal donde recibiras los productos es obligatoria',
+  })
+  id_sucursal_cercana: string;
+
   @IsNumber({}, { message: 'El subtotal debe ser un número válido.' })
   @Min(0, { message: 'El subtotal no puede ser negativo.' })
   sub_total: number;

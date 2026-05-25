@@ -1,5 +1,7 @@
 import { MailerService } from '@nestjs-modules/mailer';
 import { BadRequestException, Injectable } from '@nestjs/common';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { EstadoPedido, Pedido } from 'src/pedidos/entities/pedido.entity';
 
 @Injectable()
 export class MailService {
@@ -23,6 +25,187 @@ export class MailService {
     } catch (error) {
       throw new Error('Failed to send email');
     }
+  }
+
+  async sendOrderConfirmation(
+    email: string,
+    nombre_cliente: string,
+    pedido: {
+      id: string;
+      created_at: Date;
+      estado: string;
+      tipo_entrega: string;
+      direccion_entrega?: string;
+      nombre_finca?: string;
+      sucursal?: { nombre: string };
+      sub_total: number;
+      importe_exento: number;
+      importe_exonerado: number;
+      importe_gravado_15: number;
+      importe_gravado_18: number;
+      isv_15: number;
+      isv_18: number;
+      total: number;
+      costo_delivery: number;
+      detalles: Array<{
+        cantidad: number;
+        precio: number;
+        producto: { nombre: string };
+      }>;
+    },
+    moneda: string,
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      const fecha_pedido = new Date(pedido.created_at).toLocaleString('es-HN', {
+        dateStyle: 'full',
+        timeStyle: 'short',
+      });
+
+      const total_impuestos = pedido.isv_15 + pedido.isv_18;
+
+      const productos = pedido.detalles.map((detalle) => ({
+        nombre_producto: detalle.producto.nombre,
+        cantidad: detalle.cantidad,
+        precio_unitario: detalle.precio.toFixed(2),
+        subtotal: (detalle.precio * detalle.cantidad).toFixed(2),
+      }));
+
+      const mostrar_desglose_impuestos =
+        pedido.importe_exento > 0 || pedido.isv_15 > 0 || pedido.isv_18 > 0;
+
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `✅ Confirmación de Pedido #${pedido.id.slice(0, 8).toUpperCase()} - El Sembrador`,
+        template: './nuevo-pedido',
+        context: {
+          nombre_cliente,
+          pedido_id: pedido.id.slice(0, 8).toUpperCase(),
+          fecha_pedido,
+          estado_pedido: pedido.estado.toUpperCase(),
+          tipo_entrega:
+            pedido.tipo_entrega === 'delivery'
+              ? 'Delivery a domicilio'
+              : 'Recoger en sucursal',
+          sucursal_asignada: pedido.sucursal?.nombre || null,
+          direccion_entrega: pedido.direccion_entrega || null,
+          nombre_finca: pedido.nombre_finca || null,
+          moneda: moneda,
+          productos,
+          sub_total: pedido.sub_total.toFixed(2),
+          total_impuestos: total_impuestos.toFixed(2),
+          costo_delivery: pedido.costo_delivery.toFixed(2),
+          total: pedido.total.toFixed(2),
+          mostrar_desglose_impuestos,
+          importe_exento: pedido.importe_exento.toFixed(2),
+          isv_15: pedido.isv_15.toFixed(2),
+          isv_18: pedido.isv_18.toFixed(2),
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de confirmación de pedido enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de confirmación de pedido`);
+    }
+  }
+
+  async notificarCambioEstado(
+    pedido: Pedido,
+    cliente: Cliente,
+    nuevoEstado: EstadoPedido,
+  ) {
+    const mensajes = {
+      pendiente: {
+        titulo: '🟡 Pedido en revisión',
+        mensaje: 'Hemos recibido su pedido y está en proceso de validación.',
+      },
+      procesado: {
+        titulo: '🟢 Pedido procesado',
+        mensaje: 'Su pedido ha sido procesado y está siendo preparado.',
+      },
+      facturado: {
+        titulo: '📦 Pedido facturado',
+        mensaje: 'Su pedido ha sido facturado y está listo para entrega.',
+      },
+      cancelado: {
+        titulo: '🔴 Pedido cancelado',
+        mensaje:
+          'Su pedido ha sido cancelado. Contacte soporte si necesita ayuda.',
+      },
+    };
+
+    const estadoInfo = mensajes[nuevoEstado];
+    const moneda = cliente.pais?.simbolo_moneda || 'L';
+
+    const estadoLowercase = nuevoEstado.toLowerCase();
+
+    const esPendiente = nuevoEstado === 'pendiente';
+    const esProcesado = nuevoEstado === 'procesado';
+    const esFacturado = nuevoEstado === 'facturado';
+    const esCancelado = nuevoEstado === 'cancelado';
+    const esDelivery = pedido.tipo_entrega === 'delivery';
+
+    const detallesFormateados = pedido.detalles.map((d) => ({
+      cantidad: d.cantidad,
+      precio: Number(d.precio).toFixed(2),
+      subtotal: (Number(d.precio) * d.cantidad).toFixed(2),
+      producto: { nombre: d.producto?.nombre || 'Producto' },
+    }));
+
+    const pedidoFormateado = {
+      id: pedido.id,
+      created_at: pedido.created_at,
+      fecha_pedido: new Date(pedido.created_at).toLocaleString('es-HN', {
+        dateStyle: 'full',
+        timeStyle: 'short',
+      }),
+      estado: nuevoEstado,
+      tipo_entrega:
+        pedido.tipo_entrega === 'delivery'
+          ? 'Delivery a domicilio'
+          : 'Recoger en sucursal',
+      direccion_entrega: pedido.direccion_entrega,
+      nombre_finca: pedido.nombre_finca,
+      sucursal_asignada: pedido.sucursal?.nombre,
+      sub_total: Number(pedido.sub_total).toFixed(2),
+      importe_exento: Number(pedido.importe_exento).toFixed(2),
+      importe_exonerado: Number(pedido.importe_exonerado).toFixed(2),
+      importe_gravado_15: Number(pedido.importe_gravado_15).toFixed(2),
+      importe_gravado_18: Number(pedido.importe_gravado_18).toFixed(2),
+      isv_15: Number(pedido.isv_15).toFixed(2),
+      isv_18: Number(pedido.isv_18).toFixed(2),
+      total: Number(pedido.total).toFixed(2),
+      costo_delivery: Number(pedido.costo_delivery).toFixed(2),
+      detalles: detallesFormateados,
+    };
+
+    await this.mailerService.sendMail({
+      to: cliente.email,
+      subject: `${estadoInfo.titulo} - Pedido #${pedido.id.slice(0, 8).toUpperCase()}`,
+      template: './cambio-estado-pedido',
+      context: {
+        nombre_cliente: cliente.nombre,
+        pedido_id: pedido.id.slice(0, 8).toUpperCase(),
+        estado_pedido: nuevoEstado.toUpperCase(),
+        mensaje_estado: estadoInfo.mensaje,
+        moneda,
+        app_url:
+          process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+        year: new Date().getFullYear(),
+
+        estado_pedido_lowercase: estadoLowercase,
+
+        estado_pedido_pendiente: esPendiente,
+        estado_pedido_procesado: esProcesado,
+        estado_pedido_facturado: esFacturado,
+        estado_pedido_cancelado: esCancelado,
+        es_delivery: esDelivery,
+
+        ...pedidoFormateado,
+      },
+    });
   }
 
   async verifyAccount(email: string, name: string, verifyLink: string) {
