@@ -31,6 +31,9 @@ export class Marca {
   @UpdateDateColumn()
   updated_at: Date;
 
+  @Column({ type: 'boolean', default: false })
+  is_market: boolean;
+
   @OneToMany(() => SubServicio, (producto) => producto.marca)
   productos: SubServicio[];
 

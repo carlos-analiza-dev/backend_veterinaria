@@ -16,7 +16,7 @@ import { FilterSucursalDto } from './dto/filter-sucursal.dto';
 import { PaginationDto } from '../common/dto/pagination-common.dto';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { ValidRoles } from '../interfaces/valid-roles.interface';
-import { NearbySucursalesDto } from 'src/distance_sucursales/dto/nearby-sucursales.dto';
+import { NearbySucursalesDto } from 'src/common/dto/nearby-sucursales.dto';
 import { SucursalCercanaDto } from 'src/distance_sucursales/dto/sucursal-cercana.dto';
 
 @Controller('sucursales')

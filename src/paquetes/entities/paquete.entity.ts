@@ -27,6 +27,9 @@ export class Paquete {
   maxTrabajadores: number;
 
   @Column({ default: true })
+  ecommerce: boolean;
+
+  @Column({ default: true })
   isActive: boolean;
 
   @OneToMany(() => PaquetePais, (paquetePais) => paquetePais.paquete)

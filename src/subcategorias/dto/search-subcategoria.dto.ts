@@ -16,6 +16,15 @@ export class SearchSubcategoriaDto extends PaginationDto {
   })
   isActive?: boolean;
 
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  is_market?: boolean;
+
   @IsUUID('4', { message: 'El ID de la categoría debe ser un UUID válido' })
   @IsOptional()
   categoriaId?: string;

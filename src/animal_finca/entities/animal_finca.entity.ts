@@ -27,7 +27,7 @@ export enum TipoReproduccionEnum {
 
 export enum PurezaEnum {
   UNO = '1',
-  SIETE_OCTAVOSA = '7/8',
+  SIETE_OCTAVOS = '7/8',
   TRES_CUARTOS = '3/4',
   CINCO_OCTAVOS = '5/8',
   MEDIA_RAZA = '1/2',

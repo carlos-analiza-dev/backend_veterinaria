@@ -17,7 +17,7 @@ export class TipoProductoService {
     private readonly subCategoriaRepo: Repository<Subcategoria>,
   ) {}
   async create(createTipoProductoDto: CreateTipoProductoDto, user: User) {
-    const { subcategoriaId } = createTipoProductoDto;
+    const { subcategoriaId, is_market } = createTipoProductoDto;
     try {
       const subcategoria = await this.subCategoriaRepo.findOne({
         where: { id: subcategoriaId },
@@ -31,6 +31,7 @@ export class TipoProductoService {
         ...createTipoProductoDto,
         sub_categoria: subcategoria,
         created_by: user,
+        is_market,
       });
 
       await this.tipoRepository.save(tipo);
@@ -41,7 +42,7 @@ export class TipoProductoService {
   }
 
   async findAll(paginationDto: PaginationDto) {
-    const { limit = 10, offset = 0 } = paginationDto;
+    const { limit = 10, offset = 0, is_market } = paginationDto;
 
     const queryBuilder = this.tipoRepository
       .createQueryBuilder('tipo')
@@ -49,6 +50,12 @@ export class TipoProductoService {
       .leftJoinAndSelect('subcategoria.categoria', 'categoria')
       .take(limit)
       .skip(offset);
+
+    if (is_market !== undefined) {
+      queryBuilder.andWhere('tipo.is_market = :is_market', {
+        is_market,
+      });
+    }
 
     const [data, total] = await queryBuilder.getManyAndCount();
 
@@ -68,7 +75,7 @@ export class TipoProductoService {
       if (!subcategoria_existe)
         throw new NotFoundException('No se encontro la subcategoria');
       const tipos_producto = await this.tipoRepository.find({
-        where: { sub_categoria: { id } },
+        where: { sub_categoria: { id }, is_market: false },
         relations: ['sub_categoria'],
       });
       if (!tipos_producto)

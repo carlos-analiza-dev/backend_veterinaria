@@ -23,7 +23,7 @@ export class MarcasService {
   ) {}
 
   async create(createMarcaDto: CreateMarcaDto, userId: string) {
-    const { nombre, pais_origen } = createMarcaDto;
+    const { nombre, pais_origen, is_market } = createMarcaDto;
 
     try {
       // Verificar que el usuario existe
@@ -46,6 +46,7 @@ export class MarcasService {
       const nuevaMarca = this.marcaRepo.create({
         nombre: nombre.toUpperCase(), // Guardar en mayúsculas para consistencia
         pais_origen,
+        is_market,
         created_by: user,
         updated_by: user,
       });
@@ -62,7 +63,13 @@ export class MarcasService {
   }
 
   async findAll(searchMarcaDto: SearchMarcaDto) {
-    const { limit = 10, offset = 0, search, isActive } = searchMarcaDto;
+    const {
+      limit = 10,
+      offset = 0,
+      search,
+      isActive,
+      is_market,
+    } = searchMarcaDto;
 
     try {
       const query = this.marcaRepo
@@ -73,16 +80,20 @@ export class MarcasService {
       let whereConditions: string[] = [];
       const parameters: {
         isActive?: boolean;
+        is_market?: boolean;
         search?: string;
       } = {};
 
-      // Filtro por estado activo/inactivo si se proporciona específicamente
       if (isActive !== undefined) {
         whereConditions.push('marca.is_active = :isActive');
         parameters.isActive = isActive;
       }
 
-      // Búsqueda por nombre o país
+      if (is_market !== undefined) {
+        whereConditions.push('marca.is_market = :is_market');
+        parameters.is_market = is_market;
+      }
+
       if (search && search.trim() !== '') {
         whereConditions.push(
           '(LOWER(marca.nombre) LIKE LOWER(:search) OR ' +
@@ -91,7 +102,6 @@ export class MarcasService {
         parameters.search = `%${search}%`;
       }
 
-      // Aplicar condiciones WHERE
       if (whereConditions.length > 0) {
         query.where(whereConditions.join(' AND '), parameters);
       }
@@ -120,6 +130,7 @@ export class MarcasService {
       .createQueryBuilder('marca')
       .select(['marca.id', 'marca.nombre', 'marca.pais_origen'])
       .where('marca.is_active = :active', { active: true })
+      .andWhere('marca.is_market = :market', { market: false })
       .orderBy('marca.nombre', 'ASC')
       .getMany();
   }

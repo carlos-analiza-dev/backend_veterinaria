@@ -111,6 +111,8 @@ import { PaquetePermisosModule } from './paquete_permisos/paquete_permisos.modul
 import { ClientePaquetesModule } from './cliente_paquetes/cliente_paquetes.module';
 import { MovimientosInventarioModule } from './movimientos_inventario/movimientos_inventario.module';
 import { DistanceSucursalesModule } from './distance_sucursales/distance_sucursales.module';
+import { MarketplaceAnimalesModule } from './marketplace_animales/marketplace_animales.module';
+import { MarketplaceAnimalesImagesModule } from './marketplace_animales_images/marketplace_animales_images.module';
 
 @Module({
   imports: [
@@ -321,7 +323,9 @@ import { DistanceSucursalesModule } from './distance_sucursales/distance_sucursa
 
     DistanceSucursalesModule,
 
-    
+    MarketplaceAnimalesModule,
+
+    MarketplaceAnimalesImagesModule,
   ],
   controllers: [],
   providers: [],

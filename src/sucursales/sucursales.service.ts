@@ -17,7 +17,7 @@ import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { instanceToPlain } from 'class-transformer';
 import { DistanceSucursalesService } from 'src/distance_sucursales/distance_sucursales.service';
-import { NearbySucursalesDto } from 'src/distance_sucursales/dto/nearby-sucursales.dto';
+import { NearbySucursalesDto } from 'src/common/dto/nearby-sucursales.dto';
 import { SucursalCercanaDto } from 'src/distance_sucursales/dto/sucursal-cercana.dto';
 
 @Injectable()

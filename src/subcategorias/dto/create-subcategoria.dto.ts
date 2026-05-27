@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -27,4 +28,8 @@ export class CreateSubcategoriaDto {
   @IsUUID('4', { message: 'El ID de categoría debe ser un UUID válido' })
   @IsNotEmpty({ message: 'La categoría es obligatoria' })
   categoriaId: string;
+
+  @IsOptional()
+  @IsBoolean({ message: 'El valor de is_market debe ser verdadero o falso' })
+  is_market?: boolean;
 }

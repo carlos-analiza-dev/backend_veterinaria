@@ -63,4 +63,10 @@ export class CreatePaqueteDto {
     message: 'El estado activo debe ser verdadero o falso',
   })
   isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean({
+    message: 'El estado ecommerce debe ser verdadero o falso',
+  })
+  ecommerce?: boolean;
 }

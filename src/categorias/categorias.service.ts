@@ -22,7 +22,7 @@ export class CategoriasService {
   ) {}
 
   async create(createCategoriaDto: CreateCategoriaDto, userId: string) {
-    const { nombre, descripcion, tipo } = createCategoriaDto;
+    const { nombre, descripcion, tipo, is_market } = createCategoriaDto;
 
     try {
       const user = await this.user_repo.findOneBy({ id: userId });
@@ -43,6 +43,7 @@ export class CategoriasService {
         nombre: nombre.toUpperCase(),
         descripcion,
         tipo,
+        is_market,
         created_by: user,
         updated_by: user,
       });
@@ -59,7 +60,13 @@ export class CategoriasService {
   }
 
   async findAll(searchCategoriaDto: SearchCategoriaDto) {
-    const { limit = 10, offset = 0, search, isActive } = searchCategoriaDto;
+    const {
+      limit = 10,
+      offset = 0,
+      search,
+      isActive,
+      is_market,
+    } = searchCategoriaDto;
 
     try {
       const query = this.categoria_repo
@@ -70,12 +77,18 @@ export class CategoriasService {
       let whereConditions: string[] = [];
       const parameters: {
         isActive?: boolean;
+        is_market?: boolean;
         search?: string;
       } = {};
 
       if (isActive !== undefined) {
         whereConditions.push('categoria.is_active = :isActive');
         parameters.isActive = isActive;
+      }
+
+      if (is_market !== undefined) {
+        whereConditions.push('categoria.is_market = :is_market');
+        parameters.is_market = is_market;
       }
 
       if (search && search.trim() !== '') {
@@ -111,7 +124,9 @@ export class CategoriasService {
 
   async findAllCategorias() {
     try {
-      const categorias = await this.categoria_repo.find({});
+      const categorias = await this.categoria_repo.find({
+        where: { is_market: false },
+      });
       if (!categorias)
         throw new NotFoundException('No se encontraron categorias disponibles');
       return categorias;

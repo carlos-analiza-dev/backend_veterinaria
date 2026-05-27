@@ -174,4 +174,13 @@ export class PaginationDto {
   @Transform(({ value }) => value === 'true')
   @IsBoolean()
   activo?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  is_market?: boolean;
 }

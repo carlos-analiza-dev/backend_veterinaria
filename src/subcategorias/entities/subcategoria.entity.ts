@@ -29,6 +29,9 @@ export class Subcategoria {
   @Column({ type: 'boolean', default: true })
   is_active: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  is_market: boolean;
+
   @CreateDateColumn()
   created_at: Date;
 

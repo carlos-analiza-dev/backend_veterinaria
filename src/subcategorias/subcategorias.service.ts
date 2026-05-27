@@ -26,7 +26,8 @@ export class SubcategoriasService {
   ) {}
 
   async create(createSubcategoriaDto: CreateSubcategoriaDto, userId: string) {
-    const { nombre, descripcion, codigo, categoriaId } = createSubcategoriaDto;
+    const { nombre, descripcion, codigo, categoriaId, is_market } =
+      createSubcategoriaDto;
 
     try {
       const user = await this.user_repo.findOneBy({ id: userId });
@@ -79,6 +80,7 @@ export class SubcategoriasService {
         descripcion,
         codigo: codigoFinal,
         categoria,
+        is_market,
         created_by: user,
         updated_by: user,
       });
@@ -100,6 +102,7 @@ export class SubcategoriasService {
       offset = 0,
       search,
       isActive,
+      is_market,
       categoriaId,
     } = searchSubcategoriaDto;
 
@@ -113,6 +116,7 @@ export class SubcategoriasService {
       let whereConditions: string[] = [];
       const parameters: {
         isActive?: boolean;
+        is_market?: boolean;
         categoriaId?: string;
         search?: string;
       } = {};
@@ -120,6 +124,11 @@ export class SubcategoriasService {
       if (isActive !== undefined) {
         whereConditions.push('subcategoria.is_active = :isActive');
         parameters.isActive = isActive;
+      }
+
+      if (is_market !== undefined) {
+        whereConditions.push('subcategoria.is_market = :is_market');
+        parameters.is_market = is_market;
       }
 
       if (categoriaId) {
@@ -197,6 +206,7 @@ export class SubcategoriasService {
         where: {
           categoria: { id: categoriaId },
           is_active: true,
+          is_market: false,
         },
         relations: ['categoria'],
         order: { nombre: 'ASC' },

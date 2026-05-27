@@ -412,6 +412,7 @@ export class AuthClientesService {
             maxAnimales: paqueteActivoData.paquete?.maxAnimales,
             maxTrabajadores: paqueteActivoData.paquete?.maxTrabajadores,
             isActive: paqueteActivoData.paquete?.isActive,
+            ecommerce: paqueteActivoData.paquete?.ecommerce,
           },
         };
       }

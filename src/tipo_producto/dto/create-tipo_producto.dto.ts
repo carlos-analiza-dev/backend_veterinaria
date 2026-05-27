@@ -37,4 +37,8 @@ export class CreateTipoProductoDto {
     message: 'El estado activo debe ser verdadero o falso',
   })
   is_active?: boolean;
+
+  @IsOptional()
+  @IsBoolean({ message: 'El valor de is_market debe ser verdadero o falso' })
+  is_market?: boolean;
 }

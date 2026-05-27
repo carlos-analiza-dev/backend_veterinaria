@@ -5,6 +5,8 @@ import {
   IsInt,
   Min,
   Max,
+  IsPositive,
+  IsString,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
@@ -14,6 +16,15 @@ export class NearbySucursalesDto {
 
   @IsLongitude()
   longitud: number;
+
+  @IsOptional()
+  @IsPositive()
+  @Type(() => Number)
+  limit?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  offset?: number;
 
   @IsOptional()
   @Type(() => Number)

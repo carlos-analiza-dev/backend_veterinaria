@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsString, MaxLength, MinLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 export class CreateMarcaDto {
   @IsString({ message: 'El nombre debe ser un texto' })
@@ -13,4 +20,8 @@ export class CreateMarcaDto {
     message: 'El país de origen no puede exceder 100 caracteres',
   })
   pais_origen: string;
+
+  @IsOptional()
+  @IsBoolean({ message: 'El valor de is_market debe ser verdadero o falso' })
+  is_market?: boolean;
 }

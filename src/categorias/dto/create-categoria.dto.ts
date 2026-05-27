@@ -1,4 +1,5 @@
 import {
+  IsBoolean,
   IsEnum,
   IsNotEmpty,
   IsOptional,
@@ -25,4 +26,8 @@ export class CreateCategoriaDto {
   })
   @IsNotEmpty({ message: 'La categoría es obligatoria' })
   tipo: TipoCategoria;
+
+  @IsOptional()
+  @IsBoolean({ message: 'El valor de is_market debe ser verdadero o falso' })
+  is_market?: boolean;
 }
