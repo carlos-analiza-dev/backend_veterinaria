@@ -41,9 +41,8 @@ export class SeedService {
   async executeSeed() {
     await this.createRoles();
     const honduras = await this.createHonduras();
-    const franciscoMorazan = await this.createDepartamentoFranciscoMorazan(
-      honduras,
-    );
+    const franciscoMorazan =
+      await this.createDepartamentoFranciscoMorazan(honduras);
     const tegucigalpa = await this.createMunicipioTegucigalpa(franciscoMorazan);
     await this.createAdminUser(honduras, franciscoMorazan, tegucigalpa);
     const sucursal = await this.createSucursalPrincipal(
@@ -237,7 +236,7 @@ export class SeedService {
       { nombre: 'Bovino' },
       { nombre: 'Equino' },
       { nombre: 'Porcino' },
-      { nombre: 'Avícola' },
+      { nombre: 'Avicola' },
       { nombre: 'Caprino' },
     ];
 

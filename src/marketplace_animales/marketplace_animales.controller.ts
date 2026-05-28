@@ -19,6 +19,7 @@ import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { NearbySucursalesDto } from 'src/common/dto/nearby-sucursales.dto';
+import { FilterMarketplaceAnimalesDto } from './dto/filter-market-place.dto';
 
 @Controller('marketplace-animales')
 export class MarketplaceAnimalesController {
@@ -52,9 +53,31 @@ export class MarketplaceAnimalesController {
     return this.marketplaceAnimalesService.findAll(cliente, nearbyDto);
   }
 
+  @Get('sugerencias')
+  @AuthCliente()
+  findAllFilters(
+    @GetCliente() cliente: Cliente,
+    @Query() filters: FilterMarketplaceAnimalesDto,
+  ) {
+    return this.marketplaceAnimalesService.findAllFilters(cliente, filters);
+  }
+
+  @Get('/mis-publicaciones')
+  @AuthCliente()
+  findMyPublicaciones(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.marketplaceAnimalesService.findMyPublicaciones(
+      cliente,
+      paginationDto,
+    );
+  }
+
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.marketplaceAnimalesService.findOne(+id);
+  @AuthCliente()
+  findOne(@Param('id') id: string, @GetCliente() cliente: Cliente) {
+    return this.marketplaceAnimalesService.findOne(id, cliente);
   }
 
   @Patch(':id')

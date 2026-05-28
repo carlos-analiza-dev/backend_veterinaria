@@ -17,6 +17,10 @@ export class NearbySucursalesDto {
   @IsLongitude()
   longitud: number;
 
+  @IsString()
+  @IsOptional()
+  especie?: string;
+
   @IsOptional()
   @IsPositive()
   @Type(() => Number)

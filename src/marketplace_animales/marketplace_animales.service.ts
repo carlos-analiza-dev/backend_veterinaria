@@ -8,7 +8,7 @@ import { CreateMarketplaceAnimaleDto } from './dto/create-marketplace_animale.dt
 import { UpdateMarketplaceAnimaleDto } from './dto/update-marketplace_animale.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MarketplaceAnimale } from './entities/marketplace_animale.entity';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { Subcategoria } from 'src/subcategorias/entities/subcategoria.entity';
 import { Marca } from 'src/marcas/entities/marca.entity';
@@ -24,6 +24,7 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { DistanceSucursalesService } from 'src/distance_sucursales/distance_sucursales.service';
 import { NearbySucursalesDto } from 'src/common/dto/nearby-sucursales.dto';
+import { FilterMarketplaceAnimalesDto } from './dto/filter-market-place.dto';
 
 @Injectable()
 export class MarketplaceAnimalesService {
@@ -241,11 +242,7 @@ export class MarketplaceAnimalesService {
         },
       });
 
-      return {
-        success: true,
-        message: 'Producto creado exitosamente en el marketplace',
-        data: productoCompleto,
-      };
+      return 'Producto creado exitosamente en el marketplace';
     } catch (error) {
       throw error;
     }
@@ -257,14 +254,15 @@ export class MarketplaceAnimalesService {
       longitud,
       radio,
       usarGoogleMaps = false,
+      especie,
       limit = 12,
       offset = 0,
     } = nearbyDto;
 
     const query = this.marketAnimalRepo
       .createQueryBuilder('marketplace')
-
       .leftJoinAndSelect('marketplace.animal', 'animal')
+      .leftJoinAndSelect('animal.especie', 'especie')
       .leftJoinAndSelect('marketplace.categoria', 'categoria')
       .leftJoinAndSelect('marketplace.subcategoria', 'subcategoria')
       .leftJoinAndSelect('marketplace.marca', 'marca')
@@ -273,22 +271,19 @@ export class MarketplaceAnimalesService {
       .leftJoinAndSelect('marketplace.pais', 'pais')
       .leftJoinAndSelect('marketplace.departamento', 'departamento')
       .leftJoinAndSelect('marketplace.marketAnimalImages', 'imagenes')
-
       .where('marketplace.disponible = :disponible', { disponible: true })
-
       .andWhere('marketplace.latitud IS NOT NULL')
       .andWhere('marketplace.longitud IS NOT NULL')
+      .andWhere('animal.animal_muerte = :muerte', { muerte: false })
+      .andWhere('vendedor.id != :clienteId', { clienteId: cliente.id });
 
-      .andWhere('animal.animal_muerte = :muerte', {
-        muerte: false,
-      })
+    if (especie && especie.trim() !== '') {
+      query.andWhere('especie.nombre ILIKE :especie', {
+        especie: especie,
+      });
+    }
 
-      .andWhere('vendedor.id != :clienteId', {
-        clienteId: cliente.id,
-      })
-
-      .take(limit)
-      .skip(offset);
+    query.take(limit).skip(offset);
 
     const [data, total] = await query.getManyAndCount();
 
@@ -366,6 +361,9 @@ export class MarketplaceAnimalesService {
       offset,
       radio_km: radio,
       usando_google_maps: usarGoogleMaps,
+      filtros_aplicados: {
+        especie: especie || null,
+      },
       ubicacion_usuario: {
         latitud,
         longitud,
@@ -374,16 +372,167 @@ export class MarketplaceAnimalesService {
     };
   }
 
+  async findAllFilters(
+    cliente: Cliente,
+    filterDto: FilterMarketplaceAnimalesDto,
+  ) {
+    const {
+      categoriaId,
+      subcategoriaId,
+      tipoProductoId,
+      limit = 12,
+      offset = 0,
+    } = filterDto;
+
+    const query = this.marketAnimalRepo
+      .createQueryBuilder('marketplace')
+      .leftJoinAndSelect('marketplace.animal', 'animal')
+      .leftJoinAndSelect('animal.especie', 'especie')
+      .leftJoinAndSelect('marketplace.categoria', 'categoria')
+      .leftJoinAndSelect('marketplace.subcategoria', 'subcategoria')
+      .leftJoinAndSelect('marketplace.marca', 'marca')
+      .leftJoinAndSelect('marketplace.tipo_producto', 'tipo_producto')
+      .leftJoinAndSelect('marketplace.vendedor', 'vendedor')
+      .leftJoinAndSelect('marketplace.pais', 'pais')
+      .leftJoinAndSelect('marketplace.departamento', 'departamento')
+      .leftJoinAndSelect('marketplace.marketAnimalImages', 'imagenes')
+      .where('marketplace.disponible = :disponible', {
+        disponible: true,
+      })
+      .andWhere('animal.animal_muerte = :muerte', {
+        muerte: false,
+      })
+      .andWhere('vendedor.id != :clienteId', {
+        clienteId: cliente.id,
+      })
+      .andWhere('pais.id = :paisId', {
+        paisId: cliente.pais.id,
+      });
+
+    query.andWhere(
+      new Brackets((qb) => {
+        if (categoriaId) {
+          qb.orWhere('categoria.id = :categoriaId', {
+            categoriaId,
+          });
+        }
+
+        if (subcategoriaId) {
+          qb.orWhere('subcategoria.id = :subcategoriaId', {
+            subcategoriaId,
+          });
+        }
+
+        if (tipoProductoId) {
+          qb.orWhere('tipo_producto.id = :tipoProductoId', {
+            tipoProductoId,
+          });
+        }
+      }),
+    );
+
+    query.orderBy('marketplace.created_at', 'DESC').take(limit).skip(offset);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      total,
+      limit,
+      offset,
+      filtros_aplicados: {
+        categoriaId: categoriaId || null,
+        subcategoriaId: subcategoriaId || null,
+        tipoProductoId: tipoProductoId || null,
+        paisId: cliente.pais.id,
+      },
+      productos: data.map((producto) => this.mappingMarketAnimales(producto)),
+    };
+  }
+
+  async findMyPublicaciones(cliente: Cliente, paginationDto: PaginationDto) {
+    const { limit = 12, offset = 0 } = paginationDto;
+    const query = this.marketAnimalRepo
+      .createQueryBuilder('marketplace')
+      .leftJoinAndSelect('marketplace.animal', 'animal')
+      .leftJoinAndSelect('animal.especie', 'especie')
+      .leftJoinAndSelect('animal.razas', 'razas')
+      .leftJoinAndSelect('marketplace.categoria', 'categoria')
+      .leftJoinAndSelect('marketplace.subcategoria', 'subcategoria')
+      .leftJoinAndSelect('marketplace.marca', 'marca')
+      .leftJoinAndSelect('marketplace.tipo_producto', 'tipo_producto')
+      .leftJoinAndSelect('marketplace.vendedor', 'vendedor')
+      .leftJoinAndSelect('marketplace.pais', 'pais')
+      .leftJoinAndSelect('marketplace.departamento', 'departamento')
+      .leftJoinAndSelect('marketplace.marketAnimalImages', 'imagenes')
+
+      .where('vendedor.id = :clienteId', {
+        clienteId: cliente.id,
+      })
+
+      .andWhere('animal.animal_muerte = false')
+
+      .orderBy('marketplace.created_at', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      total,
+      limit,
+      offset,
+      productos: data.map((producto) => this.mappingMarketAnimales(producto)),
+    };
+  }
+
+  async findOne(id: string, cliente: Cliente) {
+    const producto = await this.marketAnimalRepo
+      .createQueryBuilder('marketplace')
+      .leftJoinAndSelect('marketplace.animal', 'animal')
+      .leftJoinAndSelect('animal.especie', 'especie')
+      .leftJoinAndSelect('animal.razas', 'razas')
+      .leftJoinAndSelect('marketplace.categoria', 'categoria')
+      .leftJoinAndSelect('marketplace.subcategoria', 'subcategoria')
+      .leftJoinAndSelect('marketplace.marca', 'marca')
+      .leftJoinAndSelect('marketplace.tipo_producto', 'tipo_producto')
+      .leftJoinAndSelect('marketplace.vendedor', 'vendedor')
+      .leftJoinAndSelect('marketplace.pais', 'pais')
+      .leftJoinAndSelect('marketplace.departamento', 'departamento')
+      .leftJoinAndSelect('marketplace.marketAnimalImages', 'imagenes')
+      .where('marketplace.id = :id', { id })
+      .andWhere('marketplace.disponible = true')
+      .andWhere('animal.animal_muerte = false')
+      .andWhere('vendedor.id != :clienteId', { clienteId: cliente.id })
+      .getOne();
+
+    if (!producto) {
+      throw new NotFoundException(`Producto con ID ${id} no encontrado`);
+    }
+
+    return this.mappingMarketAnimales(producto);
+  }
+
+  update(id: number, updateMarketplaceAnimaleDto: UpdateMarketplaceAnimaleDto) {
+    return `This action updates a #${id} marketplaceAnimale`;
+  }
+
+  remove(id: number) {
+    return `This action removes a #${id} marketplaceAnimale`;
+  }
+
   private mappingMarketAnimales(market: MarketplaceAnimale) {
     return {
       id: market.id,
       nombre: market.nombre,
       descripcion: market.descripcion,
+      direccion: market.direccion_completa,
       precio: market.precio,
       precio_oferta: market.precio_oferta,
       moneda: market.moneda,
       stock: market.stock,
       disponible: market.disponible,
+      vendido: market.vendido,
+      oferta: market.oferta,
       favoritos: market.favoritos,
       views: market.views,
       created_at: market.created_at,
@@ -450,6 +599,12 @@ export class MarketplaceAnimalesService {
             id: market.vendedor.id,
             nombre: market.vendedor.nombre,
             telefono: market.vendedor.telefono,
+            create: market.vendedor.createdAt,
+            imagenes:
+              market.vendedor.profileImages?.map((img) => ({
+                id: img.id,
+                url: img.url,
+              })) || [],
           }
         : null,
 
@@ -458,17 +613,5 @@ export class MarketplaceAnimalesService {
         departamento: market.departamento?.nombre,
       },
     };
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} marketplaceAnimale`;
-  }
-
-  update(id: number, updateMarketplaceAnimaleDto: UpdateMarketplaceAnimaleDto) {
-    return `This action updates a #${id} marketplaceAnimale`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} marketplaceAnimale`;
   }
 }
