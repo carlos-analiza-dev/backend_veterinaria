@@ -20,6 +20,7 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { NotificacionesAdminsService } from 'src/notificaciones_admins/notificaciones_admins.service';
 import { NotificationType } from 'src/interfaces/nptificaciones.type';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class AnimalFincaService {
@@ -316,7 +317,7 @@ export class AnimalFincaService {
       fincaId,
       identificador,
       especieId,
-      limit = 5,
+      limit = 6,
       offset = 0,
       name,
     } = paginationDto;
@@ -423,6 +424,60 @@ export class AnimalFincaService {
         limit,
         offset,
       });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findAllAnimales(cliente: Cliente) {
+    try {
+      const propietarioId = getPropietarioId(cliente);
+
+      const query = this.animalRepo
+        .createQueryBuilder('animal')
+        .leftJoinAndSelect('animal.finca', 'finca')
+        .leftJoinAndSelect('animal.propietario', 'propietario')
+        .leftJoinAndSelect('animal.especie', 'especie')
+        .leftJoinAndSelect('animal.razas', 'razas')
+        .leftJoinAndSelect('animal.razas_madre', 'razas_madre')
+        .leftJoinAndSelect('animal.razas_padre', 'razas_padre')
+        .leftJoinAndSelect('animal.profileImages', 'profileImages')
+        .where('animal.animal_muerte = :animal_muerte', {
+          animal_muerte: false,
+        });
+
+      if (cliente.rol === TipoCliente.PROPIETARIO) {
+        query.andWhere('animal.propietarioId = :propietarioId', {
+          propietarioId,
+        });
+      } else if (
+        cliente.rol === TipoCliente.TRABAJADOR ||
+        cliente.rol === TipoCliente.SUPERVISOR
+      ) {
+        query
+          .innerJoin('animal.finca', 'fincaTrabajador')
+          .innerJoin('fincaTrabajador.asignaciones', 'asignaciones')
+          .innerJoin('asignaciones.trabajador', 'trabajador')
+          .andWhere('trabajador.id = :clienteId', {
+            clienteId: cliente.id,
+          });
+      }
+
+      const animales = await query
+        .orderBy('animal.fecha_registro', 'DESC')
+        .addOrderBy('profileImages.createdAt', 'DESC')
+        .getMany();
+
+      const animalesConImagenesOrdenadas = animales.map((animal) => ({
+        ...animal,
+        profileImages:
+          animal.profileImages?.sort(
+            (a, b) =>
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          ) || [],
+      }));
+
+      return instanceToPlain(animalesConImagenesOrdenadas);
     } catch (error) {
       throw error;
     }

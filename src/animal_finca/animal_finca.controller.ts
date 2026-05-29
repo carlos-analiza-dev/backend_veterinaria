@@ -32,7 +32,7 @@ export class AnimalFincaController {
 
   @Get('/propietario-animales/:propietarioId')
   @AuthCliente()
-  findAllAnimales(
+  findAll(
     @GetCliente() cliente: Cliente,
     @Param('propietarioId') propietarioId: string,
     @Query() paginationDto: PaginationDto,
@@ -42,6 +42,12 @@ export class AnimalFincaController {
       propietarioId,
       paginationDto,
     );
+  }
+
+  @Get('propietario')
+  @AuthCliente()
+  findAllAnimales(@GetCliente() cliente: Cliente) {
+    return this.animalFincaService.findAllAnimales(cliente);
   }
 
   @Get('/animales/:fincaId/:especieId/:razaId')

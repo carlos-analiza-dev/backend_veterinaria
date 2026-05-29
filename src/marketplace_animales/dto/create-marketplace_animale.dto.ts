@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsEnum,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -10,6 +11,7 @@ import {
 } from 'class-validator';
 
 import { Type, Transform } from 'class-transformer';
+import { TipoPublicacion } from 'src/interfaces/market/tipo_publicacion.enum';
 
 export class CreateMarketplaceAnimaleDto {
   @IsUUID('4', {
@@ -64,10 +66,11 @@ export class CreateMarketplaceAnimaleDto {
   )
   precio_oferta?: number;
 
+  @IsOptional()
   @IsString({
-    message: 'La moneda es obligatoria (ej: HNL, USD)',
+    message: 'El modelo debe ser de formato texto',
   })
-  moneda: string;
+  modelo?: string;
 
   @Type(() => Number)
   @IsInt({
@@ -83,6 +86,12 @@ export class CreateMarketplaceAnimaleDto {
   })
   categoriaId: string;
 
+  @IsEnum(TipoPublicacion, {
+    message: `Ocurrio un error, asegurate que el tipo de publicacion sea el correcto`,
+  })
+  @IsOptional()
+  tipo_publicacion: TipoPublicacion;
+
   @IsUUID('4', {
     message: 'La subcategoría debe ser un UUID válido',
   })
@@ -94,6 +103,7 @@ export class CreateMarketplaceAnimaleDto {
   })
   marcaId?: string;
 
+  @IsOptional()
   @IsUUID('4', {
     message: 'El tipo de producto debe ser un UUID válido',
   })
@@ -110,4 +120,11 @@ export class CreateMarketplaceAnimaleDto {
     message: 'El campo disponible debe ser verdadero o falso',
   })
   disponible?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean({
+    message: 'El campo vendido debe ser verdadero o falso',
+  })
+  vendido?: boolean;
 }

@@ -37,8 +37,11 @@ export class TipoProductoController {
 
   @Get('subcategoria/:id')
   @Auth()
-  findAllBySubCategoria(@Param('id') id: string) {
-    return this.tipoProductoService.findAllBySubCategoria(id);
+  findAllBySubCategoria(
+    @Param('id') id: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.tipoProductoService.findAllBySubCategoria(id, paginationDto);
   }
 
   @Get(':id')

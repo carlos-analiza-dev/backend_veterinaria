@@ -12,6 +12,7 @@ import { UpdateMarcaDto } from './dto/update-marca.dto';
 import { User } from 'src/auth/entities/auth.entity';
 import { SearchMarcaDto } from './dto/search-marca.dto';
 import { instanceToPlain } from 'class-transformer';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Injectable()
 export class MarcasService {
@@ -125,12 +126,13 @@ export class MarcasService {
     }
   }
 
-  async findAllActive() {
+  async findAllActive(paginationDto: PaginationDto) {
+    const { is_market = false } = paginationDto;
     return await this.marcaRepo
       .createQueryBuilder('marca')
       .select(['marca.id', 'marca.nombre', 'marca.pais_origen'])
       .where('marca.is_active = :active', { active: true })
-      .andWhere('marca.is_market = :market', { market: false })
+      .andWhere('marca.is_market = :market', { market: is_market })
       .orderBy('marca.nombre', 'ASC')
       .getMany();
   }

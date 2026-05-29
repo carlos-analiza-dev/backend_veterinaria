@@ -67,7 +67,8 @@ export class TipoProductoService {
     };
   }
 
-  async findAllBySubCategoria(id: string) {
+  async findAllBySubCategoria(id: string, paginationDto: PaginationDto) {
+    const { is_market = false } = paginationDto;
     try {
       const subcategoria_existe = await this.subCategoriaRepo.findOne({
         where: { id },
@@ -75,7 +76,7 @@ export class TipoProductoService {
       if (!subcategoria_existe)
         throw new NotFoundException('No se encontro la subcategoria');
       const tipos_producto = await this.tipoRepository.find({
-        where: { sub_categoria: { id }, is_market: false },
+        where: { sub_categoria: { id }, is_market: is_market },
         relations: ['sub_categoria'],
       });
       if (!tipos_producto)

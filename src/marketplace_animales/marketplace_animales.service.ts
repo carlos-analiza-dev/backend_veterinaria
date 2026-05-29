@@ -64,11 +64,13 @@ export class MarketplaceAnimalesService {
       departamentoId,
       longitud,
       latitud,
+      tipo_publicacion,
       direccion_completa,
       ...restoDatos
     } = createMarketplaceAnimaleDto;
 
     const paisId = cliente.pais.id ?? '';
+    const moneda = cliente.pais.simbolo_moneda;
 
     try {
       const animal = await this.animalRepo.findOne({
@@ -80,6 +82,25 @@ export class MarketplaceAnimalesService {
 
       if (!animal) {
         throw new NotFoundException('No se encontró el animal seleccionado');
+      }
+
+      const publicacionExistente = await this.marketAnimalRepo.findOne({
+        where: {
+          animal: {
+            id: animalId,
+          },
+          disponible: true,
+          vendido: false,
+        },
+        relations: {
+          animal: true,
+        },
+      });
+
+      if (publicacionExistente) {
+        throw new BadRequestException(
+          'Este animal ya tiene una publicación activa en el marketplace',
+        );
       }
 
       const pais = await this.paisRepo.findOne({
@@ -169,6 +190,8 @@ export class MarketplaceAnimalesService {
         longitud,
         latitud,
         direccion_completa,
+        tipo_publicacion,
+
         tipo_producto: tipoProducto,
 
         vendedor: { id: cliente.id },
@@ -185,9 +208,10 @@ export class MarketplaceAnimalesService {
         descripcion: restoDatos.descripcion,
         precio: restoDatos.precio,
         precio_oferta: restoDatos.precio_oferta,
-        moneda: restoDatos.moneda,
+        moneda: moneda,
         stock: restoDatos.stock,
         disponible: restoDatos.disponible ?? true,
+        modelo: restoDatos.modelo,
       });
 
       const productoGuardado = await this.marketAnimalRepo.save(nuevoProducto);
@@ -236,7 +260,7 @@ export class MarketplaceAnimalesService {
         await this.marketImagesAnimales.save(imagenes);
       }
 
-      const productoCompleto = await this.marketAnimalRepo.findOne({
+      await this.marketAnimalRepo.findOne({
         where: {
           id: productoGuardado.id,
         },
@@ -502,7 +526,6 @@ export class MarketplaceAnimalesService {
       .where('marketplace.id = :id', { id })
       .andWhere('marketplace.disponible = true')
       .andWhere('animal.animal_muerte = false')
-      .andWhere('vendedor.id != :clienteId', { clienteId: cliente.id })
       .getOne();
 
     if (!producto) {
@@ -532,6 +555,10 @@ export class MarketplaceAnimalesService {
       stock: market.stock,
       disponible: market.disponible,
       vendido: market.vendido,
+      modelo: market.modelo,
+      latitud: market.latitud,
+      longitud: market.longitud,
+      tipo_publicacion: market.tipo_publicacion,
       oferta: market.oferta,
       favoritos: market.favoritos,
       views: market.views,

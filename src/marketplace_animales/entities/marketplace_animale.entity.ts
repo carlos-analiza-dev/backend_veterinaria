@@ -3,6 +3,7 @@ import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
+import { TipoPublicacion } from 'src/interfaces/market/tipo_publicacion.enum';
 import { Marca } from 'src/marcas/entities/marca.entity';
 import { MarketplaceAnimalesImage } from 'src/marketplace_animales_images/entities/marketplace_animales_image.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
@@ -24,7 +25,11 @@ export class MarketplaceAnimale {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => AnimalFinca, { eager: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => AnimalFinca, {
+    eager: true,
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
   @JoinColumn({ name: 'animalId' })
   animal: AnimalFinca;
 
@@ -40,6 +45,13 @@ export class MarketplaceAnimale {
     scale: 2,
   })
   precio: number;
+
+  @Column({
+    type: 'enum',
+    enum: TipoPublicacion,
+    default: TipoPublicacion.ANIMALES,
+  })
+  tipo_publicacion: TipoPublicacion;
 
   @Column({
     type: 'decimal',
@@ -70,6 +82,9 @@ export class MarketplaceAnimale {
 
   @Column({ type: 'varchar', length: 255 })
   direccion_completa: string;
+
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  modelo: string;
 
   @Column({ type: 'int', default: 1 })
   stock: number;

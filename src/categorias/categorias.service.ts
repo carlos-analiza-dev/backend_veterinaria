@@ -11,6 +11,7 @@ import { UpdateCategoriaDto } from './dto/update-categoria.dto';
 import { SearchCategoriaDto } from './dto/search-categoria.dto';
 import { User } from 'src/auth/entities/auth.entity';
 import { instanceToPlain } from 'class-transformer';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Injectable()
 export class CategoriasService {
@@ -122,10 +123,11 @@ export class CategoriasService {
     }
   }
 
-  async findAllCategorias() {
+  async findAllCategorias(paginationDto: PaginationDto) {
+    const { is_market } = paginationDto;
     try {
       const categorias = await this.categoria_repo.find({
-        where: { is_market: false },
+        where: { is_market: is_market },
       });
       if (!categorias)
         throw new NotFoundException('No se encontraron categorias disponibles');

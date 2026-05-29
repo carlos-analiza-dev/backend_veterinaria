@@ -206,7 +206,6 @@ export class SubcategoriasService {
         where: {
           categoria: { id: categoriaId },
           is_active: true,
-          is_market: false,
         },
         relations: ['categoria'],
         order: { nombre: 'ASC' },

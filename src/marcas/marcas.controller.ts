@@ -16,6 +16,7 @@ import { Auth } from 'src/auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
 import { ValidRoles } from 'src/interfaces/valid-roles.interface';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Controller('marcas')
 export class MarcasController {
@@ -35,8 +36,8 @@ export class MarcasController {
 
   @Get('activas')
   @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
-  findAllActive() {
-    return this.marcasService.findAllActive();
+  findAllActive(@Query() paginationDto: PaginationDto) {
+    return this.marcasService.findAllActive(paginationDto);
   }
 
   @Get(':id')

@@ -16,6 +16,7 @@ import { Auth } from 'src/auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
 import { ValidRoles } from 'src/interfaces/valid-roles.interface';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Controller('categorias')
 export class CategoriasController {
@@ -37,8 +38,8 @@ export class CategoriasController {
   }
 
   @Get('all')
-  findAllCategorias() {
-    return this.categoriasService.findAllCategorias();
+  findAllCategorias(@Query() paginationDto: PaginationDto) {
+    return this.categoriasService.findAllCategorias(paginationDto);
   }
 
   @Get(':id')

@@ -37,7 +37,6 @@ export class SubcategoriasController {
   }
 
   @Get('categoria/:categoriaId')
-  @Auth()
   findByCategoria(@Param('categoriaId') categoriaId: string) {
     return this.subcategoriasService.findByCategoria(categoriaId);
   }
