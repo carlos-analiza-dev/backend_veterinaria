@@ -30,4 +30,8 @@ export class CreateCategoriaDto {
   @IsOptional()
   @IsBoolean({ message: 'El valor de is_market debe ser verdadero o falso' })
   is_market?: boolean;
+
+  @IsOptional()
+  @IsBoolean({ message: 'El valor de is_market debe ser verdadero o falso' })
+  destacada?: boolean;
 }

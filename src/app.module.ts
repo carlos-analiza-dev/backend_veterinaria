@@ -113,6 +113,7 @@ import { MovimientosInventarioModule } from './movimientos_inventario/movimiento
 import { DistanceSucursalesModule } from './distance_sucursales/distance_sucursales.module';
 import { MarketplaceAnimalesModule } from './marketplace_animales/marketplace_animales.module';
 import { MarketplaceAnimalesImagesModule } from './marketplace_animales_images/marketplace_animales_images.module';
+import { MarketplaceVisualizacionesModule } from './marketplace_visualizaciones/marketplace_visualizaciones.module';
 
 @Module({
   imports: [
@@ -326,6 +327,8 @@ import { MarketplaceAnimalesImagesModule } from './marketplace_animales_images/m
     MarketplaceAnimalesModule,
 
     MarketplaceAnimalesImagesModule,
+
+    MarketplaceVisualizacionesModule,
   ],
   controllers: [],
   providers: [],

@@ -39,6 +39,9 @@ export class Categoria {
   @Column({ type: 'boolean', default: false })
   is_market: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  destacada: boolean;
+
   @CreateDateColumn()
   created_at: Date;
 

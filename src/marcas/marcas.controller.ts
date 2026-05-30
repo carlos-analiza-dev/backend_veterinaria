@@ -35,7 +35,6 @@ export class MarcasController {
   }
 
   @Get('activas')
-  @Auth(ValidRoles.Administrador, ValidRoles.Ganadero, ValidRoles.Veterinario)
   findAllActive(@Query() paginationDto: PaginationDto) {
     return this.marcasService.findAllActive(paginationDto);
   }

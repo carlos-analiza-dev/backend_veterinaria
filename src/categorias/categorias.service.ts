@@ -23,7 +23,8 @@ export class CategoriasService {
   ) {}
 
   async create(createCategoriaDto: CreateCategoriaDto, userId: string) {
-    const { nombre, descripcion, tipo, is_market } = createCategoriaDto;
+    const { nombre, descripcion, tipo, is_market, destacada } =
+      createCategoriaDto;
 
     try {
       const user = await this.user_repo.findOneBy({ id: userId });
@@ -45,6 +46,7 @@ export class CategoriasService {
         descripcion,
         tipo,
         is_market,
+        destacada,
         created_by: user,
         updated_by: user,
       });
