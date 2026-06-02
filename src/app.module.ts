@@ -114,6 +114,7 @@ import { DistanceSucursalesModule } from './distance_sucursales/distance_sucursa
 import { MarketplaceAnimalesModule } from './marketplace_animales/marketplace_animales.module';
 import { MarketplaceAnimalesImagesModule } from './marketplace_animales_images/marketplace_animales_images.module';
 import { MarketplaceVisualizacionesModule } from './marketplace_visualizaciones/marketplace_visualizaciones.module';
+import { ChatMarketplaceModule } from './chat_marketplace/chat_marketplace.module';
 
 @Module({
   imports: [
@@ -124,14 +125,27 @@ import { MarketplaceVisualizacionesModule } from './marketplace_visualizaciones/
       serveRoot: '/uploads',
     }),
     TypeOrmModule.forRoot({
+      name: 'default',
       type: 'postgres',
-      database: process.env.DB_NAME,
-      password: process.env.DB_PASSWORD,
-      port: +process.env.DB_PORT,
       host: process.env.DB_HOST,
+      port: +process.env.DB_PORT,
       username: process.env.DB_USERNAME,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
       synchronize: true,
       autoLoadEntities: true,
+    }),
+
+    TypeOrmModule.forRoot({
+      name: 'chatConnection',
+      type: 'postgres',
+      host: process.env.CHAT_DB_HOST || 'localhost',
+      port: +process.env.CHAT_DB_PORT || 5432,
+      username: process.env.CHAT_DB_USERNAME,
+      password: process.env.CHAT_DB_PASSWORD,
+      database: process.env.CHAT_DB_NAME,
+      synchronize: true,
+      entities: [__dirname + '/chat_marketplace/**/*.entity{.ts,.js}'],
     }),
     AuthModule,
     PaisModule,
@@ -329,6 +343,8 @@ import { MarketplaceVisualizacionesModule } from './marketplace_visualizaciones/
     MarketplaceAnimalesImagesModule,
 
     MarketplaceVisualizacionesModule,
+
+    ChatMarketplaceModule,
   ],
   controllers: [],
   providers: [],

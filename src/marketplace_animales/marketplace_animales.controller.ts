@@ -81,18 +81,41 @@ export class MarketplaceAnimalesController {
   }
 
   @Patch(':id')
+  @UseInterceptors(FilesInterceptor('files', 10))
+  @AuthCliente()
   update(
     @Param('id') id: string,
-    @Body() updateMarketplaceAnimaleDto: UpdateMarketplaceAnimaleDto,
+
+    @Body()
+    updateMarketplaceAnimaleDto: UpdateMarketplaceAnimaleDto,
+
+    @UploadedFiles()
+    files: Express.Multer.File[],
+
+    @GetCliente()
+    cliente: Cliente,
   ) {
     return this.marketplaceAnimalesService.update(
-      +id,
+      id,
       updateMarketplaceAnimaleDto,
+      files,
+      cliente,
     );
   }
 
+  @Patch(':id/vendido')
+  @AuthCliente()
+  markAsSold(@Param('id') id: string) {
+    return this.marketplaceAnimalesService.markAsSold(id);
+  }
+
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.marketplaceAnimalesService.remove(+id);
+  @AuthCliente()
+  remove(
+    @Param('id') id: string,
+    @GetCliente()
+    cliente: Cliente,
+  ) {
+    return this.marketplaceAnimalesService.remove(id, cliente);
   }
 }

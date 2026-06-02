@@ -36,7 +36,6 @@ export class TipoProductoController {
   }
 
   @Get('subcategoria/:id')
-  @Auth()
   findAllBySubCategoria(
     @Param('id') id: string,
     @Query() paginationDto: PaginationDto,

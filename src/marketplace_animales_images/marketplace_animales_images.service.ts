@@ -86,7 +86,34 @@ export class MarketplaceAnimalesImagesService {
     return `This action updates a #${id} marketplaceAnimalesImage`;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} marketplaceAnimalesImage`;
+  async remove(id: string) {
+    const imagen = await this.fotosRepo.findOne({
+      where: {
+        id,
+      },
+    });
+
+    if (!imagen) {
+      throw new NotFoundException('Imagen no encontrada');
+    }
+
+    const filePath = path.join(
+      __dirname,
+      '..',
+      '..',
+      'uploads',
+      'fotos_animales_market',
+      imagen.key,
+    );
+
+    if (fs.existsSync(filePath)) {
+      await fs.promises.unlink(filePath);
+    }
+
+    await this.fotosRepo.remove(imagen);
+
+    return {
+      message: 'Imagen eliminada correctamente',
+    };
   }
 }

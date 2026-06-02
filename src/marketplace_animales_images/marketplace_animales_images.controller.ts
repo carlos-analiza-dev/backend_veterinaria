@@ -57,6 +57,6 @@ export class MarketplaceAnimalesImagesController {
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.marketplaceAnimalesImagesService.remove(+id);
+    return this.marketplaceAnimalesImagesService.remove(id);
   }
 }

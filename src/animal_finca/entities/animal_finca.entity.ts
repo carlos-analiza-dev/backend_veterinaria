@@ -109,6 +109,9 @@ export class AnimalFinca {
   @Column({ type: 'varchar', length: 100, default: 'N/D' })
   nombre_criador_origen_animal: string;
 
+  @Column({ type: 'bool', default: false })
+  animal_vendido: boolean;
+
   /* DATOS PADRE */
 
   @Column({ type: 'varchar', length: 100, default: 'N/D' })

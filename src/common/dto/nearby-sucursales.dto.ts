@@ -7,8 +7,10 @@ import {
   Max,
   IsPositive,
   IsString,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { TipoPublicacion } from 'src/interfaces/market/tipo_publicacion.enum';
 
 export class NearbySucursalesDto {
   @IsLatitude()
@@ -20,6 +22,14 @@ export class NearbySucursalesDto {
   @IsString()
   @IsOptional()
   especie?: string;
+
+  @IsString()
+  @IsOptional()
+  categoria?: string;
+
+  @IsEnum(TipoPublicacion)
+  @IsOptional()
+  tipo_publicacion?: TipoPublicacion;
 
   @IsOptional()
   @IsPositive()

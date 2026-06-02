@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
@@ -8,7 +9,7 @@ import { CreateMarketplaceAnimaleDto } from './dto/create-marketplace_animale.dt
 import { UpdateMarketplaceAnimaleDto } from './dto/update-marketplace_animale.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MarketplaceAnimale } from './entities/marketplace_animale.entity';
-import { Brackets, Repository } from 'typeorm';
+import { Brackets, In, Repository } from 'typeorm';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { Subcategoria } from 'src/subcategorias/entities/subcategoria.entity';
 import { Marca } from 'src/marcas/entities/marca.entity';
@@ -207,7 +208,7 @@ export class MarketplaceAnimalesService {
         nombre: restoDatos.nombre,
         descripcion: restoDatos.descripcion,
         precio: restoDatos.precio,
-        precio_oferta: restoDatos.precio_oferta,
+
         moneda: moneda,
         stock: restoDatos.stock,
         disponible: restoDatos.disponible ?? true,
@@ -279,6 +280,8 @@ export class MarketplaceAnimalesService {
       radio,
       usarGoogleMaps = false,
       especie,
+      categoria,
+      tipo_publicacion,
       limit = 12,
       offset = 0,
     } = nearbyDto;
@@ -304,6 +307,18 @@ export class MarketplaceAnimalesService {
     if (especie && especie.trim() !== '') {
       query.andWhere('especie.nombre ILIKE :especie', {
         especie: especie,
+      });
+    }
+
+    if (categoria) {
+      query.andWhere('categoria.id = :categoriaId', {
+        categoriaId: categoria,
+      });
+    }
+
+    if (tipo_publicacion) {
+      query.andWhere('marketplace.tipo_publicacion = :tipo_publicacion', {
+        tipo_publicacion,
       });
     }
 
@@ -510,7 +525,7 @@ export class MarketplaceAnimalesService {
   }
 
   async findOne(id: string, cliente: Cliente) {
-    const producto = await this.marketAnimalRepo
+    const query = this.marketAnimalRepo
       .createQueryBuilder('marketplace')
       .leftJoinAndSelect('marketplace.animal', 'animal')
       .leftJoinAndSelect('animal.especie', 'especie')
@@ -524,9 +539,14 @@ export class MarketplaceAnimalesService {
       .leftJoinAndSelect('marketplace.departamento', 'departamento')
       .leftJoinAndSelect('marketplace.marketAnimalImages', 'imagenes')
       .where('marketplace.id = :id', { id })
-      .andWhere('marketplace.disponible = true')
-      .andWhere('animal.animal_muerte = false')
-      .getOne();
+      .andWhere('animal.animal_muerte = false');
+
+    query.andWhere(
+      '(marketplace.disponible = true OR marketplace.vendedor.id = :vendedorId)',
+      { vendedorId: cliente.id },
+    );
+
+    const producto = await query.getOne();
 
     if (!producto) {
       throw new NotFoundException(`Producto con ID ${id} no encontrado`);
@@ -535,12 +555,264 @@ export class MarketplaceAnimalesService {
     return this.mappingMarketAnimales(producto);
   }
 
-  update(id: number, updateMarketplaceAnimaleDto: UpdateMarketplaceAnimaleDto) {
-    return `This action updates a #${id} marketplaceAnimale`;
+  async update(
+    id: string,
+    updateMarketplaceAnimaleDto: UpdateMarketplaceAnimaleDto,
+    files: Express.Multer.File[],
+    cliente: Cliente,
+  ) {
+    const {
+      categoriaId,
+      subcategoriaId,
+      marcaId,
+      animalId,
+      tipoProductoId,
+      departamentoId,
+      latitud,
+      longitud,
+      direccion_completa,
+      imagenesEliminar,
+      ...restoDatos
+    } = updateMarketplaceAnimaleDto;
+
+    const publicacion = await this.marketAnimalRepo.findOne({
+      where: {
+        id,
+      },
+      relations: {
+        vendedor: true,
+        marketAnimalImages: true,
+      },
+    });
+
+    if (!publicacion) {
+      throw new NotFoundException('No se encontró la publicación');
+    }
+
+    if (publicacion.vendedor.id !== cliente.id) {
+      throw new ForbiddenException('No puedes editar esta publicación');
+    }
+
+    if (animalId) {
+      const animal = await this.animalRepo.findOne({
+        where: {
+          id: animalId,
+          animal_muerte: false,
+        },
+      });
+
+      if (!animal) {
+        throw new NotFoundException('No se encontró el animal seleccionado');
+      }
+
+      publicacion.animal = animal;
+    }
+
+    if (categoriaId) {
+      const categoria = await this.categoryRepo.findOne({
+        where: { id: categoriaId },
+      });
+
+      if (!categoria) {
+        throw new NotFoundException('No se encontró la categoría seleccionada');
+      }
+
+      publicacion.categoria = categoria;
+    }
+
+    if (subcategoriaId) {
+      const subcategoria = await this.subcategoriaRepo.findOne({
+        where: { id: subcategoriaId },
+      });
+
+      if (!subcategoria) {
+        throw new NotFoundException(
+          'No se encontró la subcategoría seleccionada',
+        );
+      }
+
+      publicacion.subcategoria = subcategoria;
+    }
+
+    if (marcaId) {
+      const marca = await this.marcaRepo.findOne({
+        where: { id: marcaId },
+      });
+
+      if (!marca) {
+        throw new NotFoundException('No se encontró la marca seleccionada');
+      }
+
+      publicacion.marca = marca;
+    }
+
+    if (tipoProductoId) {
+      const tipoProducto = await this.tipoRepo.findOne({
+        where: { id: tipoProductoId },
+      });
+
+      if (!tipoProducto) {
+        throw new NotFoundException(
+          'No se encontró el tipo de producto seleccionado',
+        );
+      }
+
+      publicacion.tipo_producto = tipoProducto;
+    }
+
+    if (departamentoId) {
+      const departamento = await this.departamentoRepo.findOne({
+        where: { id: departamentoId },
+      });
+
+      if (!departamento) {
+        throw new NotFoundException(
+          'No se encontró el departamento seleccionado',
+        );
+      }
+
+      publicacion.departamento = departamento;
+    }
+
+    Object.assign(publicacion, {
+      ...restoDatos,
+      latitud,
+      longitud,
+      direccion_completa,
+    });
+
+    await this.marketAnimalRepo.save(publicacion);
+
+    if (
+      imagenesEliminar &&
+      Array.isArray(imagenesEliminar) &&
+      imagenesEliminar.length > 0
+    ) {
+      const imagenes = await this.marketImagesAnimales.find({
+        where: {
+          id: In(imagenesEliminar),
+          animal: {
+            id: publicacion.id,
+          },
+        },
+      });
+
+      for (const imagen of imagenes) {
+        const filePath = path.join(
+          __dirname,
+          '..',
+          '..',
+          'uploads',
+          'fotos_animales_market',
+          imagen.key,
+        );
+
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+
+      await this.marketImagesAnimales.remove(imagenes);
+    }
+
+    if (files?.length) {
+      const uploadDir = path.join(
+        __dirname,
+        '..',
+        '..',
+        'uploads',
+        'fotos_animales_market',
+      );
+
+      const baseUrl = process.env.APP_URL;
+
+      const nuevasImagenes: MarketplaceAnimalesImage[] = [];
+
+      for (const file of files) {
+        const fileExt = path.extname(file.originalname);
+
+        const fileName = `${uuidv4()}${fileExt}`;
+
+        const filePath = path.join(uploadDir, fileName);
+
+        await fs.promises.writeFile(filePath, file.buffer);
+
+        const fileUrl = `${baseUrl}/uploads/fotos_animales_market/${fileName}`;
+
+        nuevasImagenes.push(
+          this.marketImagesAnimales.create({
+            url: fileUrl,
+            key: fileName,
+            mimeType: file.mimetype,
+            animal: publicacion,
+          }),
+        );
+      }
+
+      await this.marketImagesAnimales.save(nuevasImagenes);
+    }
+
+    return 'Publicación actualizada exitosamente';
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} marketplaceAnimale`;
+  async markAsSold(id: string) {
+    const product = await this.marketAnimalRepo.findOne({
+      where: { id },
+    });
+
+    if (!product) {
+      throw new NotFoundException(`Producto con ID ${id} no encontrado`);
+    }
+
+    if (product.vendido) {
+      throw new BadRequestException('El producto ya fue vendido');
+    }
+
+    product.vendido = true;
+    product.disponible = false;
+
+    return await this.marketAnimalRepo.save(product);
+  }
+
+  async remove(id: string, cliente: Cliente) {
+    const publicacion = await this.marketAnimalRepo.findOne({
+      where: { id },
+      relations: {
+        vendedor: true,
+        marketAnimalImages: true,
+      },
+    });
+
+    if (!publicacion) {
+      throw new NotFoundException('No se encontró la publicación');
+    }
+
+    if (publicacion.vendedor.id !== cliente.id) {
+      throw new ForbiddenException('No puedes eliminar esta publicación');
+    }
+
+    if (publicacion.marketAnimalImages?.length) {
+      for (const imagen of publicacion.marketAnimalImages) {
+        const filePath = path.join(
+          __dirname,
+          '..',
+          '..',
+          'uploads',
+          'fotos_animales_market',
+          imagen.key,
+        );
+
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+    }
+
+    await this.marketAnimalRepo.remove(publicacion);
+
+    return {
+      message: 'Publicación eliminada correctamente',
+    };
   }
 
   private mappingMarketAnimales(market: MarketplaceAnimale) {
@@ -550,7 +822,7 @@ export class MarketplaceAnimalesService {
       descripcion: market.descripcion,
       direccion: market.direccion_completa,
       precio: market.precio,
-      precio_oferta: market.precio_oferta,
+
       moneda: market.moneda,
       stock: market.stock,
       disponible: market.disponible,
@@ -559,7 +831,7 @@ export class MarketplaceAnimalesService {
       latitud: market.latitud,
       longitud: market.longitud,
       tipo_publicacion: market.tipo_publicacion,
-      oferta: market.oferta,
+
       favoritos: market.favoritos,
       views: market.views,
       created_at: market.created_at,

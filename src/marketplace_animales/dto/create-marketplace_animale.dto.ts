@@ -55,18 +55,6 @@ export class CreateMarketplaceAnimaleDto {
   precio: number;
 
   @IsOptional()
-  @Type(() => Number)
-  @IsNumber(
-    {
-      maxDecimalPlaces: 2,
-    },
-    {
-      message: 'El precio de oferta debe ser un número válido',
-    },
-  )
-  precio_oferta?: number;
-
-  @IsOptional()
   @IsString({
     message: 'El modelo debe ser de formato texto',
   })

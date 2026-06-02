@@ -53,14 +53,6 @@ export class MarketplaceAnimale {
   })
   tipo_publicacion: TipoPublicacion;
 
-  @Column({
-    type: 'decimal',
-    precision: 12,
-    scale: 2,
-    default: 0,
-  })
-  precio_oferta?: number;
-
   @Column({ type: 'varchar' })
   moneda: string;
 
@@ -139,9 +131,6 @@ export class MarketplaceAnimale {
 
   @Column({ type: 'boolean', default: false })
   vendido: boolean;
-
-  @Column({ type: 'boolean', default: false })
-  oferta: boolean;
 
   @CreateDateColumn()
   created_at: Date;
