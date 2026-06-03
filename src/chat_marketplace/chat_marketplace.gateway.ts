@@ -2,7 +2,6 @@ import {
   WebSocketGateway,
   WebSocketServer,
   OnGatewayConnection,
-  OnGatewayDisconnect,
   SubscribeMessage,
   MessageBody,
   ConnectedSocket,
@@ -19,12 +18,10 @@ import { CreateMessageDto } from './dtos/create-message.dto';
   },
 })
 export class ChatMarketplaceGateway
-  implements OnModuleInit, OnGatewayConnection, OnGatewayDisconnect
+  implements OnModuleInit, OnGatewayConnection
 {
   @WebSocketServer()
   public server: Server;
-
-  private userSockets: Map<string, string> = new Map();
 
   constructor(
     private readonly chatMarketplaceService: ChatMarketplaceService,
@@ -34,17 +31,9 @@ export class ChatMarketplaceGateway
 
   handleConnection(client: Socket) {
     const userId = client.handshake.auth.userId;
-    if (userId) {
-      this.userSockets.set(userId, client.id);
-    }
-  }
 
-  handleDisconnect(client: Socket) {
-    for (const [userId, socketId] of this.userSockets.entries()) {
-      if (socketId === client.id) {
-        this.userSockets.delete(userId);
-        break;
-      }
+    if (userId) {
+      client.join(`user-${userId}`);
     }
   }
 
@@ -53,21 +42,16 @@ export class ChatMarketplaceGateway
     @MessageBody() createMessageDto: CreateMessageDto,
     @ConnectedSocket() client: Socket,
   ) {
-    try {
-      const savedMessage =
-        await this.chatMarketplaceService.saveMessage(createMessageDto);
+    const savedMessage =
+      await this.chatMarketplaceService.saveMessage(createMessageDto);
 
-      const sellerSocketId = this.userSockets.get(createMessageDto.receiverId);
-      if (sellerSocketId) {
-        this.server.to(sellerSocketId).emit('new-message', savedMessage);
-      }
+    this.server
+      .to(`user-${createMessageDto.receiverId}`)
+      .emit('new-message', savedMessage);
 
-      client.emit('message-sent', savedMessage);
+    client.emit('message-sent', savedMessage);
 
-      return savedMessage;
-    } catch (error) {
-      client.emit('message-error');
-    }
+    return savedMessage;
   }
 
   @SubscribeMessage('join-conversation')

@@ -7,6 +7,7 @@ import { CreateMessageDto } from './dtos/create-message.dto';
 import { InjectRepository as InjectRepositoryDefault } from '@nestjs/typeorm';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { MarketplaceAnimale } from 'src/marketplace_animales/entities/marketplace_animale.entity';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Injectable()
 export class ChatMarketplaceService {
@@ -159,7 +160,8 @@ export class ChatMarketplaceService {
     );
   }
 
-  async getUserConversations(userId: string) {
+  async getUserConversations(userId: string, paginationDto: PaginationDto) {
+    const { limit = 10, offset = 0 } = paginationDto;
     const conversations = await this.conversationRepository
       .createQueryBuilder('conversation')
       .where(
@@ -167,6 +169,16 @@ export class ChatMarketplaceService {
         { userId },
       )
       .andWhere('conversation.isActive = true')
+      .andWhere((qb) => {
+        const subQuery = qb
+          .subQuery()
+          .select('1')
+          .from(Message, 'message')
+          .where('message.conversationId = conversation.id')
+          .getQuery();
+
+        return `EXISTS ${subQuery}`;
+      })
       .orderBy('conversation.lastMessageAt', 'DESC')
       .getMany();
 

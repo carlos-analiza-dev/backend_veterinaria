@@ -14,6 +14,7 @@ import { Type, Transform } from 'class-transformer';
 import { TipoPublicacion } from 'src/interfaces/market/tipo_publicacion.enum';
 
 export class CreateMarketplaceAnimaleDto {
+  @IsOptional()
   @IsUUID('4', {
     message: 'El ID del animal debe ser un UUID válido',
   })

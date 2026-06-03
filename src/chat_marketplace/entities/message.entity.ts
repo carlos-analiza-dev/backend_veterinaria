@@ -4,7 +4,9 @@ import {
   Column,
   CreateDateColumn,
   Index,
+  OneToMany,
 } from 'typeorm';
+import { MessageImage } from './message-image.entity';
 
 @Entity('chat_messages')
 export class Message {
@@ -22,7 +24,7 @@ export class Message {
   @Index()
   receiverId: string;
 
-  @Column()
+  @Column('uuid')
   @Index()
   conversationId: string;
 
@@ -31,6 +33,11 @@ export class Message {
 
   @Column({ default: false })
   hasImages: boolean;
+
+  /*  @OneToMany(() => MessageImage, (message) => message.message, {
+    cascade: true,
+  })
+  images: MessageImage[]; */
 
   @CreateDateColumn({
     type: 'timestamptz',

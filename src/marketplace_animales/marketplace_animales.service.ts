@@ -74,34 +74,37 @@ export class MarketplaceAnimalesService {
     const moneda = cliente.pais.simbolo_moneda;
 
     try {
-      const animal = await this.animalRepo.findOne({
-        where: {
-          id: animalId,
-          animal_muerte: false,
-        },
-      });
-
-      if (!animal) {
-        throw new NotFoundException('No se encontró el animal seleccionado');
-      }
-
-      const publicacionExistente = await this.marketAnimalRepo.findOne({
-        where: {
-          animal: {
+      let animal;
+      if (animalId) {
+        animal = await this.animalRepo.findOne({
+          where: {
             id: animalId,
+            animal_muerte: false,
           },
-          disponible: true,
-          vendido: false,
-        },
-        relations: {
-          animal: true,
-        },
-      });
+        });
 
-      if (publicacionExistente) {
-        throw new BadRequestException(
-          'Este animal ya tiene una publicación activa en el marketplace',
-        );
+        if (!animal) {
+          throw new NotFoundException('No se encontró el animal seleccionado');
+        }
+
+        const publicacionExistente = await this.marketAnimalRepo.findOne({
+          where: {
+            animal: {
+              id: animalId,
+            },
+            disponible: true,
+            vendido: false,
+          },
+          relations: {
+            animal: true,
+          },
+        });
+
+        if (publicacionExistente) {
+          throw new BadRequestException(
+            'Este animal ya tiene una publicación activa en el marketplace',
+          );
+        }
       }
 
       const pais = await this.paisRepo.findOne({
@@ -288,7 +291,11 @@ export class MarketplaceAnimalesService {
 
     const query = this.marketAnimalRepo
       .createQueryBuilder('marketplace')
-      .leftJoinAndSelect('marketplace.animal', 'animal')
+      .leftJoinAndSelect(
+        'marketplace.animal',
+        'animal',
+        'animal.animal_muerte = false OR animal.id IS NULL',
+      )
       .leftJoinAndSelect('animal.especie', 'especie')
       .leftJoinAndSelect('marketplace.categoria', 'categoria')
       .leftJoinAndSelect('marketplace.subcategoria', 'subcategoria')
@@ -301,8 +308,21 @@ export class MarketplaceAnimalesService {
       .where('marketplace.disponible = :disponible', { disponible: true })
       .andWhere('marketplace.latitud IS NOT NULL')
       .andWhere('marketplace.longitud IS NOT NULL')
-      .andWhere('animal.animal_muerte = :muerte', { muerte: false })
-      .andWhere('vendedor.id != :clienteId', { clienteId: cliente.id });
+      .andWhere('vendedor.id != :clienteId', { clienteId: cliente.id })
+      .andWhere(
+        `
+    (6371 * acos(
+      cos(radians(:latitud)) *
+      cos(radians(marketplace.latitud)) *
+      cos(radians(marketplace.longitud) - radians(:longitud)) +
+      sin(radians(:latitud)) *
+      sin(radians(marketplace.latitud))
+    )) <= :radio
+  `,
+        { latitud, longitud, radio },
+      )
+      .take(limit)
+      .skip(offset);
 
     if (especie && especie.trim() !== '') {
       query.andWhere('especie.nombre ILIKE :especie', {
@@ -425,7 +445,11 @@ export class MarketplaceAnimalesService {
 
     const query = this.marketAnimalRepo
       .createQueryBuilder('marketplace')
-      .leftJoinAndSelect('marketplace.animal', 'animal')
+      .leftJoinAndSelect(
+        'marketplace.animal',
+        'animal',
+        'animal.animal_muerte = false',
+      )
       .leftJoinAndSelect('animal.especie', 'especie')
       .leftJoinAndSelect('marketplace.categoria', 'categoria')
       .leftJoinAndSelect('marketplace.subcategoria', 'subcategoria')
@@ -435,42 +459,31 @@ export class MarketplaceAnimalesService {
       .leftJoinAndSelect('marketplace.pais', 'pais')
       .leftJoinAndSelect('marketplace.departamento', 'departamento')
       .leftJoinAndSelect('marketplace.marketAnimalImages', 'imagenes')
-      .where('marketplace.disponible = :disponible', {
-        disponible: true,
-      })
-      .andWhere('animal.animal_muerte = :muerte', {
-        muerte: false,
-      })
-      .andWhere('vendedor.id != :clienteId', {
-        clienteId: cliente.id,
-      })
-      .andWhere('pais.id = :paisId', {
-        paisId: cliente.pais.id,
-      });
+      .where('marketplace.disponible = :disponible', { disponible: true })
+      .andWhere('vendedor.id != :clienteId', { clienteId: cliente.id })
+      .andWhere('pais.id = :paisId', { paisId: cliente.pais.id })
+      .andWhere(
+        new Brackets((qb) => {
+          if (categoriaId) {
+            qb.andWhere('categoria.id = :categoriaId', { categoriaId });
+          }
 
-    query.andWhere(
-      new Brackets((qb) => {
-        if (categoriaId) {
-          qb.orWhere('categoria.id = :categoriaId', {
-            categoriaId,
-          });
-        }
+          if (subcategoriaId) {
+            qb.andWhere('subcategoria.id = :subcategoriaId', {
+              subcategoriaId,
+            });
+          }
 
-        if (subcategoriaId) {
-          qb.orWhere('subcategoria.id = :subcategoriaId', {
-            subcategoriaId,
-          });
-        }
-
-        if (tipoProductoId) {
-          qb.orWhere('tipo_producto.id = :tipoProductoId', {
-            tipoProductoId,
-          });
-        }
-      }),
-    );
-
-    query.orderBy('marketplace.created_at', 'DESC').take(limit).skip(offset);
+          if (tipoProductoId) {
+            qb.andWhere('tipo_producto.id = :tipoProductoId', {
+              tipoProductoId,
+            });
+          }
+        }),
+      )
+      .orderBy('marketplace.created_at', 'DESC')
+      .take(limit)
+      .skip(offset);
 
     const [data, total] = await query.getManyAndCount();
 
@@ -508,7 +521,11 @@ export class MarketplaceAnimalesService {
         clienteId: cliente.id,
       })
 
-      .andWhere('animal.animal_muerte = false')
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('animal.id IS NULL').orWhere('animal.animal_muerte = false');
+        }),
+      )
 
       .orderBy('marketplace.created_at', 'DESC')
       .take(limit)
@@ -539,13 +556,15 @@ export class MarketplaceAnimalesService {
       .leftJoinAndSelect('marketplace.departamento', 'departamento')
       .leftJoinAndSelect('marketplace.marketAnimalImages', 'imagenes')
       .where('marketplace.id = :id', { id })
-      .andWhere('animal.animal_muerte = false');
-
-    query.andWhere(
-      '(marketplace.disponible = true OR marketplace.vendedor.id = :vendedorId)',
-      { vendedorId: cliente.id },
-    );
-
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('animal.id IS NULL').orWhere('animal.animal_muerte = false');
+        }),
+      )
+      .andWhere(
+        '(marketplace.disponible = true OR marketplace.vendedor.id = :vendedorId)',
+        { vendedorId: cliente.id },
+      );
     const producto = await query.getOne();
 
     if (!producto) {

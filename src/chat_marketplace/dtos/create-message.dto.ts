@@ -1,23 +1,43 @@
-import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
+import {
+  IsArray,
+  IsOptional,
+  IsString,
+  IsUUID,
+  ValidateNested,
+} from 'class-validator';
+import { Type } from 'class-transformer';
+
+class MessageImageDto {
+  @IsString()
+  url: string;
+
+  @IsString()
+  key: string;
+
+  @IsString()
+  mimeType: string;
+}
 
 export class CreateMessageDto {
-  @IsNotEmpty()
   @IsUUID()
   conversationId: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  message: string;
+  message?: string;
 
-  @IsNotEmpty()
   @IsUUID()
   senderId: string;
 
-  @IsNotEmpty()
   @IsUUID()
   receiverId: string;
 
-  @IsNotEmpty()
   @IsUUID()
   productId: string;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => MessageImageDto)
+  images?: MessageImageDto[];
 }
