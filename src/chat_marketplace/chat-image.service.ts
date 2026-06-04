@@ -9,7 +9,7 @@ import { Message } from './entities/message.entity';
 
 @Injectable()
 export class ChatImageService {
-  /* constructor(
+  constructor(
     @InjectRepository(MessageImage, 'chatConnection')
     private messageImageRepository: Repository<MessageImage>,
   ) {}
@@ -81,10 +81,19 @@ export class ChatImageService {
     await this.messageImageRepository.remove(image);
   }
 
+  async createMessageImage(data: Partial<MessageImage>): Promise<MessageImage> {
+    const messageImage = this.messageImageRepository.create(data);
+    return messageImage;
+  }
+
+  async saveMessageImage(messageImage: MessageImage): Promise<MessageImage> {
+    return this.messageImageRepository.save(messageImage);
+  }
+
   async getMessageImages(messageId: string): Promise<MessageImage[]> {
     return this.messageImageRepository.find({
       where: { messageId },
       order: { created_at: 'ASC' },
     });
-  } */
+  }
 }

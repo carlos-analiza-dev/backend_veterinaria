@@ -1,22 +1,4 @@
-import {
-  IsArray,
-  IsOptional,
-  IsString,
-  IsUUID,
-  ValidateNested,
-} from 'class-validator';
-import { Type } from 'class-transformer';
-
-class MessageImageDto {
-  @IsString()
-  url: string;
-
-  @IsString()
-  key: string;
-
-  @IsString()
-  mimeType: string;
-}
+import { IsOptional, IsString, IsUUID } from 'class-validator';
 
 export class CreateMessageDto {
   @IsUUID()
@@ -34,10 +16,4 @@ export class CreateMessageDto {
 
   @IsUUID()
   productId: string;
-
-  @IsOptional()
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => MessageImageDto)
-  images?: MessageImageDto[];
 }

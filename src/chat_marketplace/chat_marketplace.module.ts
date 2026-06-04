@@ -8,6 +8,7 @@ import { Message } from './entities/message.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { MarketplaceAnimale } from 'src/marketplace_animales/entities/marketplace_animale.entity';
 import { MessageImage } from './entities/message-image.entity';
+import { ChatImageService } from './chat-image.service';
 
 @Module({
   controllers: [ChatMarketplaceController],
@@ -19,7 +20,7 @@ import { MessageImage } from './entities/message-image.entity';
 
     TypeOrmModule.forFeature([Cliente, MarketplaceAnimale]),
   ],
-  providers: [ChatMarketplaceGateway, ChatMarketplaceService],
+  providers: [ChatMarketplaceGateway, ChatMarketplaceService, ChatImageService],
   exports: [ChatMarketplaceService],
 })
 export class ChatMarketplaceModule {}

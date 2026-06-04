@@ -34,10 +34,10 @@ export class Message {
   @Column({ default: false })
   hasImages: boolean;
 
-  /*  @OneToMany(() => MessageImage, (message) => message.message, {
+  @OneToMany(() => MessageImage, (message) => message.message, {
     cascade: true,
   })
-  images: MessageImage[]; */
+  images: MessageImage[];
 
   @CreateDateColumn({
     type: 'timestamptz',

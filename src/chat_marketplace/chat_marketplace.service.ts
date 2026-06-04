@@ -8,6 +8,8 @@ import { InjectRepository as InjectRepositoryDefault } from '@nestjs/typeorm';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { MarketplaceAnimale } from 'src/marketplace_animales/entities/marketplace_animale.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { ChatMarketplaceGateway } from './chat_marketplace.gateway';
+import { ChatImageService } from './chat-image.service';
 
 @Injectable()
 export class ChatMarketplaceService {
@@ -23,6 +25,8 @@ export class ChatMarketplaceService {
 
     @InjectRepositoryDefault(MarketplaceAnimale)
     private productRepository: Repository<MarketplaceAnimale>,
+    private readonly chatMarketplaceGateway: ChatMarketplaceGateway,
+    private readonly chatImageService: ChatImageService,
   ) {}
 
   async saveMessage(createMessageDto: CreateMessageDto) {
@@ -53,6 +57,66 @@ export class ChatMarketplaceService {
       sender,
       receiver,
     };
+  }
+
+  async uploadImagesChat(
+    createMessageDto: CreateMessageDto,
+    cliente: Cliente,
+    images?: Express.Multer.File[],
+  ) {
+    try {
+      const message = this.messageRepository.create({
+        ...createMessageDto,
+        senderId: cliente.id,
+        isRead: false,
+        message: createMessageDto.message || '',
+      });
+
+      const savedMessage = await this.messageRepository.save(message);
+
+      let uploadedImages = [];
+
+      if (images?.length) {
+        uploadedImages = await this.chatImageService.uploadMessageImages(
+          images,
+          savedMessage,
+        );
+      }
+
+      await this.conversationRepository.update(
+        { id: createMessageDto.conversationId },
+        { lastMessageAt: new Date() },
+      );
+
+      const sender = await this.clienteRepository.findOne({
+        where: { id: savedMessage.senderId },
+        relations: ['profileImages'],
+      });
+
+      const receiver = await this.clienteRepository.findOne({
+        where: { id: savedMessage.receiverId },
+        relations: ['profileImages'],
+      });
+
+      const response = {
+        ...savedMessage,
+        sender,
+        receiver,
+        images: uploadedImages,
+      };
+
+      this.chatMarketplaceGateway.server
+        .to(`user-${savedMessage.receiverId}`)
+        .emit('new-message', response);
+
+      this.chatMarketplaceGateway.server
+        .to(`conversation-${savedMessage.conversationId}`)
+        .emit('new-message', response);
+
+      return response;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getOrCreateConversation(
@@ -117,6 +181,7 @@ export class ChatMarketplaceService {
   async getConversationMessages(conversationId: string) {
     const messages = await this.messageRepository
       .createQueryBuilder('message')
+      .leftJoinAndSelect('message.images', 'images')
       .where('message.conversationId = :conversationId', { conversationId })
       .orderBy('message.created_at', 'ASC')
       .getMany();
@@ -143,10 +208,46 @@ export class ChatMarketplaceService {
       receiverId: message.receiverId,
       conversationId: message.conversationId,
       isRead: message.isRead,
+      hasImages: message.images && message.images.length > 0,
       created_at: message.created_at,
-      sender: userMap.get(message.senderId) || null,
-      receiver: userMap.get(message.receiverId) || null,
+      sender: this.mapToReceiver(userMap.get(message.senderId)),
+      receiver: this.mapToReceiver(userMap.get(message.receiverId)),
+      images:
+        message.images?.map((img) => ({
+          id: img.id,
+          url: img.url,
+          key: img.key,
+          messageId: img.messageId,
+          mimeType: img.mimeType,
+          createdAt: img.created_at,
+        })) || [],
     }));
+  }
+
+  private mapToReceiver(user: any): {
+    id: string;
+    nombre: string;
+    email: string;
+    profileImage: any | null;
+  } {
+    if (!user) return null;
+
+    return {
+      id: user.id,
+      nombre: user.nombre,
+      email: user.email,
+      profileImage:
+        user.profileImages && user.profileImages.length > 0
+          ? {
+              id: user.profileImages[0].id,
+              url: user.profileImages[0].url,
+              key: user.profileImages[0].key,
+              mimeType: user.profileImages[0].mimeType,
+              createdAt: user.profileImages[0].createdAt,
+              updatedAt: user.profileImages[0].updatedAt,
+            }
+          : null,
+    };
   }
 
   async markMessagesAsRead(conversationId: string, userId: string) {

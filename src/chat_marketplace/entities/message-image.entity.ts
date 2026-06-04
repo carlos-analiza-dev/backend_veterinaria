@@ -22,9 +22,9 @@ export class MessageImage {
   @Column()
   mimeType: string;
 
-  /*   @ManyToOne(() => Message, (message) => message.images)
+  @ManyToOne(() => Message, (message) => message.images)
   @JoinColumn({ name: 'messageId' })
-  message: Message; */
+  message: Message;
 
   @Column()
   messageId: string;

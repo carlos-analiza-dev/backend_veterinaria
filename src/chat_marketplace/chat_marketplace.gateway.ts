@@ -7,7 +7,7 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { ChatMarketplaceService } from './chat_marketplace.service';
-import { OnModuleInit } from '@nestjs/common';
+import { forwardRef, Inject, OnModuleInit } from '@nestjs/common';
 import { Server, Socket } from 'socket.io';
 import { CreateMessageDto } from './dtos/create-message.dto';
 
@@ -24,6 +24,7 @@ export class ChatMarketplaceGateway
   public server: Server;
 
   constructor(
+    @Inject(forwardRef(() => ChatMarketplaceService))
     private readonly chatMarketplaceService: ChatMarketplaceService,
   ) {}
 
