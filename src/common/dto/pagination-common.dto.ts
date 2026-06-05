@@ -183,4 +183,13 @@ export class PaginationDto {
     return value;
   })
   is_market?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  destacada?: boolean;
 }

@@ -69,6 +69,7 @@ export class CategoriasService {
       search,
       isActive,
       is_market,
+      destacada,
     } = searchCategoriaDto;
 
     try {
@@ -81,6 +82,7 @@ export class CategoriasService {
       const parameters: {
         isActive?: boolean;
         is_market?: boolean;
+        destacada?: boolean;
         search?: string;
       } = {};
 
@@ -92,6 +94,11 @@ export class CategoriasService {
       if (is_market !== undefined) {
         whereConditions.push('categoria.is_market = :is_market');
         parameters.is_market = is_market;
+      }
+
+      if (destacada !== undefined) {
+        whereConditions.push('categoria.destacada = :destacada');
+        parameters.destacada = destacada;
       }
 
       if (search && search.trim() !== '') {
@@ -126,13 +133,28 @@ export class CategoriasService {
   }
 
   async findAllCategorias(paginationDto: PaginationDto) {
-    const { is_market } = paginationDto;
+    const { is_market, destacada } = paginationDto;
+
     try {
+      const where: any = {
+        is_market,
+      };
+
+      if (destacada !== undefined) {
+        where.destacada = destacada;
+      }
+
       const categorias = await this.categoria_repo.find({
-        where: { is_market: is_market },
+        where,
+        order: {
+          nombre: 'ASC',
+        },
       });
-      if (!categorias)
-        throw new NotFoundException('No se encontraron categorias disponibles');
+
+      if (!categorias.length) {
+        throw new NotFoundException('No se encontraron categorías disponibles');
+      }
+
       return categorias;
     } catch (error) {
       throw error;

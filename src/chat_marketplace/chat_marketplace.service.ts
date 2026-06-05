@@ -224,7 +224,7 @@ export class ChatMarketplaceService {
     }));
   }
 
-  private mapToReceiver(user: any): {
+  private mapToReceiver(user: Cliente): {
     id: string;
     nombre: string;
     email: string;
