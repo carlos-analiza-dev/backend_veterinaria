@@ -26,6 +26,7 @@ import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { DistanceSucursalesService } from 'src/distance_sucursales/distance_sucursales.service';
 import { NearbySucursalesDto } from 'src/common/dto/nearby-sucursales.dto';
 import { FilterMarketplaceAnimalesDto } from './dto/filter-market-place.dto';
+import { SearchMarketplaceDto } from './dto/searc-market.dto';
 
 @Injectable()
 export class MarketplaceAnimalesService {
@@ -283,6 +284,7 @@ export class MarketplaceAnimalesService {
       radio,
       usarGoogleMaps = false,
       especie,
+      nombre,
       categoria,
       tipo_publicacion,
       limit = 12,
@@ -327,6 +329,12 @@ export class MarketplaceAnimalesService {
     if (especie && especie.trim() !== '') {
       query.andWhere('especie.nombre ILIKE :especie', {
         especie: especie,
+      });
+    }
+
+    if (nombre && nombre.trim() !== '') {
+      query.andWhere('marketplace.nombre ILIKE :nombre', {
+        nombre: `%${nombre}%`,
       });
     }
 
@@ -499,6 +507,34 @@ export class MarketplaceAnimalesService {
       },
       productos: data.map((producto) => this.mappingMarketAnimales(producto)),
     };
+  }
+
+  async searchProducts(cliente: Cliente, searchDto: SearchMarketplaceDto) {
+    const { nombre } = searchDto;
+
+    if (!nombre?.trim()) {
+      return [];
+    }
+
+    const productos = await this.marketAnimalRepo
+      .createQueryBuilder('marketplace')
+      .select(['marketplace.id', 'marketplace.nombre'])
+      .leftJoin('marketplace.vendedor', 'vendedor')
+      .where('marketplace.disponible = true')
+      .andWhere('vendedor.id != :clienteId', {
+        clienteId: cliente.id,
+      })
+      .andWhere('marketplace.nombre ILIKE :nombre', {
+        nombre: `%${nombre.trim()}%`,
+      })
+      .distinct(true)
+      .take(10)
+      .getMany();
+
+    return productos.map((producto) => ({
+      id: producto.id,
+      nombre: producto.nombre,
+    }));
   }
 
   async findMyPublicaciones(cliente: Cliente, paginationDto: PaginationDto) {

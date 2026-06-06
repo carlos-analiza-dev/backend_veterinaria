@@ -25,6 +25,10 @@ export class NearbySucursalesDto {
 
   @IsString()
   @IsOptional()
+  nombre?: string;
+
+  @IsString()
+  @IsOptional()
   categoria?: string;
 
   @IsEnum(TipoPublicacion)
@@ -50,7 +54,7 @@ export class NearbySucursalesDto {
   @IsOptional()
   @Type(() => Number)
   @Min(0)
-  radio?: number = 300;
+  radio?: number = 600;
 
   @IsOptional()
   usarGoogleMaps?: boolean = true;

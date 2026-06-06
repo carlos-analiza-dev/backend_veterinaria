@@ -20,6 +20,7 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { NearbySucursalesDto } from 'src/common/dto/nearby-sucursales.dto';
 import { FilterMarketplaceAnimalesDto } from './dto/filter-market-place.dto';
+import { SearchMarketplaceDto } from './dto/searc-market.dto';
 
 @Controller('marketplace-animales')
 export class MarketplaceAnimalesController {
@@ -60,6 +61,15 @@ export class MarketplaceAnimalesController {
     @Query() filters: FilterMarketplaceAnimalesDto,
   ) {
     return this.marketplaceAnimalesService.findAllFilters(cliente, filters);
+  }
+
+  @Get('search')
+  @AuthCliente()
+  searchProducts(
+    @GetCliente() cliente: Cliente,
+    @Query() searchDto: SearchMarketplaceDto,
+  ) {
+    return this.marketplaceAnimalesService.searchProducts(cliente, searchDto);
   }
 
   @Get('/mis-publicaciones')
