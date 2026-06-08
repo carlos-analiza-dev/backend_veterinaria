@@ -443,9 +443,14 @@ export class DashboardService {
   //ANIMALES
   async getTotalAnimales(cliente: Cliente) {
     const clienteId = getPropietarioId(cliente);
+
     return await this.animalRepository.count({
       where: {
-        propietario: { id: clienteId, animales: { animal_muerte: false } },
+        propietario: {
+          id: clienteId,
+        },
+        animal_muerte: false,
+        animal_vendido: false,
       },
     });
   }
@@ -458,6 +463,12 @@ export class DashboardService {
       .select('animal.sexo', 'sexo')
       .addSelect('COUNT(*)', 'total')
       .where('propietario.id = :id', { id: clienteId })
+      .andWhere('animal.animal_muerte = :animal_muerte', {
+        animal_muerte: false,
+      })
+      .andWhere('animal.animal_vendido = :animal_vendido', {
+        animal_vendido: false,
+      })
       .groupBy('animal.sexo')
       .getRawMany();
 
@@ -505,7 +516,7 @@ export class DashboardService {
   async getGananciaPesoMensual(animalId: string, year: number) {
     try {
       const animal_existe = await this.animalRepository.findOne({
-        where: { id: animalId },
+        where: { id: animalId, animal_muerte: false, animal_vendido: false },
       });
 
       if (!animal_existe)

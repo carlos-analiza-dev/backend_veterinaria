@@ -813,14 +813,20 @@ export class MarketplaceAnimalesService {
   async markAsSold(id: string) {
     const product = await this.marketAnimalRepo.findOne({
       where: { id },
+      relations: ['animal'],
     });
 
     if (!product) {
-      throw new NotFoundException(`Producto con ID ${id} no encontrado`);
+      throw new NotFoundException(`Producto no encontrado`);
     }
 
     if (product.vendido) {
       throw new BadRequestException('El producto ya fue vendido');
+    }
+
+    if (product.animal) {
+      product.animal.animal_vendido = true;
+      await this.animalRepo.save(product.animal);
     }
 
     product.vendido = true;

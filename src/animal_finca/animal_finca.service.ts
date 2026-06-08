@@ -161,7 +161,8 @@ export class AnimalFincaService {
 
         if (configEspecie) {
           const animalesExistentes = finca.animales.filter(
-            (a) => a.especie.id === especie,
+            (a) =>
+              a.especie.id === especie && !a.animal_muerte && !a.animal_vendido,
           ).length;
 
           if (animalesExistentes >= configEspecie.cantidad) {
@@ -346,6 +347,9 @@ export class AnimalFincaService {
         .leftJoinAndSelect('animal.profileImages', 'profileImages')
         .where('animal.animal_muerte = :animal_muerte', {
           animal_muerte: false,
+        })
+        .andWhere('animal.animal_vendido = :animal_vendido', {
+          animal_vendido: false,
         });
 
       if (cliente.rol === TipoCliente.PROPIETARIO) {
@@ -444,6 +448,9 @@ export class AnimalFincaService {
         .leftJoinAndSelect('animal.profileImages', 'profileImages')
         .where('animal.animal_muerte = :animal_muerte', {
           animal_muerte: false,
+        })
+        .andWhere('animal.animal_vendido = :animal_vendido', {
+          animal_vendido: false,
         });
 
       if (cliente.rol === TipoCliente.PROPIETARIO) {
@@ -499,6 +506,12 @@ export class AnimalFincaService {
         .where('finca.id = :fincaId', { fincaId })
         .andWhere('especie.id = :especieId', { especieId })
         .andWhere('razas.id = :razaId', { razaId })
+        .andWhere('animal.animal_vendido = :animal_vendido', {
+          animal_vendido: false,
+        })
+        .andWhere('animal.animal_muerte = :animal_muerte', {
+          animal_muerte: false,
+        })
         .orderBy('animal.fecha_registro', 'DESC')
         .getMany();
 

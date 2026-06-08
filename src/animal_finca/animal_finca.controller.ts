@@ -67,6 +67,7 @@ export class AnimalFincaController {
   findOne(@Param('id') id: string) {
     return this.animalFincaService.findOne(id);
   }
+
   @Patch(':id/death-status')
   async updateDeathStatus(
     @Param('id') id: string,
