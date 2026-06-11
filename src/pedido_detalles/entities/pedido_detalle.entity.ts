@@ -33,7 +33,10 @@ export class PedidoDetalle {
   @JoinColumn({ name: 'id_sucursal' })
   sucursal: Sucursal;
 
-  @Column({ type: 'uuid' })
+  @Column({
+    type: 'uuid',
+    nullable: true,
+  })
   id_sucursal: string;
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })

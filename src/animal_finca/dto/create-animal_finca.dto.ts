@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -7,6 +7,7 @@ import {
   IsDateString,
   IsEnum,
   IsIn,
+  isNotEmpty,
   IsNotEmpty,
   IsNumber,
   IsOptional,
@@ -55,8 +56,12 @@ export class CreateAnimalFincaDto {
   sexo: string;
 
   @IsString({ message: 'El color debe ser un texto' })
-  @IsNotEmpty({ message: 'El color del animal es obligatorio' })
+  @IsOptional()
   color: string;
+
+  @IsString({ message: 'El color debe ser un texto' })
+  @IsOptional()
+  nombre_animal: string;
 
   @IsString({ message: 'La produccion debe ser un texto' })
   @IsNotEmpty({ message: 'La produccion del animal es obligatorio' })
@@ -66,8 +71,11 @@ export class CreateAnimalFincaDto {
   @IsNotEmpty({ message: 'El tipo de produccion del animal es obligatorio' })
   tipo_produccion: string;
 
-  @IsArray({ message: 'La alimentación debe ser un arreglo' })
-  @IsNotEmpty({ message: 'Debe ingresar al menos un alimento' })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return JSON.parse(value);
+    return value;
+  })
+  @IsArray()
   @ValidateNested({ each: true })
   @Type(() => TipoAlimentacionDto)
   tipo_alimentacion: TipoAlimentacionDto[];
@@ -75,16 +83,21 @@ export class CreateAnimalFincaDto {
   @IsEnum(TipoReproduccionEnum)
   tipo_reproduccion: TipoReproduccionEnum = TipoReproduccionEnum.NATURAL;
 
+  @IsOptional()
   @IsEnum(PurezaEnum, {
     message:
       'La pureza debe ser uno de: Puro, Puro por cruza, 3/4 raza, 1/2 raza, Criollo',
   })
   pureza: PurezaEnum;
 
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return JSON.parse(value);
+    return value;
+  })
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ComplementoDto)
-  @IsOptional()
   complementos: ComplementoDto[];
 
   @IsString()
@@ -95,17 +108,37 @@ export class CreateAnimalFincaDto {
   @IsNotEmpty({ message: 'El identificador del animal es obligatorio' })
   identificador: string;
 
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return JSON.parse(value);
+    return value;
+  })
   @IsArray({ message: 'Las razas deben ser un arreglo de IDs válidos' })
   @IsUUID('4', { each: true, message: 'Cada raza debe ser un UUID válido' })
   @IsNotEmpty({ message: 'Debes ingresar al menos una raza' })
   razaIds: string[];
 
-  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      const num = Number(value);
+      return Number.isFinite(num) ? num : 0;
+    }
+
+    if (typeof value === 'number') {
+      return value;
+    }
+    return 0;
+  })
   @IsNumber({}, { message: 'La edad promedio debe ser un número' })
   @Min(0, { message: 'La edad promedio debe ser mayor o igual a 0' })
-  edad_promedio?: number;
+  edad_promedio: number;
 
-  @IsNotEmpty({ message: 'La fecha de nacimiento es obligatoria' })
+  @Transform(({ value }) => {
+    if (!value || value === '' || value === 'undefined') {
+      return undefined;
+    }
+    return value;
+  })
+  @IsOptional()
   @IsDateString(
     {},
     { message: 'La fecha de nacimiento debe tener formato YYYY-MM-DD' },
@@ -123,6 +156,7 @@ export class CreateAnimalFincaDto {
   @IsNotEmpty({ message: 'La finca del animal es obligatoria' })
   fincaId: string;
 
+  @Transform(({ value }) => value === 'true')
   @IsOptional()
   @IsBoolean({ message: 'El valor de castrado debe ser verdadero o falso' })
   castrado?: boolean;
@@ -135,6 +169,7 @@ export class CreateAnimalFincaDto {
   @IsOptional()
   razon_muerte?: string;
 
+  @Transform(({ value }) => value === 'true')
   @IsOptional()
   @IsBoolean({ message: 'El valor de esterilizado debe ser verdadero o falso' })
   esterelizado?: boolean;
@@ -152,43 +187,53 @@ export class CreateAnimalFincaDto {
   })
   nombre_criador_origen_animal?: string;
 
+  @IsOptional()
+  @IsUUID('4', { message: 'El padre debe ser un UUID válido' })
+  padreId?: string;
+
+  @IsOptional()
+  @IsUUID('4', { message: 'La madre debe ser un UUID válido' })
+  madreId?: string;
+
   // --- DATOS PADRE ---
   @IsOptional()
   @IsString({ message: 'El nombre del padre debe ser un texto válido.' })
   nombre_padre?: string;
 
+  @IsOptional()
   @IsString({ message: 'El arete del padre debe ser un texto válido.' })
-  @IsNotEmpty({ message: 'El arete del padre es obligatorio.' })
   arete_padre?: string;
 
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return JSON.parse(value);
+    return value;
+  })
   @IsArray({ message: 'Las razas deben ser un arreglo de IDs válidos' })
   @IsUUID('4', { each: true, message: 'Cada raza debe ser un UUID válido' })
   @IsNotEmpty({ message: 'Debes ingresar al menos una raza al padre' })
   razas_padre: string[];
 
+  @IsOptional()
   @IsEnum(PurezaEnum, {
     message:
-      'La pureza del padre debe ser uno de: 1 raza, 7/8 raza, 3/4 raza, 1/2 raza, 5/8 raza',
+      'La pureza del padre debe ser uno de: Puro, Puro por cruza, 3/4 raza, 1/2 raza, Criollo',
   })
   pureza_padre: PurezaEnum;
 
-  @IsNotEmpty({ message: 'El nombre del criador del padre es obligatorio.' })
+  @IsOptional()
   @IsString({
     message: 'El nombre del criador del padre debe ser un texto válido.',
   })
   nombre_criador_padre: string;
 
-  @IsNotEmpty({
-    message: 'El nombre del propietario del padre es obligatorio.',
-  })
+  @IsOptional()
   @IsString({
     message: 'El nombre del propietario del padre debe ser un texto válido.',
   })
   nombre_propietario_padre: string;
 
-  @IsNotEmpty({
-    message: 'El nombre de la finca de origen del padre es obligatorio.',
-  })
+  @IsOptional()
   @IsString({
     message: 'El nombre de la finca del padre debe ser un texto válido.',
   })
@@ -199,47 +244,71 @@ export class CreateAnimalFincaDto {
   @IsString({ message: 'El nombre de la madre debe ser un texto válido.' })
   nombre_madre?: string;
 
+  @IsOptional()
   @IsString({ message: 'El arete de la madre debe ser un texto válido.' })
-  @IsNotEmpty({ message: 'El arete de la madre es obligatorio.' })
   arete_madre: string;
 
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return JSON.parse(value);
+    return value;
+  })
   @IsArray({ message: 'Las razas deben ser un arreglo de IDs válidos' })
   @IsUUID('4', { each: true, message: 'Cada raza debe ser un UUID válido' })
   @IsNotEmpty({ message: 'Debes ingresar al menos una raza a la madre' })
   razas_madre: string[];
 
+  @IsOptional()
   @IsEnum(PurezaEnum, {
     message:
-      'La pureza de la madre debe ser uno de: 1 raza, 7/8 raza, 3/4 raza, 1/2 raza, 5/8 raza',
+      'La pureza de la madre debe ser uno de: Puro, Puro por cruza, 3/4 raza, 1/2 raza, Criollo',
   })
   pureza_madre: PurezaEnum;
 
-  @IsNotEmpty({ message: 'El nombre del criador de la madre es obligatorio.' })
+  @IsOptional()
   @IsString({
     message: 'El nombre del criador de la madre debe ser un texto válido.',
   })
   nombre_criador_madre: string;
 
-  @IsNotEmpty({
-    message: 'El nombre del propietario de la madre es obligatorio.',
-  })
+  @IsOptional()
   @IsString({
     message: 'El nombre del propietario de la madre debe ser un texto válido.',
   })
   nombre_propietario_madre: string;
 
-  @IsNotEmpty({
-    message: 'El nombre de la finca de origen de la madre es obligatorio.',
-  })
+  @IsOptional()
   @IsString({
     message: 'El nombre de la finca de la madre debe ser un texto válido.',
   })
   nombre_finca_origen_madre?: string;
 
-  @IsNotEmpty({ message: 'El número de parto de la madre es obligatorio.' })
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === null || value === undefined || value === '') return undefined;
+
+    const num = Number(value);
+    if (!Number.isFinite(num)) return undefined;
+
+    return num;
+  })
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      const num = Number(value);
+      return isNaN(num) ? 0 : num;
+    }
+
+    if (typeof value === 'number') {
+      return value;
+    }
+
+    return 0;
+  })
+  @IsNotEmpty({ message: 'El número de parto de la madre es obligatorio' })
   @IsNumber(
     {},
     { message: 'El número de parto de la madre debe ser un número.' },
   )
+  @Min(1, { message: 'El número de parto debe ser mayor o igual a 0' })
   numero_parto_madre: number;
 }

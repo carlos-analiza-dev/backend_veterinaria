@@ -308,6 +308,7 @@ export class MarketplaceAnimalesService {
       .leftJoinAndSelect('marketplace.departamento', 'departamento')
       .leftJoinAndSelect('marketplace.marketAnimalImages', 'imagenes')
       .where('marketplace.disponible = :disponible', { disponible: true })
+      .andWhere('marketplace.eliminada = :eliminada', { eliminada: false })
       .andWhere('marketplace.latitud IS NOT NULL')
       .andWhere('marketplace.longitud IS NOT NULL')
       .andWhere('vendedor.id != :clienteId', { clienteId: cliente.id })
@@ -468,6 +469,7 @@ export class MarketplaceAnimalesService {
       .leftJoinAndSelect('marketplace.departamento', 'departamento')
       .leftJoinAndSelect('marketplace.marketAnimalImages', 'imagenes')
       .where('marketplace.disponible = :disponible', { disponible: true })
+      .andWhere('marketplace.eliminada = :eliminada', { eliminada: false })
       .andWhere('vendedor.id != :clienteId', { clienteId: cliente.id })
       .andWhere('pais.id = :paisId', { paisId: cliente.pais.id })
       .andWhere(
@@ -521,6 +523,7 @@ export class MarketplaceAnimalesService {
       .select(['marketplace.id', 'marketplace.nombre'])
       .leftJoin('marketplace.vendedor', 'vendedor')
       .where('marketplace.disponible = true')
+      .andWhere('marketplace.eliminada = false')
       .andWhere('vendedor.id != :clienteId', {
         clienteId: cliente.id,
       })
@@ -556,7 +559,9 @@ export class MarketplaceAnimalesService {
       .where('vendedor.id = :clienteId', {
         clienteId: cliente.id,
       })
-
+      .andWhere('marketplace.eliminada = :eliminada', {
+        eliminada: false,
+      })
       .andWhere(
         new Brackets((qb) => {
           qb.where('animal.id IS NULL').orWhere('animal.animal_muerte = false');
@@ -592,6 +597,9 @@ export class MarketplaceAnimalesService {
       .leftJoinAndSelect('marketplace.departamento', 'departamento')
       .leftJoinAndSelect('marketplace.marketAnimalImages', 'imagenes')
       .where('marketplace.id = :id', { id })
+      .andWhere('marketplace.eliminada = :eliminada', {
+        eliminada: false,
+      })
       .andWhere(
         new Brackets((qb) => {
           qb.where('animal.id IS NULL').orWhere('animal.animal_muerte = false');
@@ -840,7 +848,6 @@ export class MarketplaceAnimalesService {
       where: { id },
       relations: {
         vendedor: true,
-        marketAnimalImages: true,
       },
     });
 
@@ -852,24 +859,10 @@ export class MarketplaceAnimalesService {
       throw new ForbiddenException('No puedes eliminar esta publicación');
     }
 
-    if (publicacion.marketAnimalImages?.length) {
-      for (const imagen of publicacion.marketAnimalImages) {
-        const filePath = path.join(
-          __dirname,
-          '..',
-          '..',
-          'uploads',
-          'fotos_animales_market',
-          imagen.key,
-        );
+    publicacion.eliminada = true;
+    publicacion.disponible = false;
 
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
-        }
-      }
-    }
-
-    await this.marketAnimalRepo.remove(publicacion);
+    await this.marketAnimalRepo.save(publicacion);
 
     return {
       message: 'Publicación eliminada correctamente',
@@ -889,6 +882,7 @@ export class MarketplaceAnimalesService {
       disponible: market.disponible,
       vendido: market.vendido,
       modelo: market.modelo,
+      eliminada: market.eliminada,
       latitud: market.latitud,
       longitud: market.longitud,
       tipo_publicacion: market.tipo_publicacion,

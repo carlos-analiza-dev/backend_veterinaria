@@ -58,6 +58,7 @@ export class AuthClientesController {
     return this.authClientesService.verificarCuenta(verifiedAccount);
   }
 
+  @Get('check-status')
   @AuthCliente()
   checkAuthStatus(@GetCliente() cliente: Cliente) {
     return this.authClientesService.checkAuthStatus(cliente);

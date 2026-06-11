@@ -32,7 +32,7 @@ import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.en
     ]),
     AuthModule,
     NotificacionesAdminsModule,
-    PassportModule.register({ defaultStrategy: 'jwt' }),
+    PassportModule.register({ defaultStrategy: 'jwt-cliente' }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

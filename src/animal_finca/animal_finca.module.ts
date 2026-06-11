@@ -9,6 +9,8 @@ import { RazaAnimal } from 'src/raza_animal/entities/raza_animal.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { NotificacionesAdminsModule } from 'src/notificaciones_admins/notificaciones_admins.module';
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
+import { ImagesAminalesService } from 'src/images_aminales/images_aminales.service';
+import { ImagesAminale } from 'src/images_aminales/entities/images_aminale.entity';
 
 @Module({
   controllers: [AnimalFincaController],
@@ -19,10 +21,11 @@ import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
       EspecieAnimal,
       RazaAnimal,
       Cliente,
+      ImagesAminale,
     ]),
     AuthClientesModule,
     NotificacionesAdminsModule,
   ],
-  providers: [AnimalFincaService],
+  providers: [AnimalFincaService, ImagesAminalesService],
 })
 export class AnimalFincaModule {}

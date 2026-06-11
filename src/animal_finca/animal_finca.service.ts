@@ -21,6 +21,7 @@ import { NotificacionesAdminsService } from 'src/notificaciones_admins/notificac
 import { NotificationType } from 'src/interfaces/nptificaciones.type';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { getPropietarioId } from 'src/utils/get-propietario-id';
+import { ImagesAminalesService } from 'src/images_aminales/images_aminales.service';
 
 @Injectable()
 export class AnimalFincaService {
@@ -36,9 +37,14 @@ export class AnimalFincaService {
     @InjectRepository(RazaAnimal)
     private readonly razaAnimal: Repository<RazaAnimal>,
     private readonly notificacionesService: NotificacionesAdminsService,
+    private serviceImagesAnimal: ImagesAminalesService,
   ) {}
 
-  async create(createAnimalFincaDto: CreateAnimalFincaDto, cliente: Cliente) {
+  async create(
+    createAnimalFincaDto: CreateAnimalFincaDto,
+    cliente: Cliente,
+    images: Express.Multer.File[],
+  ) {
     const {
       color,
       especie,
@@ -76,7 +82,11 @@ export class AnimalFincaService {
       nombre_finca_origen_madre,
       numero_parto_madre,
       pureza,
+      edad_promedio,
+      nombre_animal,
       tipo_reproduccion,
+      padreId,
+      madreId,
     } = createAnimalFincaDto;
 
     try {
@@ -166,10 +176,19 @@ export class AnimalFincaService {
           ).length;
 
           if (animalesExistentes >= configEspecie.cantidad) {
-            throw new ConflictException(
+            configEspecie.cantidad += 1;
+
+            finca.especies_maneja = finca.especies_maneja.map((e) =>
+              e.especie === especie_animal.nombre
+                ? { ...e, cantidad: configEspecie.cantidad }
+                : e,
+            );
+
+            await this.fincaRepo.save(finca);
+            /* throw new ConflictException(
               `No se pueden agregar más animales de la especie ${especie_animal.nombre}. ` +
                 `Límite en finca seleccionada: ${configEspecie.cantidad}`,
-            );
+            ); */
           }
         } else {
           throw new BadRequestException(
@@ -189,18 +208,24 @@ export class AnimalFincaService {
         );
       }
 
-      const razasPadre = await this.razaAnimal.findBy({ id: In(razas_padre) });
-      if (razasPadre.length !== razas_padre.length) {
-        throw new NotFoundException(
-          'Una o más razas del padre no fueron encontradas.',
-        );
+      let razasPadre = [];
+      if (razas_padre && Array.isArray(razas_padre) && razas_padre.length > 0) {
+        razasPadre = await this.razaAnimal.findBy({ id: In(razas_padre) });
+        if (razasPadre.length !== razas_padre.length) {
+          throw new NotFoundException(
+            'Una o más razas del padre no fueron encontradas.',
+          );
+        }
       }
 
-      const razasMadre = await this.razaAnimal.findBy({ id: In(razas_madre) });
-      if (razasMadre.length !== razas_madre.length) {
-        throw new NotFoundException(
-          'Una o más razas de la madre no fueron encontradas.',
-        );
+      let razasMadre = [];
+      if (razas_madre && Array.isArray(razas_madre) && razas_madre.length > 0) {
+        razasMadre = await this.razaAnimal.findBy({ id: In(razas_madre) });
+        if (razasMadre.length !== razas_madre.length) {
+          throw new NotFoundException(
+            'Una o más razas de la madre no fueron encontradas.',
+          );
+        }
       }
 
       const existeIdentificador = await this.animalRepo.findOneBy({
@@ -208,20 +233,6 @@ export class AnimalFincaService {
       });
       if (existeIdentificador) {
         throw new ConflictException('El identificador ya está en uso');
-      }
-
-      let edadCalculada: number | null = null;
-      if (fecha_nacimiento) {
-        const nacimiento = new Date(fecha_nacimiento);
-        const hoy = new Date();
-        let años = hoy.getFullYear() - nacimiento.getFullYear();
-        const mes = hoy.getMonth() - nacimiento.getMonth();
-        const dia = hoy.getDate() - nacimiento.getDate();
-
-        if (mes < 0 || (mes === 0 && dia < 0)) {
-          años--;
-        }
-        edadCalculada = años;
       }
 
       for (const alimentacion of tipo_alimentacion) {
@@ -238,6 +249,42 @@ export class AnimalFincaService {
         }
       }
 
+      let padreAnimal: AnimalFinca | null = null;
+      let madreAnimal: AnimalFinca | null = null;
+      if (padreId) {
+        padreAnimal = await this.animalRepo.findOne({
+          where: { id: padreId },
+          relations: ['razas', 'propietario', 'finca'],
+        });
+
+        if (!padreAnimal) {
+          throw new BadRequestException('No se encontró el padre seleccionado');
+        }
+
+        if (padreAnimal.sexo !== 'Macho') {
+          throw new BadRequestException(
+            'El animal seleccionado como padre debe ser macho',
+          );
+        }
+      }
+
+      if (madreId) {
+        madreAnimal = await this.animalRepo.findOne({
+          where: { id: madreId },
+          relations: ['razas', 'propietario', 'finca'],
+        });
+
+        if (!madreAnimal) {
+          throw new BadRequestException('No se encontró la madre seleccionada');
+        }
+
+        if (madreAnimal.sexo !== 'Hembra') {
+          throw new BadRequestException(
+            'El animal seleccionado como madre debe ser hembra',
+          );
+        }
+      }
+
       const nuevoAnimal = this.animalRepo.create({
         color,
         especie: especie_animal,
@@ -246,7 +293,7 @@ export class AnimalFincaService {
         sexo,
         produccion,
         tipo_produccion,
-        edad_promedio: edadCalculada,
+        edad_promedio,
         fecha_nacimiento,
         observaciones,
         propietario,
@@ -264,24 +311,53 @@ export class AnimalFincaService {
         tipo_reproduccion,
         compra_animal,
         nombre_criador_origen_animal,
-        nombre_padre,
-        arete_padre,
-        razas_padre: razasPadre,
-        pureza_padre,
-        nombre_criador_padre,
-        nombre_propietario_padre,
-        nombre_finca_origen_padre,
-        arete_madre,
-        nombre_criador_madre,
-        nombre_finca_origen_madre,
-        nombre_madre,
-        nombre_propietario_madre,
-        numero_parto_madre,
-        razas_madre: razasMadre,
-        pureza_madre,
+        padre: padreAnimal,
+        madre: madreAnimal,
+        nombre_padre: padreAnimal?.nombre_animal ?? nombre_padre,
+        arete_padre: padreAnimal?.identificador ?? arete_padre,
+        razas_padre: padreAnimal?.razas ?? razasPadre,
+        pureza_padre: padreAnimal?.pureza ?? pureza_padre,
+        nombre_propietario_padre:
+          padreAnimal?.propietario?.nombre ?? nombre_propietario_padre,
+        nombre_finca_origen_padre:
+          padreAnimal?.finca?.nombre_finca ?? nombre_finca_origen_padre,
+        nombre_criador_padre:
+          padreAnimal?.nombre_criador_padre ?? nombre_criador_padre,
+
+        nombre_madre: madreAnimal?.nombre_animal ?? nombre_madre,
+        arete_madre: madreAnimal?.identificador ?? arete_madre,
+        razas_madre: madreAnimal?.razas ?? razasMadre,
+        pureza_madre: madreAnimal?.pureza ?? pureza_madre,
+        nombre_propietario_madre:
+          madreAnimal?.propietario?.nombre ?? nombre_propietario_madre,
+        nombre_finca_origen_madre:
+          madreAnimal?.finca?.nombre_finca ?? nombre_finca_origen_madre,
+        numero_parto_madre: numero_parto_madre,
+        nombre_criador_madre:
+          madreAnimal?.nombre_criador_madre ?? nombre_criador_madre,
+        nombre_animal,
       });
 
       await this.animalRepo.save(nuevoAnimal);
+
+      const uploadedImages = [];
+      if (images && images.length > 0) {
+        for (const image of images) {
+          try {
+            const uploadedImage =
+              await this.serviceImagesAnimal.uploadProfileImage(
+                nuevoAnimal.id,
+                image,
+              );
+            uploadedImages.push(uploadedImage);
+          } catch (imageError) {
+            console.error(
+              `Error al subir imagen para animal ${nuevoAnimal.id}:`,
+              imageError,
+            );
+          }
+        }
+      }
 
       const creadorNombre =
         cliente.rol === TipoCliente.TRABAJADOR
@@ -433,7 +509,8 @@ export class AnimalFincaService {
     }
   }
 
-  async findAllAnimales(cliente: Cliente) {
+  async findAllAnimales(cliente: Cliente, paginationDto: PaginationDto) {
+    const { sexo, especieId } = paginationDto;
     try {
       const propietarioId = getPropietarioId(cliente);
 
@@ -452,6 +529,18 @@ export class AnimalFincaService {
         .andWhere('animal.animal_vendido = :animal_vendido', {
           animal_vendido: false,
         });
+
+      if (sexo) {
+        query.andWhere('LOWER(animal.sexo) = LOWER(:sexo)', {
+          sexo,
+        });
+      }
+
+      if (especieId) {
+        query.andWhere('especie.id = :especieId', {
+          especieId,
+        });
+      }
 
       if (cliente.rol === TipoCliente.PROPIETARIO) {
         query.andWhere('animal.propietarioId = :propietarioId', {
@@ -581,6 +670,7 @@ export class AnimalFincaService {
       nombre_criador_madre,
       nombre_propietario_madre,
       nombre_finca_origen_madre,
+      nombre_animal,
       numero_parto_madre,
     } = updateAnimalFincaDto;
 
@@ -745,29 +835,6 @@ export class AnimalFincaService {
         animal.propietario = propietario;
       }
 
-      if (fecha_nacimiento !== undefined) {
-        let edadCalculada: number | null = null;
-        if (fecha_nacimiento) {
-          const nacimiento = new Date(fecha_nacimiento);
-          const hoy = new Date();
-          let años = hoy.getFullYear() - nacimiento.getFullYear();
-          const mes = hoy.getMonth() - nacimiento.getMonth();
-          const dia = hoy.getDate() - nacimiento.getDate();
-
-          if (mes < 0 || (mes === 0 && dia < 0)) {
-            años--;
-          }
-          edadCalculada = años;
-        }
-
-        const fecha = new Date(fecha_nacimiento);
-        if (isNaN(fecha.getTime())) {
-          throw new BadRequestException('Fecha de nacimiento inválida');
-        }
-        animal.fecha_nacimiento = fecha;
-        animal.edad_promedio = edadCalculada;
-      }
-
       if (tipo_alimentacion !== undefined) {
         if (
           !Array.isArray(tipo_alimentacion) ||
@@ -802,9 +869,13 @@ export class AnimalFincaService {
         animal.tipo_alimentacion = tipo_alimentacion;
       }
 
+      if (fecha_nacimiento !== undefined) {
+        animal.fecha_nacimiento = new Date(fecha_nacimiento);
+      }
       if (color !== undefined) animal.color = color;
       if (sexo !== undefined) animal.sexo = sexo;
       if (edad_promedio !== undefined) animal.edad_promedio = edad_promedio;
+
       if (observaciones !== undefined) animal.observaciones = observaciones;
       if (medicamento !== undefined) animal.medicamento = medicamento;
       if (complementos !== undefined) animal.complementos = complementos;
@@ -843,7 +914,7 @@ export class AnimalFincaService {
       if (numero_parto_madre !== undefined)
         animal.numero_parto_madre = numero_parto_madre;
       if (pureza_madre !== undefined) animal.pureza_madre = pureza_madre;
-
+      if (nombre_animal !== undefined) animal.nombre_animal = nombre_animal;
       await this.animalRepo.save({ ...animal, actualizado_por: cliente });
 
       return {

@@ -23,6 +23,7 @@ export enum TipoReproduccionEnum {
   NATURAL = 'Monta natural',
   IATF = 'Inseminación aritificial a tiempo fijo (IATF)',
   FIV = 'Fecundación in vitro (FIV)',
+  TRANSFERENCIA_EMBRIONES = 'Transferencia de embriones',
 }
 
 export enum PurezaEnum {
@@ -31,6 +32,7 @@ export enum PurezaEnum {
   TRES_CUARTOS = '3/4',
   CINCO_OCTAVOS = '5/8',
   MEDIA_RAZA = '1/2',
+  NO_DEFINIDA = 'N/D',
 }
 
 @Entity('animal_finca')
@@ -44,8 +46,11 @@ export class AnimalFinca {
   @Column({ type: 'varchar', length: 100 })
   sexo: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   color: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  nombre_animal: string;
 
   @Column({ type: 'varchar', length: 100, unique: true })
   identificador: string;
@@ -60,7 +65,7 @@ export class AnimalFinca {
   @Column({
     type: 'enum',
     enum: PurezaEnum,
-    default: PurezaEnum.UNO,
+    default: PurezaEnum.NO_DEFINIDA,
   })
   pureza: PurezaEnum;
 
@@ -112,6 +117,20 @@ export class AnimalFinca {
   @Column({ type: 'bool', default: false })
   animal_vendido: boolean;
 
+  @ManyToOne(() => AnimalFinca, { nullable: true })
+  @JoinColumn({ name: 'padreId' })
+  padre: AnimalFinca;
+
+  @Column({ nullable: true })
+  padreId: string;
+
+  @ManyToOne(() => AnimalFinca, { nullable: true })
+  @JoinColumn({ name: 'madreId' })
+  madre: AnimalFinca;
+
+  @Column({ nullable: true })
+  madreId: string;
+
   /* DATOS PADRE */
 
   @Column({ type: 'varchar', length: 100, default: 'N/D' })
@@ -129,7 +148,7 @@ export class AnimalFinca {
   @Column({
     type: 'enum',
     enum: PurezaEnum,
-    default: PurezaEnum.UNO,
+    default: PurezaEnum.NO_DEFINIDA,
   })
   pureza_padre: PurezaEnum;
 
@@ -158,7 +177,7 @@ export class AnimalFinca {
   @Column({
     type: 'enum',
     enum: PurezaEnum,
-    default: PurezaEnum.UNO,
+    default: PurezaEnum.NO_DEFINIDA,
   })
   pureza_madre: PurezaEnum;
 

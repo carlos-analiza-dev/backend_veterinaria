@@ -24,6 +24,10 @@ export class PaginationDto {
 
   @IsOptional()
   @IsString()
+  sexo?: string;
+
+  @IsOptional()
+  @IsString()
   categoria?: string;
 
   @IsOptional()

@@ -173,7 +173,7 @@ export class AuthClientesService {
           }),
         );
       } else {
-        console.log(
+        console.warn(
           'No se encontraron administradores para notificar en el país:',
           user.pais.nombre,
         );
@@ -442,6 +442,21 @@ export class AuthClientesService {
     }
   }
 
+  async checkAuthStatus(cliente: Cliente) {
+    delete cliente.password;
+    return {
+      ...cliente,
+      token: this.getJwtToken({ id: cliente.id }),
+    };
+  }
+
+  private getJwtToken(payload: JwtPayload) {
+    if (!this.jwtService) {
+      throw new InternalServerErrorException('JwtService no está disponible');
+    }
+    return this.jwtService.sign(payload);
+  }
+
   async actualizarContrasena(updatePassword: UpdatePasswordDto) {
     const { email, nuevaContrasena } = updatePassword;
 
@@ -463,14 +478,6 @@ export class AuthClientesService {
     } catch (error) {
       throw error;
     }
-  }
-
-  async checkAuthStatus(cliente: Cliente) {
-    delete cliente.password;
-    return {
-      ...cliente,
-      token: this.getJwtToken({ id: cliente.id }),
-    };
   }
 
   async verificarCuenta(verifiedAccount: VerifiedAccountDto) {
@@ -543,6 +550,8 @@ export class AuthClientesService {
       const queryBuilder = this.clienteRepository
         .createQueryBuilder('cliente')
         .leftJoinAndSelect('cliente.pais', 'pais')
+        .leftJoinAndSelect('cliente.paquetes', 'clientePaquetes')
+        .leftJoinAndSelect('clientePaquetes.paquete', 'paquete')
         .leftJoinAndSelect('cliente.departamento', 'departamento')
         .leftJoinAndSelect('cliente.municipio', 'municipio');
 
@@ -572,8 +581,32 @@ export class AuthClientesService {
         );
       }
 
-      const clientes = instanceToPlain(clients);
-      return { clientes, total };
+      const clientes = clients.map((cliente) => {
+        const paqueteActivo = cliente.paquetes?.find(
+          (p) =>
+            p.activo && (!p.fechaFin || new Date(p.fechaFin) >= new Date()),
+        );
+
+        return {
+          ...instanceToPlain(cliente),
+
+          tienePaqueteActivo: !!paqueteActivo,
+
+          paqueteActivo: paqueteActivo
+            ? {
+                id: paqueteActivo.paquete.id,
+                nombre: paqueteActivo.paquete.nombre,
+                fechaInicio: paqueteActivo.fechaInicio,
+                fechaFin: paqueteActivo.fechaFin,
+              }
+            : null,
+        };
+      });
+
+      return {
+        clientes,
+        total,
+      };
     } catch (error) {
       throw error;
     }
@@ -929,13 +962,6 @@ export class AuthClientesService {
 
   remove(id: number) {
     return `This action removes a #${id} authCliente`;
-  }
-
-  private getJwtToken(payload: JwtPayload) {
-    if (!this.jwtService) {
-      throw new InternalServerErrorException('JwtService no está disponible');
-    }
-    return this.jwtService.sign(payload);
   }
 
   private handleDatabaseErrors(error: any): never {

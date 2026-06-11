@@ -44,6 +44,7 @@ export class AuthController {
     return this.authService.verificarCuenta(verifiedAccount);
   }
 
+  @Get('check-status')
   @Auth()
   checkAuthStatus(@GetUser() user: User) {
     return this.authService.checkAuthStatus(user);

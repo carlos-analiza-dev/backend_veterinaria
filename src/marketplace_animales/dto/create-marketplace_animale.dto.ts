@@ -116,4 +116,11 @@ export class CreateMarketplaceAnimaleDto {
     message: 'El campo vendido debe ser verdadero o falso',
   })
   vendido?: boolean;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean({
+    message: 'El campo eliminada debe ser verdadero o falso',
+  })
+  eliminada?: boolean;
 }

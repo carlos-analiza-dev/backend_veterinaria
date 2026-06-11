@@ -132,6 +132,9 @@ export class MarketplaceAnimale {
   @Column({ type: 'boolean', default: false })
   vendido: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  eliminada: boolean;
+
   @CreateDateColumn()
   created_at: Date;
 
