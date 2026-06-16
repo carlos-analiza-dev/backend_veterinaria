@@ -5,6 +5,7 @@ import { PesoEsperadoRaza } from 'src/peso_esperado_raza/entities/peso_esperado_
 import {
   Column,
   Entity,
+  JoinTable,
   ManyToMany,
   ManyToOne,
   OneToMany,
@@ -26,6 +27,7 @@ export class RazaAnimal {
   isActive: boolean;
 
   @ManyToMany(() => AnimalFinca, (animal) => animal.razas)
+  @JoinTable()
   animales: AnimalFinca[];
 
   @ManyToOne(() => EspecieAnimal, (especie) => especie.razas)

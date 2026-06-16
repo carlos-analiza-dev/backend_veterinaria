@@ -9,7 +9,7 @@ import { CreateAnimalFincaDto } from './dto/create-animal_finca.dto';
 import { UpdateAnimalFincaDto } from './dto/update-animal_finca.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AnimalFinca } from './entities/animal_finca.entity';
-import { In, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Like, Repository } from 'typeorm';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
@@ -22,7 +22,7 @@ import { NotificationType } from 'src/interfaces/nptificaciones.type';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { getPropietarioId } from 'src/utils/get-propietario-id';
 import { ImagesAminalesService } from 'src/images_aminales/images_aminales.service';
-
+import * as XLSX from 'xlsx';
 @Injectable()
 export class AnimalFincaService {
   constructor(
@@ -38,6 +38,7 @@ export class AnimalFincaService {
     private readonly razaAnimal: Repository<RazaAnimal>,
     private readonly notificacionesService: NotificacionesAdminsService,
     private serviceImagesAnimal: ImagesAminalesService,
+    private readonly dataSource: DataSource,
   ) {}
 
   async create(
@@ -383,6 +384,306 @@ export class AnimalFincaService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async cargaMasiva(
+    cliente: Cliente,
+    file: Express.Multer.File,
+    fincaId: string,
+    especieId: string,
+    razaId: string,
+  ) {
+    const workbook = XLSX.read(file.buffer, {
+      type: 'buffer',
+    });
+
+    const sheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[sheetName];
+    const data = XLSX.utils.sheet_to_json<any>(worksheet);
+
+    if (!data || data.length === 0) {
+      throw new BadRequestException('El archivo no contiene datos');
+    }
+
+    const finca = await this.fincaRepo.findOne({
+      where: {
+        id: fincaId,
+      },
+    });
+
+    if (!finca) {
+      throw new NotFoundException('Finca no encontrada');
+    }
+
+    const especie = await this.especieAnimal.findOne({
+      where: {
+        id: especieId,
+      },
+    });
+
+    if (!especie) {
+      throw new NotFoundException('Especie no encontrada');
+    }
+
+    const raza = await this.razaAnimal.findOne({
+      where: {
+        id: razaId,
+      },
+    });
+
+    if (!raza) {
+      throw new NotFoundException('Raza no encontrada');
+    }
+
+    if (!raza.abreviatura) {
+      throw new BadRequestException(
+        'La raza seleccionada no tiene una abreviatura definida',
+      );
+    }
+
+    const getIdentifierPrefix = (sexo: string) => {
+      const especieCode = especie.nombre.slice(0, 2).toUpperCase();
+      const razaCode = raza.abreviatura.toUpperCase();
+      const sexoCode = sexo === 'Macho' ? '1' : '2';
+      return `${especieCode}${razaCode}${sexoCode}`;
+    };
+
+    const generateUniqueNumber = (): string => {
+      const min = 100000;
+      const max = 999999;
+      return Math.floor(Math.random() * (max - min + 1) + min).toString();
+    };
+
+    const generateIdentifier = (
+      prefix: string,
+      uniqueNumber: string,
+    ): string => {
+      return `${prefix}-${uniqueNumber}`;
+    };
+
+    return this.dataSource.transaction(async (manager) => {
+      const animales: AnimalFinca[] = [];
+      const errors: Array<{ row: number; error: string }> = [];
+
+      const animalesPorSexo: { [key: string]: any[] } = {
+        Macho: [],
+        Hembra: [],
+      };
+
+      const normalizeToString = (value: any): string => {
+        if (value === null || value === undefined) return '';
+        if (typeof value === 'number') return value.toString();
+        if (typeof value === 'string') return value.trim();
+        if (typeof value === 'boolean') return value ? 'true' : 'false';
+        if (value instanceof Date) return value.toISOString().split('T')[0];
+        return String(value).trim();
+      };
+
+      const normalizeSexo = (value: any): string => {
+        const sexoStr = normalizeToString(value).toLowerCase();
+        if (sexoStr === 'macho' || sexoStr === 'm') return 'Macho';
+        if (
+          sexoStr === 'hembra' ||
+          sexoStr === 'h' ||
+          sexoStr === 'femenino' ||
+          sexoStr === 'f'
+        )
+          return 'Hembra';
+        return sexoStr;
+      };
+
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i];
+        const rowNumber = i + 2;
+
+        const nombreAnimal = normalizeToString(row.nombre_animal);
+        const sexoRaw = row.sexo;
+        const fechaNacimientoRaw = row.fecha_nacimiento;
+        const edadPromedioRaw = row.edad_promedio;
+        const nombrePadre = normalizeToString(row.nombre_padre);
+        const nombreMadre = normalizeToString(row.nombre_madre);
+
+        if (!nombreAnimal) {
+          errors.push({
+            row: rowNumber,
+            error: 'nombre_animal es requerido',
+          });
+          continue;
+        }
+
+        if (!sexoRaw) {
+          errors.push({
+            row: rowNumber,
+            error: 'sexo es requerido',
+          });
+          continue;
+        }
+
+        const sexoNormalizado = normalizeSexo(sexoRaw);
+        if (sexoNormalizado !== 'Macho' && sexoNormalizado !== 'Hembra') {
+          errors.push({
+            row: rowNumber,
+            error: `sexo debe ser "Macho" o "Hembra". Valor recibido: "${sexoRaw}"`,
+          });
+          continue;
+        }
+
+        let fechaNacimiento = null;
+        if (fechaNacimientoRaw) {
+          let date: Date;
+
+          if (typeof fechaNacimientoRaw === 'number') {
+            const excelEpoch = new Date(1899, 11, 30);
+            date = new Date(
+              excelEpoch.getTime() + fechaNacimientoRaw * 86400000,
+            );
+          } else {
+            date = new Date(fechaNacimientoRaw);
+          }
+
+          if (isNaN(date.getTime())) {
+            errors.push({
+              row: rowNumber,
+              error: `fecha_nacimiento inválida. Valor recibido: "${fechaNacimientoRaw}"`,
+            });
+            continue;
+          }
+          fechaNacimiento = date;
+        }
+
+        let edadPromedio: number;
+        if (typeof edadPromedioRaw === 'string') {
+          edadPromedio = parseFloat(edadPromedioRaw.replace(',', '.'));
+        } else if (typeof edadPromedioRaw === 'number') {
+          edadPromedio = edadPromedioRaw;
+        } else {
+          edadPromedio = NaN;
+        }
+
+        if (isNaN(edadPromedio)) {
+          errors.push({
+            row: rowNumber,
+            error: `edad_promedio debe ser un número. Valor recibido: "${edadPromedioRaw}"`,
+          });
+          continue;
+        }
+
+        animalesPorSexo[sexoNormalizado].push({
+          row,
+          rowNumber,
+          nombre_animal: nombreAnimal,
+          sexo: sexoNormalizado,
+          fecha_nacimiento: fechaNacimiento,
+          edad_promedio: edadPromedio,
+          nombre_padre: nombrePadre || 'N/D',
+          nombre_madre: nombreMadre || 'N/D',
+        });
+      }
+
+      if (errors.length > 0) {
+        throw new BadRequestException({
+          message: 'Errores en el archivo',
+          errors: errors,
+        });
+      }
+
+      if (
+        animalesPorSexo.Macho.length === 0 &&
+        animalesPorSexo.Hembra.length === 0
+      ) {
+        throw new BadRequestException('No hay animales válidos para cargar');
+      }
+
+      const usedIdentifiers = new Set<string>();
+
+      const existingIdentifiers = await manager.find(AnimalFinca, {
+        select: ['identificador'],
+      });
+      existingIdentifiers.forEach((animal) => {
+        if (animal.identificador) {
+          usedIdentifiers.add(animal.identificador);
+        }
+      });
+
+      const generateUniqueIdentifier = (prefix: string): string => {
+        let attempts = 0;
+        const maxAttempts = 1000;
+
+        while (attempts < maxAttempts) {
+          const uniqueNumber = generateUniqueNumber();
+          const identifier = generateIdentifier(prefix, uniqueNumber);
+
+          if (!usedIdentifiers.has(identifier)) {
+            usedIdentifiers.add(identifier);
+            return identifier;
+          }
+          attempts++;
+        }
+
+        throw new BadRequestException(
+          `No se pudo generar un identificador único para el prefijo ${prefix}`,
+        );
+      };
+
+      const machoPrefix = getIdentifierPrefix('Macho');
+      for (const animalData of animalesPorSexo.Macho) {
+        const identificador = generateUniqueIdentifier(machoPrefix);
+
+        const animal = manager.create(AnimalFinca, {
+          nombre_animal: animalData.nombre_animal,
+          sexo: animalData.sexo,
+          propietario: cliente,
+          fecha_nacimiento: animalData.fecha_nacimiento,
+          edad_promedio: animalData.edad_promedio,
+          nombre_padre: animalData.nombre_padre,
+          nombre_madre: animalData.nombre_madre,
+          especie,
+          finca,
+          razas: [raza],
+          identificador,
+          produccion: 'N/D',
+          tipo_produccion: 'N/D',
+          tipo_alimentacion: [],
+          complementos: [],
+        });
+
+        animales.push(animal);
+      }
+
+      const hembraPrefix = getIdentifierPrefix('Hembra');
+      for (const animalData of animalesPorSexo.Hembra) {
+        const identificador = generateUniqueIdentifier(hembraPrefix);
+
+        const animal = manager.create(AnimalFinca, {
+          nombre_animal: animalData.nombre_animal,
+          sexo: animalData.sexo,
+          propietario: cliente,
+          fecha_nacimiento: animalData.fecha_nacimiento,
+          edad_promedio: animalData.edad_promedio,
+          nombre_padre: animalData.nombre_padre,
+          nombre_madre: animalData.nombre_madre,
+          especie,
+          finca,
+          razas: [raza],
+          identificador,
+          produccion: 'N/D',
+          tipo_produccion: 'N/D',
+          tipo_alimentacion: [],
+          complementos: [],
+        });
+
+        animales.push(animal);
+      }
+
+      await manager.save(animales);
+
+      return {
+        total: animales.length,
+        machos: animalesPorSexo.Macho.length,
+        hembras: animalesPorSexo.Hembra.length,
+        message: 'Carga masiva realizada correctamente',
+      };
+    });
   }
 
   async findAll(

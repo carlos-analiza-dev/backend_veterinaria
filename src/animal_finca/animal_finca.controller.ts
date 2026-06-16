@@ -9,6 +9,7 @@ import {
   Query,
   UseInterceptors,
   UploadedFiles,
+  UploadedFile,
 } from '@nestjs/common';
 import { AnimalFincaService } from './animal_finca.service';
 import { CreateAnimalFincaDto } from './dto/create-animal_finca.dto';
@@ -18,7 +19,7 @@ import { UpdateDeathStatusDto } from './dto/update-death-status.dto';
 import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
 import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
-import { FilesInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 
 @Controller('animal-finca')
 export class AnimalFincaController {
@@ -36,6 +37,25 @@ export class AnimalFincaController {
       createAnimalFincaDto,
       cliente,
       images,
+    );
+  }
+
+  @Post('carga-masiva/:fincaId/:especieId/:razaId')
+  @UseInterceptors(FileInterceptor('file'))
+  @AuthCliente()
+  async cargaMasiva(
+    @GetCliente() cliente: Cliente,
+    @UploadedFile() file: Express.Multer.File,
+    @Param('fincaId') fincaId: string,
+    @Param('especieId') especieId: string,
+    @Param('razaId') razaId: string,
+  ) {
+    return this.animalFincaService.cargaMasiva(
+      cliente,
+      file,
+      fincaId,
+      especieId,
+      razaId,
     );
   }
 

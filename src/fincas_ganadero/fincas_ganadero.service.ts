@@ -114,6 +114,7 @@ export class FincasGanaderoService {
         cantidad_animales,
         abreviatura,
         area_ganaderia,
+        area_agricola,
         tamaño_total,
         tipo_explotacion,
         especies_maneja,
