@@ -44,6 +44,7 @@ export class CreateMarketplaceAnimaleDto {
   @IsNotEmpty({ message: 'La dirección es requerida' })
   direccion_completa: string;
 
+  @IsOptional()
   @Type(() => Number)
   @IsNumber(
     {
@@ -53,7 +54,7 @@ export class CreateMarketplaceAnimaleDto {
       message: 'El precio debe ser un número válido (ej: 1500.00)',
     },
   )
-  precio: number;
+  precio?: number;
 
   @IsOptional()
   @IsString({
@@ -61,6 +62,7 @@ export class CreateMarketplaceAnimaleDto {
   })
   modelo?: string;
 
+  @IsOptional()
   @Type(() => Number)
   @IsInt({
     message: 'El stock debe ser un número entero',
@@ -123,4 +125,63 @@ export class CreateMarketplaceAnimaleDto {
     message: 'El campo eliminada debe ser verdadero o falso',
   })
   eliminada?: boolean;
+
+  // ALQUILER
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    {
+      message: 'El precio por hora debe ser un número válido',
+    },
+  )
+  precioPorHora?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    {
+      message: 'El precio por día debe ser un número válido',
+    },
+  )
+  precioPorDia?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    {
+      message: 'El precio por semana debe ser un número válido',
+    },
+  )
+  precioPorSemana?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    {
+      message: 'El precio por mes debe ser un número válido',
+    },
+  )
+  precioPorMes?: number;
+
+  @IsOptional()
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsBoolean({
+    message: 'El campo requiereDeposito debe ser verdadero o falso',
+  })
+  requiereDeposito?: boolean;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    {
+      message: 'El monto del depósito debe ser un número válido',
+    },
+  )
+  montoDeposito?: number;
 }

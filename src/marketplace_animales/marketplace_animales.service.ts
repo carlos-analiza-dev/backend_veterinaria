@@ -212,7 +212,12 @@ export class MarketplaceAnimalesService {
         nombre: restoDatos.nombre,
         descripcion: restoDatos.descripcion,
         precio: restoDatos.precio,
-
+        precioPorDia: restoDatos.precioPorDia,
+        precioPorHora: restoDatos.precioPorHora,
+        precioPorSemana: restoDatos.precioPorSemana,
+        precioPorMes: restoDatos.precioPorMes,
+        requiereDeposito: restoDatos.requiereDeposito,
+        montoDeposito: restoDatos.montoDeposito,
         moneda: moneda,
         stock: restoDatos.stock,
         disponible: restoDatos.disponible ?? true,
@@ -596,6 +601,8 @@ export class MarketplaceAnimalesService {
       .leftJoinAndSelect('marketplace.pais', 'pais')
       .leftJoinAndSelect('marketplace.departamento', 'departamento')
       .leftJoinAndSelect('marketplace.marketAnimalImages', 'imagenes')
+      .leftJoinAndSelect('vendedor.paquetes', 'paquetes')
+      .leftJoinAndSelect('paquetes.paquete', 'paquete')
       .where('marketplace.id = :id', { id })
       .andWhere('marketplace.eliminada = :eliminada', {
         eliminada: false,
@@ -876,7 +883,12 @@ export class MarketplaceAnimalesService {
       descripcion: market.descripcion,
       direccion: market.direccion_completa,
       precio: market.precio,
-
+      precioHora: market.precioPorHora,
+      precioDia: market.precioPorDia,
+      precioSemana: market.precioPorSemana,
+      precioMes: market.precioPorMes,
+      deposito: market.requiereDeposito,
+      montoDeposito: market.montoDeposito,
       moneda: market.moneda,
       stock: market.stock,
       disponible: market.disponible,
@@ -953,7 +965,10 @@ export class MarketplaceAnimalesService {
             id: market.vendedor.id,
             nombre: market.vendedor.nombre,
             telefono: market.vendedor.telefono,
+            verificado: market.vendedor.verified,
             create: market.vendedor.createdAt,
+            tienePaqueteActivo: this.tienePaqueteActivo(market.vendedor),
+            paqueteActivo: this.getPaqueteActivoInfo(market.vendedor),
             imagenes:
               market.vendedor.profileImages?.map((img) => ({
                 id: img.id,
@@ -966,6 +981,45 @@ export class MarketplaceAnimalesService {
         pais: market.pais?.nombre,
         departamento: market.departamento?.nombre,
       },
+    };
+  }
+
+  private tienePaqueteActivo(cliente: Cliente): boolean {
+    if (!cliente.paquetes || cliente.paquetes.length === 0) {
+      return false;
+    }
+
+    return cliente.paquetes.some((clientePaquete) => {
+      if (!clientePaquete.activo) return false;
+
+      if (clientePaquete.fechaFin) {
+        return new Date(clientePaquete.fechaFin) > new Date();
+      }
+
+      return true;
+    });
+  }
+  private getPaqueteActivoInfo(cliente: Cliente): any {
+    if (!cliente.paquetes || cliente.paquetes.length === 0) {
+      return null;
+    }
+
+    const paqueteActivo = cliente.paquetes.find((clientePaquete) => {
+      if (!clientePaquete.activo) return false;
+      if (clientePaquete.fechaFin) {
+        return new Date(clientePaquete.fechaFin) > new Date();
+      }
+      return true;
+    });
+
+    if (!paqueteActivo) return null;
+
+    return {
+      id: paqueteActivo.id,
+      nombre: paqueteActivo.paquete?.nombre,
+      fechaInicio: paqueteActivo.fechaInicio,
+      fechaFin: paqueteActivo.fechaFin,
+      activo: paqueteActivo.activo,
     };
   }
 }

@@ -43,6 +43,7 @@ export class MarketplaceAnimale {
     type: 'decimal',
     precision: 12,
     scale: 2,
+    nullable: true,
   })
   precio: number;
 
@@ -78,7 +79,7 @@ export class MarketplaceAnimale {
   @Column({ type: 'varchar', length: 255, nullable: true })
   modelo: string;
 
-  @Column({ type: 'int', default: 1 })
+  @Column({ type: 'int', default: 1, nullable: true })
   stock: number;
 
   @OneToMany(
@@ -134,6 +135,54 @@ export class MarketplaceAnimale {
 
   @Column({ type: 'boolean', default: false })
   eliminada: boolean;
+
+  //ALQUILER
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
+  precioPorHora: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
+  precioPorDia: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
+  precioPorSemana: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
+  precioPorMes: number;
+
+  @Column({
+    type: 'boolean',
+    default: false,
+  })
+  requiereDeposito: boolean;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+  })
+  montoDeposito: number;
 
   @CreateDateColumn()
   created_at: Date;

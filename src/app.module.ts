@@ -115,6 +115,8 @@ import { MarketplaceAnimalesModule } from './marketplace_animales/marketplace_an
 import { MarketplaceAnimalesImagesModule } from './marketplace_animales_images/marketplace_animales_images.module';
 import { MarketplaceVisualizacionesModule } from './marketplace_visualizaciones/marketplace_visualizaciones.module';
 import { ChatMarketplaceModule } from './chat_marketplace/chat_marketplace.module';
+import { AnunciosPrincipalesModule } from './anuncios_principales/anuncios_principales.module';
+import { ImagesAnunciosModule } from './images_anuncios/images_anuncios.module';
 
 @Module({
   imports: [
@@ -345,6 +347,10 @@ import { ChatMarketplaceModule } from './chat_marketplace/chat_marketplace.modul
     MarketplaceVisualizacionesModule,
 
     ChatMarketplaceModule,
+
+    AnunciosPrincipalesModule,
+
+    ImagesAnunciosModule,
   ],
   controllers: [],
   providers: [],
