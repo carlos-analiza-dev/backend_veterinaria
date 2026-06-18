@@ -8,12 +8,21 @@ import { ImagesAnuncio } from 'src/images_anuncios/entities/images_anuncio.entit
 import { AuthModule } from 'src/auth/auth.module';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { User } from 'src/auth/entities/auth.entity';
+import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Module({
   controllers: [AnunciosPrincipalesController],
   imports: [
-    TypeOrmModule.forFeature([AnunciosPrincipale, User, ImagesAnuncio, Pai]),
+    TypeOrmModule.forFeature([
+      AnunciosPrincipale,
+      User,
+      ImagesAnuncio,
+      Pai,
+      Cliente,
+    ]),
     AuthModule,
+    AuthClientesModule,
   ],
   providers: [AnunciosPrincipalesService, ImagesAnunciosService],
 })

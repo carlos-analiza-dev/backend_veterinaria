@@ -506,12 +506,6 @@ export class MarketplaceAnimalesService {
       total,
       limit,
       offset,
-      filtros_aplicados: {
-        categoriaId: categoriaId || null,
-        subcategoriaId: subcategoriaId || null,
-        tipoProductoId: tipoProductoId || null,
-        paisId: cliente.pais.id,
-      },
       productos: data.map((producto) => this.mappingMarketAnimales(producto)),
     };
   }

@@ -18,6 +18,9 @@ import { Auth } from 'src/auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
+import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Controller('anuncios-principales')
 export class AnunciosPrincipalesController {
@@ -42,13 +45,20 @@ export class AnunciosPrincipalesController {
 
   @Get()
   @Auth()
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.anunciosPrincipalesService.findAll(paginationDto);
+  findAll(@GetUser() user: User, @Query() paginationDto: PaginationDto) {
+    return this.anunciosPrincipalesService.findAll(user, paginationDto);
   }
 
   @Get('clients')
-  findAllAnuncios() {
-    return this.anunciosPrincipalesService.findAllAnuncios();
+  @AuthCliente()
+  findAllAnuncios(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.anunciosPrincipalesService.findAllAnuncios(
+      cliente,
+      paginationDto,
+    );
   }
 
   @Get(':id')

@@ -12,6 +12,7 @@ import { ImagesAnunciosService } from 'src/images_anuncios/images_anuncios.servi
 import { User } from 'src/auth/entities/auth.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Injectable()
 export class AnunciosPrincipalesService {
@@ -58,20 +59,27 @@ export class AnunciosPrincipalesService {
     return 'Anuncio ingresado exitosamente';
   }
 
-  async findAll(paginationDto: PaginationDto) {
+  async findAll(user: User, paginationDto: PaginationDto) {
+    const paisId = user.pais.id;
+
     const { limit = 10, offset = 0, principal, mostrar } = paginationDto;
 
     const queryBuilder = this.anunciosRepo
       .createQueryBuilder('anuncio')
       .leftJoinAndSelect('anuncio.pais', 'pais')
-      .leftJoinAndSelect('anuncio.anucioImages', 'imagenes');
+      .leftJoinAndSelect('anuncio.anucioImages', 'imagenes')
+      .where('pais.id = :paisId', { paisId });
 
     if (principal !== undefined) {
-      queryBuilder.andWhere('anuncio.esPrincipal = :principal', { principal });
+      queryBuilder.andWhere('anuncio.esPrincipal = :principal', {
+        principal,
+      });
     }
 
     if (mostrar !== undefined) {
-      queryBuilder.andWhere('anuncio.mostrar = :mostrar', { mostrar });
+      queryBuilder.andWhere('anuncio.mostrar = :mostrar', {
+        mostrar,
+      });
     }
 
     queryBuilder
@@ -89,7 +97,31 @@ export class AnunciosPrincipalesService {
     };
   }
 
-  async findAllAnuncios() {}
+  async findAllAnuncios(cliente: Cliente, paginationDto: PaginationDto) {
+    const paisId = cliente.pais.id;
+
+    const { principal, mostrar } = paginationDto;
+
+    const queryBuilder = this.anunciosRepo
+      .createQueryBuilder('anuncio')
+      .leftJoinAndSelect('anuncio.pais', 'pais')
+      .leftJoinAndSelect('anuncio.anucioImages', 'imagenes')
+      .where('pais.id = :paisId', { paisId });
+
+    if (principal !== undefined) {
+      queryBuilder.andWhere('anuncio.esPrincipal = :principal', {
+        principal,
+      });
+    }
+
+    if (mostrar !== undefined) {
+      queryBuilder.andWhere('anuncio.mostrar = :mostrar', {
+        mostrar,
+      });
+    }
+
+    return queryBuilder.orderBy('anuncio.fecha_registro', 'DESC').getMany();
+  }
 
   async findOne(id: string): Promise<AnunciosPrincipale> {
     const anuncio = await this.anunciosRepo.findOne({

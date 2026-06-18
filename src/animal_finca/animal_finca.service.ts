@@ -973,6 +973,8 @@ export class AnimalFincaService {
       nombre_finca_origen_madre,
       nombre_animal,
       numero_parto_madre,
+      padreId,
+      madreId,
     } = updateAnimalFincaDto;
 
     try {
@@ -988,6 +990,14 @@ export class AnimalFincaService {
           'finca',
           'propietario',
           'finca.asignaciones',
+          'padre',
+          'madre',
+          'padre.razas',
+          'madre.razas',
+          'padre.propietario',
+          'madre.propietario',
+          'padre.finca',
+          'madre.finca',
         ],
       });
 
@@ -1022,6 +1032,109 @@ export class AnimalFincaService {
         }
       } else {
         throw new BadRequestException('Rol de usuario no válido');
+      }
+
+      if (padreId !== undefined) {
+        if (padreId === null) {
+          animal.padre = null;
+          animal.nombre_padre = null;
+          animal.arete_padre = null;
+          animal.razas_padre = null;
+          animal.pureza_padre = null;
+          animal.nombre_propietario_padre = null;
+          animal.nombre_finca_origen_padre = null;
+          animal.nombre_criador_padre = null;
+        } else {
+          const padreAnimal = await this.animalRepo.findOne({
+            where: { id: padreId },
+            relations: ['razas', 'propietario', 'finca'],
+          });
+
+          if (!padreAnimal) {
+            throw new BadRequestException(
+              'No se encontró el padre seleccionado',
+            );
+          }
+
+          if (padreAnimal.sexo !== 'Macho') {
+            throw new BadRequestException(
+              'El animal seleccionado como padre debe ser macho',
+            );
+          }
+
+          if (padreAnimal.id === animal.id) {
+            throw new BadRequestException(
+              'Un animal no puede ser su propio padre',
+            );
+          }
+
+          animal.padre = padreAnimal;
+
+          animal.nombre_padre = padreAnimal.nombre_animal;
+          animal.arete_padre = padreAnimal.identificador;
+          animal.razas_padre = padreAnimal.razas;
+          animal.pureza_padre = padreAnimal.pureza;
+          animal.nombre_propietario_padre =
+            padreAnimal.propietario?.nombre || null;
+          animal.nombre_finca_origen_padre =
+            padreAnimal.finca?.nombre_finca || null;
+          animal.nombre_criador_padre =
+            padreAnimal.nombre_criador_padre || null;
+        }
+      }
+
+      if (madreId !== undefined) {
+        if (madreId === null) {
+          animal.madre = null;
+          animal.nombre_madre = null;
+          animal.arete_madre = null;
+          animal.razas_madre = null;
+          animal.pureza_madre = null;
+          animal.nombre_propietario_madre = null;
+          animal.nombre_finca_origen_madre = null;
+          animal.nombre_criador_madre = null;
+          animal.numero_parto_madre = null;
+        } else {
+          const madreAnimal = await this.animalRepo.findOne({
+            where: { id: madreId },
+            relations: ['razas', 'propietario', 'finca'],
+          });
+
+          if (!madreAnimal) {
+            throw new BadRequestException(
+              'No se encontró la madre seleccionada',
+            );
+          }
+
+          if (madreAnimal.sexo !== 'Hembra') {
+            throw new BadRequestException(
+              'El animal seleccionado como madre debe ser hembra',
+            );
+          }
+
+          if (madreAnimal.id === animal.id) {
+            throw new BadRequestException(
+              'Un animal no puede ser su propia madre',
+            );
+          }
+
+          animal.madre = madreAnimal;
+
+          animal.nombre_madre = madreAnimal.nombre_animal;
+          animal.arete_madre = madreAnimal.identificador;
+          animal.razas_madre = madreAnimal.razas;
+          animal.pureza_madre = madreAnimal.pureza;
+          animal.nombre_propietario_madre =
+            madreAnimal.propietario?.nombre || null;
+          animal.nombre_finca_origen_madre =
+            madreAnimal.finca?.nombre_finca || null;
+          animal.nombre_criador_madre =
+            madreAnimal.nombre_criador_madre || null;
+
+          if (numero_parto_madre !== undefined) {
+            animal.numero_parto_madre = numero_parto_madre;
+          }
+        }
       }
 
       if (identificador && identificador !== animal.identificador) {
@@ -1062,48 +1175,74 @@ export class AnimalFincaService {
         animal.razas = razas;
       }
 
-      if (razas_padre !== undefined) {
-        if (
-          !Array.isArray(razas_padre) ||
-          razas_padre.length === 0 ||
-          razas_padre.length > 2
-        ) {
-          throw new BadRequestException(
-            'Debe ingresar entre 1 y 2 razas para el padre',
-          );
+      if (padreId === undefined) {
+        if (razas_padre !== undefined) {
+          if (
+            !Array.isArray(razas_padre) ||
+            razas_padre.length === 0 ||
+            razas_padre.length > 2
+          ) {
+            throw new BadRequestException(
+              'Debe ingresar entre 1 y 2 razas para el padre',
+            );
+          }
+
+          const razasPadreEntities = await this.razaAnimal.findBy({
+            id: In(razas_padre),
+          });
+          if (razasPadreEntities.length !== razas_padre.length) {
+            throw new NotFoundException(
+              'Una o más razas del padre no fueron encontradas',
+            );
+          }
+          animal.razas_padre = razasPadreEntities;
         }
 
-        const razasPadreEntities = await this.razaAnimal.findBy({
-          id: In(razas_padre),
-        });
-        if (razasPadreEntities.length !== razas_padre.length) {
-          throw new NotFoundException(
-            'Una o más razas del padre no fueron encontradas',
-          );
-        }
-        animal.razas_padre = razasPadreEntities;
+        if (nombre_padre !== undefined) animal.nombre_padre = nombre_padre;
+        if (arete_padre !== undefined) animal.arete_padre = arete_padre;
+        if (nombre_criador_padre !== undefined)
+          animal.nombre_criador_padre = nombre_criador_padre;
+        if (nombre_propietario_padre !== undefined)
+          animal.nombre_propietario_padre = nombre_propietario_padre;
+        if (nombre_finca_origen_padre !== undefined)
+          animal.nombre_finca_origen_padre = nombre_finca_origen_padre;
+        if (pureza_padre !== undefined) animal.pureza_padre = pureza_padre;
       }
 
-      if (razas_madre !== undefined) {
-        if (
-          !Array.isArray(razas_madre) ||
-          razas_madre.length === 0 ||
-          razas_madre.length > 2
-        ) {
-          throw new BadRequestException(
-            'Debe ingresar entre 1 y 2 razas para la madre',
-          );
+      if (madreId === undefined) {
+        if (razas_madre !== undefined) {
+          if (
+            !Array.isArray(razas_madre) ||
+            razas_madre.length === 0 ||
+            razas_madre.length > 2
+          ) {
+            throw new BadRequestException(
+              'Debe ingresar entre 1 y 2 razas para la madre',
+            );
+          }
+
+          const razasMadreEntities = await this.razaAnimal.findBy({
+            id: In(razas_madre),
+          });
+          if (razasMadreEntities.length !== razas_madre.length) {
+            throw new NotFoundException(
+              'Una o más razas de la madre no fueron encontradas',
+            );
+          }
+          animal.razas_madre = razasMadreEntities;
         }
 
-        const razasMadreEntities = await this.razaAnimal.findBy({
-          id: In(razas_madre),
-        });
-        if (razasMadreEntities.length !== razas_madre.length) {
-          throw new NotFoundException(
-            'Una o más razas de la madre no fueron encontradas',
-          );
-        }
-        animal.razas_madre = razasMadreEntities;
+        if (nombre_madre !== undefined) animal.nombre_madre = nombre_madre;
+        if (arete_madre !== undefined) animal.arete_madre = arete_madre;
+        if (nombre_criador_madre !== undefined)
+          animal.nombre_criador_madre = nombre_criador_madre;
+        if (nombre_propietario_madre !== undefined)
+          animal.nombre_propietario_madre = nombre_propietario_madre;
+        if (nombre_finca_origen_madre !== undefined)
+          animal.nombre_finca_origen_madre = nombre_finca_origen_madre;
+        if (numero_parto_madre !== undefined)
+          animal.numero_parto_madre = numero_parto_madre;
+        if (pureza_madre !== undefined) animal.pureza_madre = pureza_madre;
       }
 
       if (fincaId && fincaId !== animal.finca.id) {
@@ -1176,7 +1315,6 @@ export class AnimalFincaService {
       if (color !== undefined) animal.color = color;
       if (sexo !== undefined) animal.sexo = sexo;
       if (edad_promedio !== undefined) animal.edad_promedio = edad_promedio;
-
       if (observaciones !== undefined) animal.observaciones = observaciones;
       if (medicamento !== undefined) animal.medicamento = medicamento;
       if (complementos !== undefined) animal.complementos = complementos;
@@ -1193,29 +1331,8 @@ export class AnimalFincaService {
       if (compra_animal !== undefined) animal.compra_animal = compra_animal;
       if (nombre_criador_origen_animal !== undefined)
         animal.nombre_criador_origen_animal = nombre_criador_origen_animal;
-
-      if (nombre_padre !== undefined) animal.nombre_padre = nombre_padre;
-      if (arete_padre !== undefined) animal.arete_padre = arete_padre;
-      if (nombre_criador_padre !== undefined)
-        animal.nombre_criador_padre = nombre_criador_padre;
-      if (nombre_propietario_padre !== undefined)
-        animal.nombre_propietario_padre = nombre_propietario_padre;
-      if (nombre_finca_origen_padre !== undefined)
-        animal.nombre_finca_origen_padre = nombre_finca_origen_padre;
-      if (pureza_padre !== undefined) animal.pureza_padre = pureza_padre;
-
-      if (nombre_madre !== undefined) animal.nombre_madre = nombre_madre;
-      if (arete_madre !== undefined) animal.arete_madre = arete_madre;
-      if (nombre_criador_madre !== undefined)
-        animal.nombre_criador_madre = nombre_criador_madre;
-      if (nombre_propietario_madre !== undefined)
-        animal.nombre_propietario_madre = nombre_propietario_madre;
-      if (nombre_finca_origen_madre !== undefined)
-        animal.nombre_finca_origen_madre = nombre_finca_origen_madre;
-      if (numero_parto_madre !== undefined)
-        animal.numero_parto_madre = numero_parto_madre;
-      if (pureza_madre !== undefined) animal.pureza_madre = pureza_madre;
       if (nombre_animal !== undefined) animal.nombre_animal = nombre_animal;
+
       await this.animalRepo.save({ ...animal, actualizado_por: cliente });
 
       return {

@@ -61,7 +61,7 @@ export class ImagesAnunciosService {
     if (!urls || urls.length === 0) {
       return;
     }
-    console.log('URLs recibidas:', urls);
+
     const images = await this.anucioImageRepo
       .createQueryBuilder('image')
       .where('image.url IN (:...urls)', { urls })
