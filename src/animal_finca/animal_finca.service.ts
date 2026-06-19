@@ -757,17 +757,24 @@ export class AnimalFincaService {
       }
 
       if (identificador && identificador.trim() !== '') {
-        query.andWhere('LOWER(animal.identificador) LIKE :identificador', {
-          identificador: `%${identificador.toLowerCase()}%`,
-        });
+        const searchTerm = identificador.trim();
+        query.andWhere(
+          '(LOWER(animal.identificador) LIKE :searchTerm OR LOWER(animal.nombre_animal) LIKE :searchTerm)',
+          { searchTerm: `%${searchTerm.toLowerCase()}%` },
+        );
       }
 
-      if (name && name.trim() !== '') {
-        query.andWhere('LOWER(animal.identificador) LIKE :name', {
-          name: `%${name.toLowerCase()}%`,
-        });
+      if (
+        name &&
+        name.trim() !== '' &&
+        (!identificador || identificador.trim() === '')
+      ) {
+        const searchTerm = name.trim();
+        query.andWhere(
+          '(LOWER(animal.identificador) LIKE :searchTerm OR LOWER(animal.nombre_animal) LIKE :searchTerm)',
+          { searchTerm: `%${searchTerm.toLowerCase()}%` },
+        );
       }
-
       if (especieId) {
         query.andWhere('animal.especieId = :especieId', { especieId });
       }

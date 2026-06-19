@@ -12,7 +12,7 @@ Eres un veterinario experto.
 Animal:
 Especie: ${dto.especie}
 Raza: ${dto.raza}
-Edad: ${dto.edad} meses
+Edad: ${dto.edad} años
 
 Síntomas:
 ${dto.sintomas.join(', ')}
