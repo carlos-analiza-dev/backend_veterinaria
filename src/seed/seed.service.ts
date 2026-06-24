@@ -238,6 +238,8 @@ export class SeedService {
       { nombre: 'Porcino' },
       { nombre: 'Avicola' },
       { nombre: 'Caprino' },
+      { nombre: 'Ovino' },
+      { nombre: 'Peces' },
     ];
 
     const razasPorEspecie = {
@@ -256,6 +258,7 @@ export class SeedService {
         { nombre: 'Simmental', abreviatura: 'SIM' },
         { nombre: 'Senepol', abreviatura: 'SNP' },
         { nombre: 'Cruzamiento con Cebú', abreviatura: 'CCC' },
+        { nombre: 'Criollo Bovino', abreviatura: 'CRB' },
       ],
       Equino: [
         { nombre: 'Caballo Español', abreviatura: 'ESP' },
@@ -268,6 +271,7 @@ export class SeedService {
         { nombre: 'Gypsy Vanner', abreviatura: 'GYP' },
         { nombre: 'Pura Sangre Inglés', abreviatura: 'PSI' },
         { nombre: 'Pony de Shetland', abreviatura: 'PSH' },
+        { nombre: 'Criollo Equino', abreviatura: 'CRE' },
       ],
       Porcino: [
         { nombre: 'Landrace', abreviatura: 'LAN' },
@@ -275,6 +279,7 @@ export class SeedService {
         { nombre: 'Hampshire', abreviatura: 'HAM' },
         { nombre: 'Large White', abreviatura: 'LW' },
         { nombre: 'Pietrain', abreviatura: 'PIE' },
+        { nombre: 'Criollo Porcino', abreviatura: 'CRP' },
       ],
       Avícola: [
         { nombre: 'Postura', abreviatura: 'POS' },
@@ -286,6 +291,7 @@ export class SeedService {
         { nombre: 'Leghorn', abreviatura: 'LGH' },
         { nombre: 'Cobb 500', abreviatura: 'C500' },
         { nombre: 'Ross 308', abreviatura: 'R308' },
+        { nombre: 'Criollo Avícola', abreviatura: 'CRA' },
       ],
       Caprino: [
         { nombre: 'Dorper', abreviatura: 'DOR' },
@@ -293,6 +299,34 @@ export class SeedService {
         { nombre: 'Española', abreviatura: 'ESP' },
         { nombre: 'Nubia', abreviatura: 'NUB' },
         { nombre: 'Saanen', abreviatura: 'SAA' },
+        { nombre: 'Criollo Caprino', abreviatura: 'CRC' },
+      ],
+      Ovino: [
+        { nombre: 'Dorper', abreviatura: 'DOR' },
+        { nombre: 'Katahdin', abreviatura: 'KAT' },
+        { nombre: 'Pelibuey', abreviatura: 'PEL' },
+        { nombre: 'Santa Inés', abreviatura: 'SIN' },
+        { nombre: 'Suffolk', abreviatura: 'SUF' },
+        { nombre: 'Hampshire Down', abreviatura: 'HMD' },
+        { nombre: 'Merino', abreviatura: 'MER' },
+        { nombre: 'Rambouillet', abreviatura: 'RAM' },
+        { nombre: 'Texel', abreviatura: 'TEX' },
+        { nombre: 'Black Belly', abreviatura: 'BLB' },
+        { nombre: 'Criollo Ovino', abreviatura: 'CRO' },
+      ],
+
+      Peces: [
+        { nombre: 'Tilapia Nilótica', abreviatura: 'TIL' },
+        { nombre: 'Tilapia Roja', abreviatura: 'TLR' },
+        { nombre: 'Cachama Blanca', abreviatura: 'CAB' },
+        { nombre: 'Cachama Negra', abreviatura: 'CAN' },
+        { nombre: 'Bagre', abreviatura: 'BAG' },
+        { nombre: 'Carpa Común', abreviatura: 'CAR' },
+        { nombre: 'Trucha Arcoíris', abreviatura: 'TRA' },
+        { nombre: 'Róbalo', abreviatura: 'ROB' },
+        { nombre: 'Pacu', abreviatura: 'PAC' },
+        { nombre: 'Mojarra', abreviatura: 'MOJ' },
+        { nombre: 'Criollo Piscícola', abreviatura: 'CRI' },
       ],
     };
 

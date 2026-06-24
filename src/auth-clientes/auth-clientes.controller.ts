@@ -21,6 +21,8 @@ import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { VerifiedAccountDto } from 'src/auth/dto/verify-account';
+import { CreateAuthTrabajadorDto } from './dto/create-trabajador.dto';
+import { UpdateAuthTrabajadotDto } from './dto/update-trabajdor.dto';
 
 @Controller('auth-clientes')
 export class AuthClientesController {
@@ -34,7 +36,7 @@ export class AuthClientesController {
   @Post('register-trabajador')
   @AuthCliente()
   createTrabajador(
-    @Body() createClienteDto: CreateAuthClienteDto,
+    @Body() createClienteDto: CreateAuthTrabajadorDto,
     @GetCliente() propietario: Cliente,
   ) {
     return this.authClientesService.createTrabajador(
@@ -105,11 +107,17 @@ export class AuthClientesController {
   }
 
   @Patch('trabajador/:id')
+  @AuthCliente()
   updateTrabajador(
     @Param('id') id: string,
-    @Body() updateAuthClienteDto: UpdateAuthClienteDto,
+    @Body() updateAuthClienteDto: UpdateAuthTrabajadotDto,
+    @GetCliente() propietario: Cliente,
   ) {
-    return this.authClientesService.updateTrabajador(id, updateAuthClienteDto);
+    return this.authClientesService.updateTrabajador(
+      id,
+      updateAuthClienteDto,
+      propietario,
+    );
   }
 
   @Delete(':id')

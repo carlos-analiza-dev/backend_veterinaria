@@ -9,7 +9,7 @@ import {
 import { CreateAuthClienteDto } from './dto/create-auth-cliente.dto';
 import { UpdateAuthClienteDto } from './dto/update-auth-cliente.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Not, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { Cliente } from './entities/auth-cliente.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
@@ -30,6 +30,10 @@ import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { getPropietarioId } from 'src/utils/get-propietario-id';
 import { formatearFecha, formatearFechaEs } from 'src/helpers/format-date';
 import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
+import { CreateAuthTrabajadorDto } from './dto/create-trabajador.dto';
+import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
+import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cliente_finca_trabajador.entity';
+import { UpdateAuthTrabajadotDto } from './dto/update-trabajdor.dto';
 
 @Injectable()
 export class AuthClientesService {
@@ -44,6 +48,10 @@ export class AuthClientesService {
     private readonly departamentoRepo: Repository<DepartamentosPai>,
     @InjectRepository(ClientePaquete)
     private readonly clientePaquete: Repository<ClientePaquete>,
+    @InjectRepository(FincasGanadero)
+    private readonly fincasRepository: Repository<FincasGanadero>,
+    @InjectRepository(ClienteFincaTrabajador)
+    private readonly clienteFincaTrabajadorRepository: Repository<ClienteFincaTrabajador>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly notificacionService: NotificacionesAdminsService,
@@ -198,7 +206,7 @@ export class AuthClientesService {
   }
 
   async createTrabajador(
-    createClienteDto: CreateAuthClienteDto,
+    createClienteDto: CreateAuthTrabajadorDto,
     propietario: Cliente,
   ) {
     try {
@@ -259,6 +267,25 @@ export class AuthClientesService {
         );
       }
 
+      let fincasValidas: FincasGanadero[] = [];
+      if (
+        createClienteDto.fincasAsignadas &&
+        createClienteDto.fincasAsignadas.length > 0
+      ) {
+        fincasValidas = await this.fincasRepository.find({
+          where: {
+            id: In(createClienteDto.fincasAsignadas),
+            propietario: { id: propietarioId },
+          },
+        });
+
+        if (fincasValidas.length !== createClienteDto.fincasAsignadas.length) {
+          throw new BadRequestException(
+            'Una o más fincas no existen o no pertenecen al propietario',
+          );
+        }
+      }
+
       const trabajador = this.clienteRepository.create({
         nombre: createClienteDto.nombre,
         identificacion: createClienteDto.identificacion,
@@ -277,6 +304,19 @@ export class AuthClientesService {
       });
 
       await this.clienteRepository.save(trabajador);
+
+      if (fincasValidas.length > 0) {
+        const asignaciones = fincasValidas.map((finca) =>
+          this.clienteFincaTrabajadorRepository.create({
+            trabajador: { id: trabajador.id },
+            finca: { id: finca.id },
+            asignadoPor: { id: propietarioId },
+            fechaAsignacion: new Date(),
+          }),
+        );
+
+        await this.clienteFincaTrabajadorRepository.save(asignaciones);
+      }
 
       return 'Trabajador Creado Exitosamente';
     } catch (error) {
@@ -626,6 +666,11 @@ export class AuthClientesService {
       .leftJoinAndSelect('cliente.pais', 'pais')
       .leftJoinAndSelect('cliente.departamento', 'departamento')
       .leftJoinAndSelect('cliente.municipio', 'municipio')
+      .leftJoinAndSelect(
+        'cliente.asignacionesTrabajador',
+        'asignacionesTrabajador',
+      )
+      .leftJoinAndSelect('asignacionesTrabajador.finca', 'fincaAsignada')
       .leftJoin('cliente.propietario', 'propietario')
       .where('cliente.rol != :rol', { rol: TipoCliente.PROPIETARIO })
       .andWhere('propietario.id = :propietarioId', { propietarioId })
@@ -689,7 +734,10 @@ export class AuthClientesService {
   }
 
   async findOne(id: string) {
-    const cliente = await this.clienteRepository.findOne({ where: { id } });
+    const cliente = await this.clienteRepository.findOne({
+      where: { id },
+      relations: ['asignacionesTrabajador', 'asignacionesTrabajador.finca'],
+    });
     if (!cliente)
       throw new NotFoundException('No se encontro el cliente seleccionado');
     return instanceToPlain(cliente);
@@ -835,7 +883,8 @@ export class AuthClientesService {
 
   async updateTrabajador(
     id: string,
-    updateAuthClienteDto: UpdateAuthClienteDto,
+    updateAuthClienteDto: UpdateAuthTrabajadotDto,
+    propietario: Cliente,
   ) {
     try {
       const {
@@ -852,7 +901,10 @@ export class AuthClientesService {
         verified,
         rol,
         password,
+        fincasAsignadas,
       } = updateAuthClienteDto;
+
+      const propietarioId = getPropietarioId(propietario);
 
       const trabajador = await this.clienteRepository.findOne({
         where: { id, rol: Not(TipoCliente.PROPIETARIO) },
@@ -950,6 +1002,14 @@ export class AuthClientesService {
 
       delete trabajadorActualizado.password;
 
+      if (fincasAsignadas !== undefined) {
+        await this.actualizarFincasAsignadas(
+          trabajador.id,
+          fincasAsignadas,
+          propietarioId,
+        );
+      }
+
       return {
         message: 'Trabajador actualizado exitosamente',
         trabajador: trabajadorActualizado,
@@ -957,6 +1017,44 @@ export class AuthClientesService {
     } catch (error) {
       console.error('Error en update trabajador:', error);
       this.handleDatabaseErrors(error);
+    }
+  }
+
+  private async actualizarFincasAsignadas(
+    trabajadorId: string,
+    nuevasFincasIds: string[],
+    propietarioId: string,
+  ) {
+    if (nuevasFincasIds.length > 0) {
+      const fincasValidas = await this.fincasRepository.find({
+        where: {
+          id: In(nuevasFincasIds),
+          propietario: { id: propietarioId },
+        },
+      });
+
+      if (fincasValidas.length !== nuevasFincasIds.length) {
+        throw new BadRequestException(
+          'Una o más fincas no existen o no pertenecen al propietario',
+        );
+      }
+    }
+
+    await this.clienteFincaTrabajadorRepository.delete({
+      trabajador: { id: trabajadorId },
+    });
+
+    if (nuevasFincasIds.length > 0) {
+      const nuevasAsignaciones = nuevasFincasIds.map((fincaId) =>
+        this.clienteFincaTrabajadorRepository.create({
+          trabajador: { id: trabajadorId },
+          finca: { id: fincaId },
+          asignadoPor: { id: propietarioId },
+          fechaAsignacion: new Date(),
+        }),
+      );
+
+      await this.clienteFincaTrabajadorRepository.save(nuevasAsignaciones);
     }
   }
 

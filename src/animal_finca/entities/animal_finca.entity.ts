@@ -35,6 +35,19 @@ export enum PurezaEnum {
   NO_DEFINIDA = 'N/D',
 }
 
+export enum UsoEquinoEnum {
+  TRABAJO = 'Trabajo',
+  DEPORTE = 'Deporte',
+  REPRODUCCION = 'Reproducción',
+  PASEO = 'Paseo',
+  CARGA = 'Carga',
+  GANADERIA = 'Ganadería',
+  POLICIA = 'Policía',
+  TERAPIA = 'Terapia',
+  COMPANIA = 'Compañía',
+  OTRO = 'Otro',
+}
+
 @Entity('animal_finca')
 export class AnimalFinca {
   @PrimaryGeneratedColumn('uuid')
@@ -238,6 +251,53 @@ export class AnimalFinca {
 
   @Column({ type: 'boolean', default: false })
   esterelizado: boolean;
+
+  //AVES
+  @Column({ nullable: true })
+  codigo_lote: string;
+
+  @Column({ type: 'int', nullable: true })
+  cantidad_lote: number;
+
+  //PECES
+
+  //EQUINO
+  @Column({
+    type: 'enum',
+    enum: UsoEquinoEnum,
+    nullable: true,
+  })
+  uso_equino: UsoEquinoEnum;
+
+  @Column({ type: 'boolean', default: false })
+  desparasitado: boolean;
+
+  @Column({ type: 'varchar', length: 100, default: 'Sin vacunas' })
+  vacunas: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  peso_actual: number;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  condicion_corporal: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  nivel_entrenamiento: string;
+
+  @Column({ type: 'text', nullable: true })
+  resultados_competencias: string;
+
+  @Column({ type: 'text', nullable: true })
+  historial_reproductivo: string;
+
+  @Column({ type: 'text', nullable: true })
+  veterinario: string;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  valor_estimado: number;
+
+  @Column({ type: 'boolean', default: false })
+  asegurado: boolean;
 
   @OneToMany(() => ImagesAminale, (profileImage) => profileImage.animal, {
     eager: true,

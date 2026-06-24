@@ -1,6 +1,7 @@
 import {
   IsArray,
   IsBoolean,
+  IsDateString,
   IsEnum,
   IsOptional,
   IsString,
@@ -43,6 +44,24 @@ export class CreateAnunciosPrincipaleDto {
     message: 'La etiqueta seleccionada no es válida',
   })
   etiqueta?: EtiquetaAnuncio;
+
+  @IsOptional()
+  @IsDateString(
+    {},
+    {
+      message: 'La fecha de inicio debe tener un formato válido',
+    },
+  )
+  fechaInicio?: string;
+
+  @IsOptional()
+  @IsDateString(
+    {},
+    {
+      message: 'La fecha de fin debe tener un formato válido',
+    },
+  )
+  fechaFin?: string;
 
   @IsOptional()
   @Transform(({ value }) => {

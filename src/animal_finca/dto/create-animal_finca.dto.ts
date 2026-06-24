@@ -17,6 +17,7 @@ import {
 import {
   PurezaEnum,
   TipoReproduccionEnum,
+  UsoEquinoEnum,
 } from '../entities/animal_finca.entity';
 
 export class TipoAlimentacionDto {
@@ -59,13 +60,14 @@ export class CreateAnimalFincaDto {
   nombre_animal: string;
 
   @IsString({ message: 'La produccion debe ser un texto' })
-  @IsNotEmpty({ message: 'La produccion del animal es obligatorio' })
+  @IsOptional()
   produccion: string;
 
   @IsString({ message: 'El tipo de produccion debe ser un texto' })
-  @IsNotEmpty({ message: 'El tipo de produccion del animal es obligatorio' })
+  @IsOptional()
   tipo_produccion: string;
 
+  @IsOptional()
   @Transform(({ value }) => {
     if (typeof value === 'string') return JSON.parse(value);
     return value;
@@ -306,4 +308,87 @@ export class CreateAnimalFincaDto {
   )
   @Min(1, { message: 'El número de parto debe ser mayor o igual a 0' })
   numero_parto_madre: number;
+
+  //EQUINOS
+  @IsOptional()
+  @IsEnum(UsoEquinoEnum, {
+    message: 'El uso del equino no es válido.',
+  })
+  uso_equino?: UsoEquinoEnum;
+
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsOptional()
+  @IsBoolean({
+    message: 'El valor de desparasitado debe ser verdadero o falso.',
+  })
+  desparasitado?: boolean;
+
+  @IsOptional()
+  @IsString({
+    message: 'Las vacunas deben ser un texto válido.',
+  })
+  vacunas?: string;
+
+  @Transform(({ value }) => {
+    if (value === '' || value === null || value === undefined) {
+      return undefined;
+    }
+
+    const num = Number(value);
+    return Number.isFinite(num) ? num : undefined;
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'El peso actual debe ser un número válido.' })
+  @Min(0, { message: 'El peso actual debe ser mayor o igual a 0.' })
+  peso_actual?: number;
+
+  @IsOptional()
+  @IsString({
+    message: 'La condición corporal debe ser un texto válido.',
+  })
+  condicion_corporal?: string;
+
+  @IsOptional()
+  @IsString({
+    message: 'El nivel de entrenamiento debe ser un texto válido.',
+  })
+  nivel_entrenamiento?: string;
+
+  @IsOptional()
+  @IsString({
+    message: 'Los resultados de competencias deben ser un texto válido.',
+  })
+  resultados_competencias?: string;
+
+  @IsOptional()
+  @IsString({
+    message: 'El historial reproductivo debe ser un texto válido.',
+  })
+  historial_reproductivo?: string;
+
+  @Transform(({ value }) => {
+    if (value === '' || value === null || value === undefined) {
+      return undefined;
+    }
+
+    const num = Number(value);
+    return Number.isFinite(num) ? num : undefined;
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'El valor estimado debe ser un número válido.' })
+  @Min(0, { message: 'El valor estimado debe ser mayor o igual a 0.' })
+  valor_estimado?: number;
+
+  @Transform(({ value }) => value === 'true' || value === true)
+  @IsOptional()
+  @IsBoolean({
+    message: 'El valor de asegurado debe ser verdadero o falso.',
+  })
+  asegurado?: boolean;
+
+  @IsOptional()
+  @IsString({
+    message: 'El veterinario debe ser un texto válido.',
+  })
+  veterinario?: string;
 }

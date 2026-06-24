@@ -36,6 +36,18 @@ export class AnunciosPrincipale {
   mostrar: boolean;
 
   @Column({
+    type: 'timestamp',
+    nullable: true,
+  })
+  fechaInicio: Date;
+
+  @Column({
+    type: 'timestamp',
+    nullable: true,
+  })
+  fechaFin: Date;
+
+  @Column({
     type: 'enum',
     enum: EtiquetaAnuncio,
     default: EtiquetaAnuncio.PATROCINADO,

@@ -16,6 +16,8 @@ import { User } from 'src/auth/entities/auth.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { NotificacionesAdminsModule } from 'src/notificaciones_admins/notificaciones_admins.module';
 import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
+import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
+import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cliente_finca_trabajador.entity';
 
 @Module({
   controllers: [AuthClientesController],
@@ -29,6 +31,8 @@ import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.en
       DepartamentosPai,
       User,
       ClientePaquete,
+      FincasGanadero,
+      ClienteFincaTrabajador,
     ]),
     AuthModule,
     NotificacionesAdminsModule,

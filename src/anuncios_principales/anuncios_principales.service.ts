@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateAnunciosPrincipaleDto } from './dto/create-anuncios_principale.dto';
 import { UpdateAnunciosPrincipaleDto } from './dto/update-anuncios_principale.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -35,6 +39,17 @@ export class AnunciosPrincipalesService {
       throw new NotFoundException('No existe el pais seleccionado');
     }
 
+    if (
+      createAnunciosPrincipaleDto.fechaInicio &&
+      createAnunciosPrincipaleDto.fechaFin &&
+      new Date(createAnunciosPrincipaleDto.fechaFin) <
+        new Date(createAnunciosPrincipaleDto.fechaInicio)
+    ) {
+      throw new BadRequestException(
+        'La fecha de fin debe ser mayor a la fecha de inicio',
+      );
+    }
+
     const anuncio = this.anunciosRepo.create({
       titulo: createAnunciosPrincipaleDto.titulo,
       descripcion: createAnunciosPrincipaleDto.descripcion,
@@ -43,6 +58,12 @@ export class AnunciosPrincipalesService {
       etiqueta:
         createAnunciosPrincipaleDto.etiqueta || EtiquetaAnuncio.PATROCINADO,
       esPrincipal: createAnunciosPrincipaleDto.esPrincipal || false,
+      fechaInicio: createAnunciosPrincipaleDto.fechaInicio
+        ? new Date(createAnunciosPrincipaleDto.fechaInicio)
+        : null,
+      fechaFin: createAnunciosPrincipaleDto.fechaFin
+        ? new Date(createAnunciosPrincipaleDto.fechaFin)
+        : null,
     });
 
     const savedAnuncio = await this.anunciosRepo.save(anuncio);
@@ -99,14 +120,19 @@ export class AnunciosPrincipalesService {
 
   async findAllAnuncios(cliente: Cliente, paginationDto: PaginationDto) {
     const paisId = cliente.pais.id;
-
     const { principal, mostrar } = paginationDto;
+
+    const hoy = new Date();
 
     const queryBuilder = this.anunciosRepo
       .createQueryBuilder('anuncio')
       .leftJoinAndSelect('anuncio.pais', 'pais')
       .leftJoinAndSelect('anuncio.anucioImages', 'imagenes')
-      .where('pais.id = :paisId', { paisId });
+      .where('pais.id = :paisId', { paisId })
+      .andWhere('anuncio.fechaInicio IS NOT NULL')
+      .andWhere('anuncio.fechaFin IS NOT NULL')
+      .andWhere('anuncio.fechaInicio <= :hoy', { hoy })
+      .andWhere('anuncio.fechaFin >= :hoy', { hoy });
 
     if (principal !== undefined) {
       queryBuilder.andWhere('anuncio.esPrincipal = :principal', {
@@ -140,26 +166,53 @@ export class AnunciosPrincipalesService {
     updateAnunciosPrincipaleDto: UpdateAnunciosPrincipaleDto,
     imagenes?: Express.Multer.File[],
     imagenesAEliminar?: string[],
-  ): Promise<AnunciosPrincipale> {
+  ) {
     const anuncio = await this.findOne(id);
+
+    const fechaInicio = updateAnunciosPrincipaleDto.fechaInicio
+      ? new Date(updateAnunciosPrincipaleDto.fechaInicio)
+      : anuncio.fechaInicio;
+
+    const fechaFin = updateAnunciosPrincipaleDto.fechaFin
+      ? new Date(updateAnunciosPrincipaleDto.fechaFin)
+      : anuncio.fechaFin;
+
+    if (fechaInicio && fechaFin && fechaFin < fechaInicio) {
+      throw new BadRequestException(
+        'La fecha de fin debe ser mayor o igual a la fecha de inicio',
+      );
+    }
 
     if (updateAnunciosPrincipaleDto.titulo) {
       anuncio.titulo = updateAnunciosPrincipaleDto.titulo;
     }
+
     if (updateAnunciosPrincipaleDto.descripcion) {
       anuncio.descripcion = updateAnunciosPrincipaleDto.descripcion;
     }
+
     if (updateAnunciosPrincipaleDto.link) {
       anuncio.link = updateAnunciosPrincipaleDto.link;
     }
+
     if (updateAnunciosPrincipaleDto.etiqueta) {
       anuncio.etiqueta = updateAnunciosPrincipaleDto.etiqueta;
     }
+
     if (updateAnunciosPrincipaleDto.esPrincipal !== undefined) {
       anuncio.esPrincipal = updateAnunciosPrincipaleDto.esPrincipal;
     }
+
     if (updateAnunciosPrincipaleDto.mostrar !== undefined) {
       anuncio.mostrar = updateAnunciosPrincipaleDto.mostrar;
+    }
+
+    if (updateAnunciosPrincipaleDto.fechaInicio) {
+      anuncio.fechaInicio = fechaInicio;
+    }
+
+    if (updateAnunciosPrincipaleDto.fechaFin) {
+      anuncio.fechaFin = fechaFin;
     }
 
     if (imagenesAEliminar && imagenesAEliminar.length > 0) {
@@ -179,7 +232,7 @@ export class AnunciosPrincipalesService {
       }
     }
 
-    return this.findOne(updatedAnuncio.id);
+    return 'Anuncio actualizado con exito';
   }
 
   remove(id: number) {

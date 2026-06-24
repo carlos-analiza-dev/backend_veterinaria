@@ -88,6 +88,17 @@ export class AnimalFincaService {
       tipo_reproduccion,
       padreId,
       madreId,
+      asegurado,
+      condicion_corporal,
+      desparasitado,
+      historial_reproductivo,
+      veterinario,
+      nivel_entrenamiento,
+      peso_actual,
+      resultados_competencias,
+      uso_equino,
+      vacunas,
+      valor_estimado,
     } = createAnimalFincaDto;
 
     try {
@@ -236,16 +247,18 @@ export class AnimalFincaService {
         throw new ConflictException('El identificador ya está en uso');
       }
 
-      for (const alimentacion of tipo_alimentacion) {
-        if (alimentacion.origen === 'comprado y producido') {
-          const porcentaje_comprado = alimentacion.porcentaje_comprado ?? 0;
-          const porcentaje_producido = alimentacion.porcentaje_producido ?? 0;
-          const total = porcentaje_comprado + porcentaje_producido;
+      if (tipo_alimentacion) {
+        for (const alimentacion of tipo_alimentacion) {
+          if (alimentacion.origen === 'comprado y producido') {
+            const porcentaje_comprado = alimentacion.porcentaje_comprado ?? 0;
+            const porcentaje_producido = alimentacion.porcentaje_producido ?? 0;
+            const total = porcentaje_comprado + porcentaje_producido;
 
-          if (total !== 100) {
-            throw new BadRequestException(
-              `El alimento "${alimentacion.alimento}" tiene porcentajes que no suman 100%. Comprado: ${porcentaje_comprado}%, Producido: ${porcentaje_producido}%`,
-            );
+            if (total !== 100) {
+              throw new BadRequestException(
+                `El alimento "${alimentacion.alimento}" tiene porcentajes que no suman 100%. Comprado: ${porcentaje_comprado}%, Producido: ${porcentaje_producido}%`,
+              );
+            }
           }
         }
       }
@@ -337,6 +350,17 @@ export class AnimalFincaService {
         nombre_criador_madre:
           madreAnimal?.nombre_criador_madre ?? nombre_criador_madre,
         nombre_animal,
+        asegurado,
+        condicion_corporal,
+        desparasitado,
+        historial_reproductivo,
+        veterinario,
+        nivel_entrenamiento,
+        peso_actual,
+        resultados_competencias,
+        uso_equino,
+        vacunas,
+        valor_estimado,
       });
 
       await this.animalRepo.save(nuevoAnimal);
@@ -982,6 +1006,17 @@ export class AnimalFincaService {
       numero_parto_madre,
       padreId,
       madreId,
+      asegurado,
+      condicion_corporal,
+      desparasitado,
+      historial_reproductivo,
+      veterinario,
+      nivel_entrenamiento,
+      peso_actual,
+      resultados_competencias,
+      uso_equino,
+      vacunas,
+      valor_estimado,
     } = updateAnimalFincaDto;
 
     try {
@@ -1077,7 +1112,7 @@ export class AnimalFincaService {
 
           animal.padre = padreAnimal;
 
-          animal.nombre_padre = padreAnimal.nombre_animal;
+          animal.nombre_padre = padreAnimal.nombre_animal ?? 'N/D';
           animal.arete_padre = padreAnimal.identificador;
           animal.razas_padre = padreAnimal.razas;
           animal.pureza_padre = padreAnimal.pureza;
@@ -1127,7 +1162,7 @@ export class AnimalFincaService {
 
           animal.madre = madreAnimal;
 
-          animal.nombre_madre = madreAnimal.nombre_animal;
+          animal.nombre_madre = madreAnimal.nombre_animal ?? 'N/D';
           animal.arete_madre = madreAnimal.identificador;
           animal.razas_madre = madreAnimal.razas;
           animal.pureza_madre = madreAnimal.pureza;
@@ -1339,6 +1374,23 @@ export class AnimalFincaService {
       if (nombre_criador_origen_animal !== undefined)
         animal.nombre_criador_origen_animal = nombre_criador_origen_animal;
       if (nombre_animal !== undefined) animal.nombre_animal = nombre_animal;
+
+      //EQUINO
+      if (asegurado !== undefined) animal.asegurado = asegurado;
+      if (condicion_corporal !== undefined)
+        animal.condicion_corporal = condicion_corporal;
+      if (veterinario !== undefined) animal.veterinario = veterinario;
+      if (historial_reproductivo !== undefined)
+        animal.historial_reproductivo = historial_reproductivo;
+      if (desparasitado !== undefined) animal.desparasitado = desparasitado;
+      if (nivel_entrenamiento !== undefined)
+        animal.nivel_entrenamiento = nivel_entrenamiento;
+      if (peso_actual !== undefined) animal.peso_actual = peso_actual;
+      if (resultados_competencias !== undefined)
+        animal.resultados_competencias = resultados_competencias;
+      if (uso_equino !== undefined) animal.uso_equino = uso_equino;
+      if (vacunas !== undefined) animal.vacunas = vacunas;
+      if (valor_estimado !== undefined) animal.valor_estimado = valor_estimado;
 
       await this.animalRepo.save({ ...animal, actualizado_por: cliente });
 
