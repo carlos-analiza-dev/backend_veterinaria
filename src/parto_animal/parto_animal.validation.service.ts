@@ -130,35 +130,47 @@ export class PartoAnimalValidationService {
   }
 
   async validarEdadMinimaParto(hembra: AnimalFinca): Promise<void> {
-    if (!hembra.fecha_nacimiento) {
-      console.warn('⚠️ Animal sin fecha de nacimiento registrada');
-      return;
-    }
-
-    const fechaNacimiento = new Date(hembra.fecha_nacimiento);
-
-    if (isNaN(fechaNacimiento.getTime())) {
-      throw new BadRequestException(
-        'La fecha de nacimiento del animal no es válida',
-      );
-    }
-
-    const fechaActual = new Date();
-    const edadMeses = this.calcularEdadMeses(fechaNacimiento, fechaActual);
-
     const config =
       ESPECIE_CONFIG[hembra.especie.nombre as keyof typeof ESPECIE_CONFIG];
 
     const edadMinimaMeses = config?.edadMinimaReproduccionMeses || 18;
 
+    let edadMeses: number;
+    let edadAnios: number;
+    let detalleEdad: string;
+
+    if (hembra.fecha_nacimiento) {
+      const fechaNacimiento = new Date(hembra.fecha_nacimiento);
+
+      if (isNaN(fechaNacimiento.getTime())) {
+        throw new BadRequestException(
+          'La fecha de nacimiento del animal no es válida',
+        );
+      }
+
+      edadMeses = this.calcularEdadMeses(fechaNacimiento, new Date());
+      edadAnios = edadMeses / 12;
+
+      detalleEdad = `Fecha de nacimiento: ${fechaNacimiento.toLocaleDateString()}`;
+    } else if (hembra.edad_promedio) {
+      edadAnios = hembra.edad_promedio;
+      edadMeses = edadAnios * 12;
+
+      detalleEdad = `Edad promedio registrada: ${edadAnios} año(s)`;
+    } else {
+      throw new BadRequestException(
+        'El animal no posee fecha de nacimiento ni edad promedio registrada',
+      );
+    }
+
     if (edadMeses < edadMinimaMeses) {
       throw new BadRequestException(
-        `❌ La hembra es demasiado joven para ingresar en proceso de reproducción.\n\n` +
+        `❌ La hembra es demasiado joven para reproducción.\n\n` +
           `🐄 Especie: ${hembra.especie.nombre}\n` +
-          `📅 Fecha de nacimiento: ${fechaNacimiento.toLocaleDateString()}\n` +
-          `📆 Edad actual: ${Math.floor(edadMeses)} meses (${(edadMeses / 12).toFixed(1)} años)\n` +
-          `⏳ Edad mínima requerida: ${edadMinimaMeses} meses (${(edadMinimaMeses / 12).toFixed(1)} años)\n\n` +
-          `⚠️ Espere hasta que la hembra alcance la edad adecuada.`,
+          `📋 ${detalleEdad}\n` +
+          `📆 Edad actual: ${edadAnios.toFixed(1)} años (${Math.floor(edadMeses)} meses)\n` +
+          `⏳ Edad mínima requerida: ${(edadMinimaMeses / 12).toFixed(1)} años (${edadMinimaMeses} meses)\n\n` +
+          `⚠️ Espere hasta que la hembra alcance la edad mínima requerida.`,
       );
     }
   }

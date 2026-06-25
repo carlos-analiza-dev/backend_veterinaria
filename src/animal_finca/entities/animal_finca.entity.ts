@@ -3,6 +3,12 @@ import { CelosAnimal } from 'src/celos_animal/entities/celos_animal.entity';
 import { EspecieAnimal } from 'src/especie_animal/entities/especie_animal.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { ImagesAminale } from 'src/images_aminales/entities/images_aminale.entity';
+import {
+  PurezaEnum,
+  TipoAve,
+  TipoReproduccionEnum,
+  UsoEquinoEnum,
+} from 'src/interfaces/animales/animales-enums';
 import { PartoAnimal } from 'src/parto_animal/entities/parto_animal.entity';
 import { PesoHistorial } from 'src/peso_historial/entities/peso_historial.entity';
 import { RazaAnimal } from 'src/raza_animal/entities/raza_animal.entity';
@@ -19,35 +25,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 
-export enum TipoReproduccionEnum {
-  NATURAL = 'Monta natural',
-  IATF = 'Inseminación aritificial a tiempo fijo (IATF)',
-  FIV = 'Fecundación in vitro (FIV)',
-  TRANSFERENCIA_EMBRIONES = 'Transferencia de embriones',
-}
-
-export enum PurezaEnum {
-  UNO = '1',
-  SIETE_OCTAVOS = '7/8',
-  TRES_CUARTOS = '3/4',
-  CINCO_OCTAVOS = '5/8',
-  MEDIA_RAZA = '1/2',
-  NO_DEFINIDA = 'N/D',
-}
-
-export enum UsoEquinoEnum {
-  TRABAJO = 'Trabajo',
-  DEPORTE = 'Deporte',
-  REPRODUCCION = 'Reproducción',
-  PASEO = 'Paseo',
-  CARGA = 'Carga',
-  GANADERIA = 'Ganadería',
-  POLICIA = 'Policía',
-  TERAPIA = 'Terapia',
-  COMPANIA = 'Compañía',
-  OTRO = 'Otro',
-}
-
 @Entity('animal_finca')
 export class AnimalFinca {
   @PrimaryGeneratedColumn('uuid')
@@ -56,7 +33,7 @@ export class AnimalFinca {
   @ManyToOne(() => EspecieAnimal, { eager: true })
   especie: EspecieAnimal;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ type: 'varchar', length: 100, nullable: true, default: 'N/D' })
   sexo: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
@@ -253,11 +230,56 @@ export class AnimalFinca {
   esterelizado: boolean;
 
   //AVES
-  @Column({ nullable: true })
-  codigo_lote: string;
-
   @Column({ type: 'int', nullable: true })
   cantidad_lote: number;
+
+  @Column({ type: 'enum', enum: TipoAve, nullable: true })
+  tipo_ave: TipoAve;
+
+  @Column({ type: 'varchar', nullable: true })
+  proveedor_aves: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  galpon: string;
+
+  @Column({ type: 'int', nullable: true })
+  mortalidad_diaria: number;
+
+  @Column({ type: 'varchar', nullable: true })
+  consumo_alimento: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  consumo_agua: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  peso_promedio: string;
+
+  @Column({ type: 'int', nullable: true })
+  huevos_diarios: number;
+
+  @Column({ type: 'int', nullable: true })
+  huevos_rotos: number;
+
+  @Column({ type: 'varchar', nullable: true })
+  calificacion_huevos: string;
+
+  @Column({ type: 'varchar', length: 100, default: 'Sin vacunas' })
+  vacunas_lote: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  tratamientos: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  porcentaje_postura: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  tipo_concentrado: string;
+
+  @Column({ type: 'date', nullable: true })
+  fecha_postura: Date;
+
+  @Column({ type: 'boolean', default: true })
+  lote_activo?: boolean;
 
   //PECES
 

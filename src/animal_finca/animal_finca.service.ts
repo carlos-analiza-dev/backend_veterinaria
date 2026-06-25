@@ -6,7 +6,10 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateAnimalFincaDto } from './dto/create-animal_finca.dto';
-import { UpdateAnimalFincaDto } from './dto/update-animal_finca.dto';
+import {
+  UpdateAnimalFincaDto,
+  UpdateAvicolaFincaDto,
+} from './dto/update-animal_finca.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AnimalFinca } from './entities/animal_finca.entity';
 import { DataSource, EntityManager, In, Like, Repository } from 'typeorm';
@@ -23,6 +26,7 @@ import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { getPropietarioId } from 'src/utils/get-propietario-id';
 import { ImagesAminalesService } from 'src/images_aminales/images_aminales.service';
 import * as XLSX from 'xlsx';
+import { CreateAvicolaDto } from './dto/create-avicola.dto';
 @Injectable()
 export class AnimalFincaService {
   constructor(
@@ -404,6 +408,258 @@ export class AnimalFincaService {
           trabajador: trabajador?.nombre || null,
           finca: finca.nombre_finca,
         },
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async createAvicola(
+    createAvicolaDto: CreateAvicolaDto,
+    cliente: Cliente,
+    images: Express.Multer.File[],
+  ) {
+    const {
+      especie,
+      fincaId,
+      identificador,
+      razaIds,
+      tipo_produccion,
+      tipo_alimentacion,
+      cantidad_lote,
+      tipo_ave,
+      proveedor_aves,
+      galpon,
+      mortalidad_diaria,
+      consumo_alimento,
+      consumo_agua,
+      peso_promedio,
+      huevos_diarios,
+      huevos_rotos,
+      calificacion_huevos,
+      vacunas_lote,
+      tratamientos,
+      porcentaje_postura,
+      tipo_concentrado,
+      fecha_postura,
+    } = createAvicolaDto;
+
+    try {
+      let propietario: Cliente;
+      let trabajador: Cliente | null = null;
+
+      if (cliente.rol === TipoCliente.PROPIETARIO) {
+        propietario = cliente;
+      } else if (
+        cliente.rol === TipoCliente.TRABAJADOR ||
+        cliente.rol === TipoCliente.SUPERVISOR
+      ) {
+        if (!cliente.propietario) {
+          throw new BadRequestException(
+            'El trabajador no tiene un propietario asignado',
+          );
+        }
+        propietario = cliente.propietario;
+        trabajador = cliente;
+
+        const fincaAsignada = await this.fincaRepo
+          .createQueryBuilder('finca')
+          .innerJoin('finca.asignaciones', 'asignaciones')
+          .innerJoin('asignaciones.trabajador', 'trabajador')
+          .where('finca.id = :fincaId', { fincaId })
+          .andWhere('trabajador.id = :trabajadorId', {
+            trabajadorId: cliente.id,
+          })
+          .getOne();
+
+        if (!fincaAsignada) {
+          throw new UnauthorizedException(
+            'No tienes permiso para agregar aves en esta finca',
+          );
+        }
+      } else {
+        throw new BadRequestException('Rol de usuario no válido');
+      }
+
+      if (!propietario) {
+        throw new NotFoundException('Propietario no encontrado');
+      }
+
+      const finca = await this.fincaRepo.findOne({
+        where: { id: fincaId },
+        relations: ['propietario'],
+      });
+
+      if (!finca) {
+        throw new NotFoundException('Finca no encontrada');
+      }
+
+      if (finca.propietario.id !== propietario.id) {
+        throw new UnauthorizedException(
+          'La finca no pertenece al propietario especificado',
+        );
+      }
+
+      const especieAnimal = await this.especieAnimal.findOne({
+        where: { id: especie },
+      });
+      if (!especieAnimal) {
+        throw new NotFoundException('Especie no encontrada');
+      }
+
+      if (finca.especies_maneja && finca.especies_maneja.length > 0) {
+        const configEspecie = finca.especies_maneja.find(
+          (e) => e.especie === especieAnimal.nombre,
+        );
+
+        if (configEspecie) {
+          const avesExistentes =
+            finca.animales
+              ?.filter(
+                (animal) =>
+                  animal.especie.id === especie &&
+                  !animal.animal_muerte &&
+                  !animal.animal_vendido &&
+                  animal.cantidad_lote,
+              )
+              ?.reduce(
+                (total, animal) => total + (animal.cantidad_lote || 0),
+                0,
+              ) || 0;
+
+          /* const capacidadDisponible = configEspecie.cantidad - avesExistentes;
+
+          if (capacidadDisponible <= 0) {
+            throw new ConflictException(
+              `No hay capacidad disponible para más aves de la especie ${especieAnimal.nombre}. ` +
+                `Límite de la finca: ${configEspecie.cantidad} aves. ` +
+                `Aves actuales: ${avesExistentes} aves.`,
+            );
+          }
+
+          if (cantidad_lote && cantidad_lote > capacidadDisponible) {
+            throw new BadRequestException(
+              `La cantidad del lote (${cantidad_lote} aves) excede la capacidad disponible ` +
+                `(${capacidadDisponible} aves) para la especie ${especieAnimal.nombre} en esta finca. ` +
+                `Límite total: ${configEspecie.cantidad} aves. ` +
+                `Aves actuales: ${avesExistentes} aves.`,
+            );
+          }
+ */
+          finca.especies_maneja = finca.especies_maneja.map((e) =>
+            e.especie === especieAnimal.nombre
+              ? { ...e, cantidad: avesExistentes + (cantidad_lote || 0) }
+              : e,
+          );
+          await this.fincaRepo.save(finca);
+        } else {
+          throw new BadRequestException(
+            `La especie ${especieAnimal.nombre} no está configurada para esta finca. ` +
+              `Por favor, configura primero la especie en la finca.`,
+          );
+        }
+      }
+
+      const razas = await this.razaAnimal.findBy({ id: In(razaIds) });
+      if (razas.length !== razaIds.length) {
+        throw new NotFoundException('Una o más razas no fueron encontradas.');
+      }
+
+      if (!razaIds || razaIds.length === 0 || razaIds.length > 2) {
+        throw new BadRequestException(
+          'Debes ingresar al menos una raza y como máximo dos.',
+        );
+      }
+
+      const existeIdentificador = await this.animalRepo.findOne({
+        where: { identificador },
+      });
+      if (existeIdentificador) {
+        throw new ConflictException(
+          'El identificador del galpón ya está en uso',
+        );
+      }
+
+      if (tipo_alimentacion) {
+        for (const alimentacion of tipo_alimentacion) {
+          if (alimentacion.origen === 'comprado y producido') {
+            const porcentaje_comprado = alimentacion.porcentaje_comprado ?? 0;
+            const porcentaje_producido = alimentacion.porcentaje_producido ?? 0;
+            const total = porcentaje_comprado + porcentaje_producido;
+
+            if (total !== 100) {
+              throw new BadRequestException(
+                `El alimento "${alimentacion.alimento}" tiene porcentajes que no suman 100%. Comprado: ${porcentaje_comprado}%, Producido: ${porcentaje_producido}%`,
+              );
+            }
+          }
+        }
+      }
+
+      const nuevoAvicola = this.animalRepo.create({
+        especie: especieAnimal,
+        identificador,
+        razas,
+        tipo_produccion,
+        tipo_alimentacion,
+        cantidad_lote,
+        tipo_ave,
+        proveedor_aves,
+        galpon,
+        mortalidad_diaria,
+        consumo_alimento,
+        consumo_agua,
+        peso_promedio,
+        huevos_diarios,
+        huevos_rotos,
+        calificacion_huevos,
+        vacunas_lote,
+        tratamientos,
+        porcentaje_postura,
+        tipo_concentrado,
+        fecha_postura,
+        propietario,
+        trabajador,
+        creado_por: cliente,
+        finca,
+      });
+
+      await this.animalRepo.save(nuevoAvicola);
+
+      const uploadedImages = [];
+      if (images && images.length > 0) {
+        for (const image of images) {
+          try {
+            const uploadedImage =
+              await this.serviceImagesAnimal.uploadProfileImage(
+                nuevoAvicola.id,
+                image,
+              );
+            uploadedImages.push(uploadedImage);
+          } catch (imageError) {
+            console.error(
+              `Error al subir imagen para avícola ${nuevoAvicola.id}:`,
+              imageError,
+            );
+          }
+        }
+      }
+
+      const creadorNombre =
+        cliente.rol === TipoCliente.TRABAJADOR
+          ? `el trabajador ${cliente.nombre} (del ganadero ${propietario.nombre})`
+          : `el ganadero ${propietario.nombre}`;
+
+      await this.notificacionesService.notifyAdmins(
+        NotificationType.NEW_ANIMAL,
+        'Nuevo Lote Avícola Registrado',
+        `Se ha registrado un nuevo lote avícola con identificador: ${nuevoAvicola.identificador}, ` +
+          `en la finca ${finca.nombre_finca}, por ${creadorNombre}. ` +
+          `Cantidad: ${cantidad_lote || 'No especificada'} aves.`,
+      );
+
+      return {
+        message: 'Lote avícola creado exitosamente',
       };
     } catch (error) {
       throw error;
@@ -1397,6 +1653,262 @@ export class AnimalFincaService {
       return {
         message: 'Animal actualizado correctamente',
         animal: instanceToPlain(animal),
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async updateAvicola(
+    id: string,
+    updateAvicolaDto: UpdateAvicolaFincaDto,
+    cliente: Cliente,
+  ) {
+    const {
+      especie,
+      fincaId,
+      identificador,
+      razaIds,
+      tipo_produccion,
+      tipo_alimentacion,
+      cantidad_lote,
+      tipo_ave,
+      proveedor_aves,
+      galpon,
+      mortalidad_diaria,
+      consumo_alimento,
+      consumo_agua,
+      peso_promedio,
+      huevos_diarios,
+      huevos_rotos,
+      calificacion_huevos,
+      vacunas_lote,
+      tratamientos,
+      porcentaje_postura,
+      tipo_concentrado,
+      fecha_postura,
+    } = updateAvicolaDto;
+
+    try {
+      const avicolaExistente = await this.animalRepo.findOne({
+        where: { id },
+        relations: ['propietario', 'trabajador', 'finca', 'especie', 'razas'],
+      });
+
+      if (!avicolaExistente) {
+        throw new NotFoundException('Lote avícola no encontrado');
+      }
+
+      if (!avicolaExistente.cantidad_lote) {
+        throw new BadRequestException('Este animal no es un lote de aves');
+      }
+
+      let propietario: Cliente;
+      let trabajador: Cliente | null = null;
+
+      if (cliente.rol === TipoCliente.PROPIETARIO) {
+        propietario = cliente;
+
+        if (avicolaExistente.propietario.id !== cliente.id) {
+          throw new UnauthorizedException(
+            'No tienes permiso para editar este lote avícola',
+          );
+        }
+      } else if (
+        cliente.rol === TipoCliente.TRABAJADOR ||
+        cliente.rol === TipoCliente.SUPERVISOR
+      ) {
+        if (!cliente.propietario) {
+          throw new BadRequestException(
+            'El trabajador no tiene un propietario asignado',
+          );
+        }
+        propietario = cliente.propietario;
+        trabajador = cliente;
+
+        const fincaAsignada = await this.fincaRepo
+          .createQueryBuilder('finca')
+          .innerJoin('finca.asignaciones', 'asignaciones')
+          .innerJoin('asignaciones.trabajador', 'trabajador')
+          .where('finca.id = :fincaId', { fincaId })
+          .andWhere('trabajador.id = :trabajadorId', {
+            trabajadorId: cliente.id,
+          })
+          .getOne();
+
+        if (!fincaAsignada) {
+          throw new UnauthorizedException(
+            'No tienes permiso para editar lotes en esta finca',
+          );
+        }
+
+        if (avicolaExistente.propietario.id !== propietario.id) {
+          throw new UnauthorizedException(
+            'No tienes permiso para editar este lote avícola',
+          );
+        }
+      } else {
+        throw new BadRequestException('Rol de usuario no válido');
+      }
+
+      const finca = await this.fincaRepo.findOne({
+        where: { id: fincaId },
+        relations: ['propietario', 'animales'],
+      });
+
+      if (!finca) {
+        throw new NotFoundException('Finca no encontrada');
+      }
+
+      if (finca.propietario.id !== propietario.id) {
+        throw new UnauthorizedException(
+          'La finca no pertenece al propietario especificado',
+        );
+      }
+
+      const especieAnimal = await this.especieAnimal.findOne({
+        where: { id: especie },
+      });
+      if (!especieAnimal) {
+        throw new NotFoundException('Especie no encontrada');
+      }
+
+      const cantidadAnterior = avicolaExistente.cantidad_lote || 0;
+
+      /* if (finca.especies_maneja && finca.especies_maneja.length > 0) {
+        const configEspecie = finca.especies_maneja.find(
+          (e) => e.especie === especieAnimal.nombre,
+        );
+
+        if (configEspecie) {
+          const avesExistentes =
+            finca.animales
+              ?.filter(
+                (animal) =>
+                  animal.especie.id === especie &&
+                  !animal.animal_muerte &&
+                  !animal.animal_vendido &&
+                  animal.cantidad_lote,
+              )
+              ?.reduce(
+                (total, animal) => total + (animal.cantidad_lote || 0),
+                0,
+              ) || 0;
+
+          const capacidadDisponible = configEspecie.cantidad - avesExistentes;
+
+          if (capacidadDisponible <= 0) {
+            throw new ConflictException(
+              `No hay capacidad disponible para más aves de la especie ${especieAnimal.nombre}. ` +
+                `Límite de la finca: ${configEspecie.cantidad} aves. ` +
+                `Aves actuales: ${avesExistentes} aves.`,
+            );
+          }
+
+          if (cantidad_lote && cantidad_lote > capacidadDisponible) {
+            throw new BadRequestException(
+              `La cantidad del lote (${cantidad_lote} aves) excede la capacidad disponible ` +
+                `(${capacidadDisponible} aves) para la especie ${especieAnimal.nombre} en esta finca. ` +
+                `Límite total: ${configEspecie.cantidad} aves. ` +
+                `Aves actuales: ${avesExistentes} aves.`,
+            );
+          }
+
+          finca.especies_maneja = finca.especies_maneja.map((e) =>
+            e.especie === especieAnimal.nombre
+              ? { ...e, cantidad: avesExistentes + (cantidad_lote || 0) }
+              : e,
+          );
+          await this.fincaRepo.save(finca);
+        } else {
+          throw new BadRequestException(
+            `La especie ${especieAnimal.nombre} no está configurada para esta finca. ` +
+              `Por favor, configura primero la especie en la finca.`,
+          );
+        }
+      } */
+
+      const razas = await this.razaAnimal.findBy({ id: In(razaIds) });
+      if (razas.length !== razaIds.length) {
+        throw new NotFoundException('Una o más razas no fueron encontradas.');
+      }
+
+      if (!razaIds || razaIds.length === 0 || razaIds.length > 2) {
+        throw new BadRequestException(
+          'Debes ingresar al menos una raza y como máximo dos.',
+        );
+      }
+
+      if (identificador !== avicolaExistente.identificador) {
+        const existeIdentificador = await this.animalRepo.findOne({
+          where: { identificador },
+        });
+        if (existeIdentificador) {
+          throw new ConflictException(
+            'El identificador del galpón ya está en uso por otro animal',
+          );
+        }
+      }
+
+      if (tipo_alimentacion) {
+        for (const alimentacion of tipo_alimentacion) {
+          if (alimentacion.origen === 'comprado y producido') {
+            const porcentaje_comprado = alimentacion.porcentaje_comprado ?? 0;
+            const porcentaje_producido = alimentacion.porcentaje_producido ?? 0;
+            const total = porcentaje_comprado + porcentaje_producido;
+
+            if (total !== 100) {
+              throw new BadRequestException(
+                `El alimento "${alimentacion.alimento}" tiene porcentajes que no suman 100%. ` +
+                  `Comprado: ${porcentaje_comprado}%, Producido: ${porcentaje_producido}%`,
+              );
+            }
+          }
+        }
+      }
+
+      const avicolaActualizado = {
+        ...avicolaExistente,
+        especie: especieAnimal,
+        identificador,
+        razas,
+        tipo_produccion,
+        tipo_alimentacion,
+        cantidad_lote,
+        tipo_ave,
+        proveedor_aves,
+        galpon,
+        mortalidad_diaria,
+        consumo_alimento,
+        consumo_agua,
+        peso_promedio,
+        huevos_diarios,
+        huevos_rotos,
+        calificacion_huevos,
+        vacunas_lote,
+        tratamientos,
+        porcentaje_postura,
+        tipo_concentrado,
+        fecha_postura,
+        finca,
+        trabajador: trabajador || avicolaExistente.trabajador,
+        actualizado_por: cliente,
+        actualizadoPorId: cliente.id,
+      };
+
+      await this.animalRepo.save(avicolaActualizado);
+
+      return {
+        message: 'Lote avícola actualizado exitosamente',
+        avicola: {
+          id: avicolaActualizado.id,
+          identificador: avicolaActualizado.identificador,
+          propietario: propietario.nombre,
+          trabajador: trabajador?.nombre || null,
+          finca: finca.nombre_finca,
+          cantidad_lote: avicolaActualizado.cantidad_lote,
+          tipo_ave: avicolaActualizado.tipo_ave,
+        },
       };
     } catch (error) {
       throw error;

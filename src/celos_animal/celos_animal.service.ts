@@ -256,8 +256,24 @@ export class CelosAnimalService {
 
   async remove(id: string): Promise<{ message: string }> {
     const celo = await this.findOne(id);
+
+    const servicioAsociado = await this.servicioRepository.existsBy({
+      celo_asociado: {
+        id: celo.id,
+      },
+    });
+
+    if (servicioAsociado) {
+      throw new BadRequestException(
+        'No se puede eliminar el celo porque está asociado a un servicio reproductivo',
+      );
+    }
+
     await this.celosAnimalRepository.remove(celo);
-    return { message: 'Registro de celo eliminado correctamente' };
+
+    return {
+      message: 'Registro de celo eliminado correctamente',
+    };
   }
 
   async getCelosActivosByAnimal(animalId: string): Promise<CelosAnimal[]> {

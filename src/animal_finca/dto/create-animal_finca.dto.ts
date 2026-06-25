@@ -18,7 +18,7 @@ import {
   PurezaEnum,
   TipoReproduccionEnum,
   UsoEquinoEnum,
-} from '../entities/animal_finca.entity';
+} from 'src/interfaces/animales/animales-enums';
 
 export class TipoAlimentacionDto {
   @IsString({ message: 'El nombre del alimento debe ser un texto válido.' })

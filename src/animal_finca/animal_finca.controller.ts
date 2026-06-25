@@ -13,13 +13,17 @@ import {
 } from '@nestjs/common';
 import { AnimalFincaService } from './animal_finca.service';
 import { CreateAnimalFincaDto } from './dto/create-animal_finca.dto';
-import { UpdateAnimalFincaDto } from './dto/update-animal_finca.dto';
+import {
+  UpdateAnimalFincaDto,
+  UpdateAvicolaFincaDto,
+} from './dto/update-animal_finca.dto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { UpdateDeathStatusDto } from './dto/update-death-status.dto';
 import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
 import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
+import { CreateAvicolaDto } from './dto/create-avicola.dto';
 
 @Controller('animal-finca')
 export class AnimalFincaController {
@@ -34,6 +38,21 @@ export class AnimalFincaController {
     @UploadedFiles() images: Express.Multer.File[],
   ) {
     return this.animalFincaService.create(
+      createAnimalFincaDto,
+      cliente,
+      images,
+    );
+  }
+
+  @Post('avicola')
+  @UseInterceptors(FilesInterceptor('images', 5))
+  @AuthCliente()
+  createAvicola(
+    @Body() createAnimalFincaDto: CreateAvicolaDto,
+    @GetCliente() cliente: Cliente,
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    return this.animalFincaService.createAvicola(
       createAnimalFincaDto,
       cliente,
       images,
@@ -114,6 +133,7 @@ export class AnimalFincaController {
       data: updatedAnimal,
     };
   }
+
   @Patch(':id')
   @AuthCliente()
   update(
@@ -122,6 +142,20 @@ export class AnimalFincaController {
     @GetCliente() cliente: Cliente,
   ) {
     return this.animalFincaService.update(id, updateAnimalFincaDto, cliente);
+  }
+
+  @Patch('avicola/:id')
+  @AuthCliente()
+  updateAvicola(
+    @Param('id') id: string,
+    @Body() updateAnimalFincaDto: UpdateAvicolaFincaDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.animalFincaService.updateAvicola(
+      id,
+      updateAnimalFincaDto,
+      cliente,
+    );
   }
 
   @Delete(':id')
