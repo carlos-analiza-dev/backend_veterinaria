@@ -24,6 +24,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { EtapaPez } from '../dto/create-peces.dto';
 
 @Entity('animal_finca')
 export class AnimalFinca {
@@ -283,6 +284,102 @@ export class AnimalFinca {
 
   //PECES
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  estanque_tanque_jaula?: string;
+
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  proveedor_alevines?: string;
+
+  @Column({ type: 'date', nullable: true })
+  fecha_siembra?: Date;
+
+  @Column({ type: 'int', nullable: true })
+  cantidad_inicial?: number;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  talla_peso_inicial?: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  densidad_por_m3_m2?: number;
+
+  @Column({ type: 'int', nullable: true })
+  cantidad_actual?: number;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  mortalidad_diaria_acum?: string;
+
+  @Column({ type: 'jsonb', nullable: true })
+  muestreos?: {
+    fecha_muestreo: string;
+    peso?: number;
+    talla?: number;
+  }[];
+
+  @Column({
+    type: 'enum',
+    enum: EtapaPez,
+    nullable: true,
+  })
+  etapa?: EtapaPez;
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  peso_promedio_pez?: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  biomasa_estimada?: number;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  talla_pez?: number;
+
+  @Column({ type: 'date', nullable: true })
+  fecha_muestreo_pez?: Date;
+  @Column({ type: 'jsonb', nullable: true })
+  calidad_agua?: {
+    temperatura?: number;
+    oxigeno_disuelto?: number;
+    ph?: number;
+    amonio?: number;
+    nitrito?: number;
+    turbidez?: number;
+    historial_recambios?: {
+      fecha_recambio: string;
+      porcentaje_recambio?: number;
+      volumen_m3?: number;
+      motivo?: string;
+      responsable?: string;
+    }[];
+  };
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  tipo_concentrado_pez?: string;
+
+  @Column({ type: 'decimal', precision: 5, scale: 2, nullable: true })
+  proteina_porcentaje?: number;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  racion_diaria?: string;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  consumo_pez?: string;
+
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
+  conversion_alimenticia?: number;
+  @Column({ type: 'jsonb', nullable: true })
+  sanidad?: {
+    signos_clinicos?: string;
+    tratamientos?: string;
+    banos_salinidad?: string;
+    laboratorio?: string;
+  };
+
+  @Column({ type: 'jsonb', nullable: true })
+  cosecha?: {
+    fecha_cosecha: string;
+    kilos_cosechados?: number;
+    sobrevivencia_porcentaje?: number;
+    comprador?: string;
+    precio?: number;
+  };
+
   //EQUINO
   @Column({
     type: 'enum',
@@ -313,10 +410,34 @@ export class AnimalFinca {
   historial_reproductivo: string;
 
   @Column({ type: 'text', nullable: true })
+  registro_genealogico: string;
+
+  @Column({ type: 'text', nullable: true })
+  alzada: string;
+
+  @Column({ type: 'text', nullable: true })
+  microchip: string;
+
+  @Column({ type: 'text', nullable: true })
+  unidad_alzada: string;
+
+  @Column({ type: 'text', nullable: true })
+  lesiones: string;
+
+  @Column({ type: 'text', nullable: true })
+  alergias: string;
+
+  @Column({ type: 'text', nullable: true })
+  odontologia: string;
+
+  @Column({ type: 'text', nullable: true })
   veterinario: string;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   valor_estimado: number;
+
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  precio_compra: number;
 
   @Column({ type: 'boolean', default: false })
   asegurado: boolean;

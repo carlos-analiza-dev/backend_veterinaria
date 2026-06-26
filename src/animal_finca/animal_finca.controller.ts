@@ -16,6 +16,7 @@ import { CreateAnimalFincaDto } from './dto/create-animal_finca.dto';
 import {
   UpdateAnimalFincaDto,
   UpdateAvicolaFincaDto,
+  UpdatePecesFincaDto,
 } from './dto/update-animal_finca.dto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { UpdateDeathStatusDto } from './dto/update-death-status.dto';
@@ -24,6 +25,7 @@ import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { CreateAvicolaDto } from './dto/create-avicola.dto';
+import { CreatePecesDto } from './dto/create-peces.dto';
 
 @Controller('animal-finca')
 export class AnimalFincaController {
@@ -53,6 +55,21 @@ export class AnimalFincaController {
     @UploadedFiles() images: Express.Multer.File[],
   ) {
     return this.animalFincaService.createAvicola(
+      createAnimalFincaDto,
+      cliente,
+      images,
+    );
+  }
+
+  @Post('peces')
+  @UseInterceptors(FilesInterceptor('images', 5))
+  @AuthCliente()
+  createPeces(
+    @Body() createAnimalFincaDto: CreatePecesDto,
+    @GetCliente() cliente: Cliente,
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    return this.animalFincaService.createPeces(
       createAnimalFincaDto,
       cliente,
       images,
@@ -152,6 +169,20 @@ export class AnimalFincaController {
     @GetCliente() cliente: Cliente,
   ) {
     return this.animalFincaService.updateAvicola(
+      id,
+      updateAnimalFincaDto,
+      cliente,
+    );
+  }
+
+  @Patch('peces/:id')
+  @AuthCliente()
+  updatePeces(
+    @Param('id') id: string,
+    @Body() updateAnimalFincaDto: UpdatePecesFincaDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.animalFincaService.updatePeces(
       id,
       updateAnimalFincaDto,
       cliente,

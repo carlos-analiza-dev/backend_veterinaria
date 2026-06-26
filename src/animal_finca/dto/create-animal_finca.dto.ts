@@ -362,6 +362,12 @@ export class CreateAnimalFincaDto {
 
   @IsOptional()
   @IsString({
+    message: 'Los registro genealogico debe ser un texto válido.',
+  })
+  registro_genealogico?: string;
+
+  @IsOptional()
+  @IsString({
     message: 'El historial reproductivo debe ser un texto válido.',
   })
   historial_reproductivo?: string;
@@ -379,6 +385,19 @@ export class CreateAnimalFincaDto {
   @Min(0, { message: 'El valor estimado debe ser mayor o igual a 0.' })
   valor_estimado?: number;
 
+  @Transform(({ value }) => {
+    if (value === '' || value === null || value === undefined) {
+      return undefined;
+    }
+
+    const num = Number(value);
+    return Number.isFinite(num) ? num : undefined;
+  })
+  @IsOptional()
+  @IsNumber({}, { message: 'El precio de compra debe ser un número válido.' })
+  @Min(0, { message: 'El precio de compra debe ser mayor o igual a 0.' })
+  precio_compra?: number;
+
   @Transform(({ value }) => value === 'true' || value === true)
   @IsOptional()
   @IsBoolean({
@@ -391,4 +410,38 @@ export class CreateAnimalFincaDto {
     message: 'El veterinario debe ser un texto válido.',
   })
   veterinario?: string;
+
+  @IsOptional()
+  @IsString({
+    message: 'La alzada debe ser un texto válido.',
+  })
+  alzada?: string;
+
+  @IsOptional()
+  @IsString({
+    message: 'El microchip debe ser un texto válido.',
+  })
+  microchip?: string;
+
+  @IsOptional()
+  @IsString({
+    message: 'La unidad de alzada debe ser un texto válido.',
+  })
+  unidad_alzada?: string;
+
+  @IsOptional()
+  @IsString({
+    message: 'Las lesiones debe ser un texto válido.',
+  })
+  lesiones?: string;
+
+  @IsOptional()
+  @IsString({
+    message: 'Las alergias debe ser un texto válido.',
+  })
+  alergias?: string;
+
+  @IsOptional()
+  @IsString({ message: 'La odontologia debe ser un texto valido' })
+  odontologia: string;
 }

@@ -65,68 +65,69 @@ export class CreateAvicolaDto {
 
   @IsOptional()
   @IsString({ message: 'El proveedor de aves debe ser un texto' })
-  proveedor_aves: string;
+  proveedor_aves?: string;
 
   @IsOptional()
   @IsString({ message: 'El galpón debe ser un texto' })
-  galpon: string;
+  galpon?: string;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: 'La mortalidad diaria debe ser un número entero' })
   @Min(0)
-  mortalidad_diaria: number;
+  mortalidad_diaria?: number;
 
   @IsOptional()
   @IsString({ message: 'El consumo de alimento debe ser un texto' })
-  consumo_alimento: string;
+  consumo_alimento?: string;
 
   @IsOptional()
   @IsString({ message: 'El consumo de agua debe ser un texto' })
-  consumo_agua: string;
+  consumo_agua?: string;
 
   @IsOptional()
   @IsString({ message: 'El peso promedio debe ser un texto' })
-  peso_promedio: string;
+  peso_promedio?: string;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: 'Los huevos diarios deben ser un número entero' })
   @Min(0)
-  huevos_diarios: number;
+  huevos_diarios?: number;
 
   @IsOptional()
   @Type(() => Number)
   @IsInt({ message: 'Los huevos rotos deben ser un número entero' })
   @Min(0)
-  huevos_rotos: number;
+  huevos_rotos?: number;
 
   @IsOptional()
   @IsString({ message: 'La calificación de huevos debe ser un texto' })
-  calificacion_huevos: string;
+  calificacion_huevos?: string;
 
   @IsOptional()
   @IsString({ message: 'Las vacunas del lote deben ser un texto' })
-  vacunas_lote: string;
+  vacunas_lote?: string;
 
   @IsOptional()
   @IsString({ message: 'Los tratamientos deben ser un texto' })
-  tratamientos: string;
+  tratamientos?: string;
 
   @IsOptional()
   @IsString({ message: 'El porcentaje de postura debe ser un texto' })
-  porcentaje_postura: string;
+  porcentaje_postura?: string;
 
   @IsOptional()
   @IsString({ message: 'El tipo de concentrado debe ser un texto' })
-  tipo_concentrado: string;
+  tipo_concentrado?: string;
 
+  @Transform(({ value }) => (value === '' ? undefined : value))
   @IsOptional()
   @IsDateString(
     {},
-    { message: 'La fecha de postura debe tener un formato válido' },
+    { message: 'La fecha de postura debe tener formato YYYY-MM-DD' },
   )
-  fecha_postura: Date;
+  fecha_postura?: string;
 
   @Transform(({ value }) => value === 'true')
   @IsOptional()
