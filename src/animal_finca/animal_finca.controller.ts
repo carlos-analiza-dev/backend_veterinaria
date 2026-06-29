@@ -16,6 +16,8 @@ import { CreateAnimalFincaDto } from './dto/create-animal_finca.dto';
 import {
   UpdateAnimalFincaDto,
   UpdateAvicolaFincaDto,
+  UpdateCaprinoFincaDto,
+  UpdateOvinoFincaDto,
   UpdatePecesFincaDto,
 } from './dto/update-animal_finca.dto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
@@ -26,6 +28,8 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { FileInterceptor, FilesInterceptor } from '@nestjs/platform-express';
 import { CreateAvicolaDto } from './dto/create-avicola.dto';
 import { CreatePecesDto } from './dto/create-peces.dto';
+import { CreateCaprinoDto } from './dto/crear-caprino.dto';
+import { CreateOvinoDto } from './dto/create-ovino.dto';
 
 @Controller('animal-finca')
 export class AnimalFincaController {
@@ -70,6 +74,36 @@ export class AnimalFincaController {
     @UploadedFiles() images: Express.Multer.File[],
   ) {
     return this.animalFincaService.createPeces(
+      createAnimalFincaDto,
+      cliente,
+      images,
+    );
+  }
+
+  @Post('caprino')
+  @UseInterceptors(FilesInterceptor('images', 5))
+  @AuthCliente()
+  createCaprino(
+    @Body() createAnimalFincaDto: CreateCaprinoDto,
+    @GetCliente() cliente: Cliente,
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    return this.animalFincaService.createCaprino(
+      createAnimalFincaDto,
+      cliente,
+      images,
+    );
+  }
+
+  @Post('ovino')
+  @UseInterceptors(FilesInterceptor('images', 5))
+  @AuthCliente()
+  createOvino(
+    @Body() createAnimalFincaDto: CreateOvinoDto,
+    @GetCliente() cliente: Cliente,
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    return this.animalFincaService.createOvino(
       createAnimalFincaDto,
       cliente,
       images,
@@ -183,6 +217,34 @@ export class AnimalFincaController {
     @GetCliente() cliente: Cliente,
   ) {
     return this.animalFincaService.updatePeces(
+      id,
+      updateAnimalFincaDto,
+      cliente,
+    );
+  }
+
+  @Patch('caprino/:id')
+  @AuthCliente()
+  updateCaprino(
+    @Param('id') id: string,
+    @Body() updateAnimalFincaDto: UpdateCaprinoFincaDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.animalFincaService.updateCaprino(
+      id,
+      updateAnimalFincaDto,
+      cliente,
+    );
+  }
+
+  @Patch('ovino/:id')
+  @AuthCliente()
+  updateOvino(
+    @Param('id') id: string,
+    @Body() updateAnimalFincaDto: UpdateOvinoFincaDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.animalFincaService.updateOvino(
       id,
       updateAnimalFincaDto,
       cliente,

@@ -110,7 +110,10 @@ export class CreateAnimalFincaDto {
     return value;
   })
   @IsArray({ message: 'Las razas deben ser un arreglo de IDs válidos' })
-  @IsUUID('4', { each: true, message: 'Cada raza debe ser un UUID válido' })
+  @IsUUID('4', {
+    each: true,
+    message: 'Cada raza del animal debe ser un UUID válido',
+  })
   @IsNotEmpty({ message: 'Debes ingresar al menos una raza' })
   razaIds: string[];
 
@@ -207,7 +210,10 @@ export class CreateAnimalFincaDto {
     return value;
   })
   @IsArray({ message: 'Las razas deben ser un arreglo de IDs válidos' })
-  @IsUUID('4', { each: true, message: 'Cada raza debe ser un UUID válido' })
+  @IsUUID('4', {
+    each: true,
+    message: 'Cada raza del padre debe ser un UUID válido',
+  })
   @IsNotEmpty({ message: 'Debes ingresar al menos una raza al padre' })
   razas_padre: string[];
 
@@ -251,7 +257,10 @@ export class CreateAnimalFincaDto {
     return value;
   })
   @IsArray({ message: 'Las razas deben ser un arreglo de IDs válidos' })
-  @IsUUID('4', { each: true, message: 'Cada raza debe ser un UUID válido' })
+  @IsUUID('4', {
+    each: true,
+    message: 'Cada raza de la madre debe ser un UUID válido',
+  })
   @IsNotEmpty({ message: 'Debes ingresar al menos una raza a la madre' })
   razas_madre: string[];
 

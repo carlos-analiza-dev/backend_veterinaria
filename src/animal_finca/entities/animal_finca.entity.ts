@@ -230,6 +230,15 @@ export class AnimalFinca {
   @Column({ type: 'boolean', default: false })
   esterelizado: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  desparasitado: boolean;
+
+  @Column({ type: 'varchar', length: 100, default: 'Sin vacunas' })
+  vacunas: string;
+
+  @Column({ type: 'boolean', default: true })
+  lote_activo?: boolean;
+
   //AVES
   @Column({ type: 'int', nullable: true })
   cantidad_lote: number;
@@ -278,9 +287,7 @@ export class AnimalFinca {
 
   @Column({ type: 'date', nullable: true })
   fecha_postura: Date;
-
-  @Column({ type: 'boolean', default: true })
-  lote_activo?: boolean;
+  /* ----------------------------------------- */
 
   //PECES
 
@@ -379,6 +386,7 @@ export class AnimalFinca {
     comprador?: string;
     precio?: number;
   };
+  /* ----------------------------------------- */
 
   //EQUINO
   @Column({
@@ -387,12 +395,6 @@ export class AnimalFinca {
     nullable: true,
   })
   uso_equino: UsoEquinoEnum;
-
-  @Column({ type: 'boolean', default: false })
-  desparasitado: boolean;
-
-  @Column({ type: 'varchar', length: 100, default: 'Sin vacunas' })
-  vacunas: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   peso_actual: number;
@@ -441,6 +443,70 @@ export class AnimalFinca {
 
   @Column({ type: 'boolean', default: false })
   asegurado: boolean;
+  /* ----------------------------------------- */
+
+  //CAPTINO
+  @Column({ type: 'text', nullable: true })
+  mastitis?: string;
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  calidad_leche_grasa?: number;
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  calidad_leche_proteina?: number;
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  calidad_leche_celulas?: number;
+  @Column({ type: 'text', nullable: true })
+  linea_genetica?: string;
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  litros_leche_dia?: number;
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  peso_destete?: number;
+  @Column({ type: 'text', nullable: true })
+  proposito?: string;
+
+  //CAPRINOS Y OVINOS
+  @Column({ type: 'text', nullable: true })
+  potrero?: string;
+  @Column({ type: 'text', nullable: true })
+  pezunas?: string;
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  peso?: number;
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  ganancia_peso?: number;
+  @Column({ type: 'boolean', default: false })
+  mortalidad?: boolean;
+
+  //OVINO
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  categoria_edad?: string;
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  tipo_nacimiento?: string;
+  @Column({ type: 'jsonb', nullable: true })
+  lana?: {
+    fecha_esquila?: Date | string;
+    calidad_micras?: number;
+    color_lana?: string;
+    peso_vellon?: number;
+  };
+  @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
+  peso_nacimiento?: number;
+  @Column({ type: 'jsonb', nullable: true })
+  historial_esquila?: {
+    fecha_esquila: Date | string;
+    peso_vellon_kg?: number;
+    calidad_clasificacion?: string;
+    esquilador_responsable?: string;
+    observaciones?: string;
+  }[];
+
+  @Column({ type: 'smallint', nullable: true })
+  famacha?: number;
+  @Column({ type: 'jsonb', nullable: true })
+  parasitos?: {
+    famacha?: number;
+    tratamiento?: string;
+    fecha_tratamiento?: Date | string;
+    observaciones?: string;
+  }[];
 
   @OneToMany(() => ImagesAminale, (profileImage) => profileImage.animal, {
     eager: true,
