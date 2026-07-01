@@ -19,15 +19,13 @@ export class CreatePartoAnimalDto {
   hembra_id: string;
 
   @IsOptional()
-  @IsUUID('4', {
-    message: 'Debe seleccionar un servicio.',
-  })
   servicio_id?: string;
 
   @Type(() => Date)
   @IsDate({ message: 'La fecha de parto debe ser una fecha válida.' })
   fecha_parto: Date;
 
+  @Type(() => Number)
   @IsNumber({}, { message: 'El número de parto debe ser un valor numérico.' })
   @Min(1, { message: 'El número de parto debe ser al menos 1.' })
   @Max(50, { message: 'El número de parto no puede ser mayor a 50.' })

@@ -25,6 +25,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { EtapaPez } from '../dto/create-peces.dto';
+import { EtapaAvicola } from 'src/interfaces/avicola/avicola.enums';
 
 @Entity('animal_finca')
 export class AnimalFinca {
@@ -218,10 +219,14 @@ export class AnimalFinca {
   @JoinColumn({ name: 'trabajadorId' })
   trabajador: Cliente;
 
+  @Column({ nullable: true })
+  fincaId: string;
+
   @ManyToOne(() => FincasGanadero, (finca) => finca.animales, {
     onDelete: 'CASCADE',
     eager: true,
   })
+  @JoinColumn({ name: 'fincaId' })
   finca: FincasGanadero;
 
   @Column({ type: 'boolean', default: false })
@@ -238,6 +243,18 @@ export class AnimalFinca {
 
   @Column({ type: 'boolean', default: true })
   lote_activo?: boolean;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  condicion_corporal: string;
+
+  @Column({ type: 'boolean', default: false })
+  mortalidad?: boolean;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  tratamientos: string;
+
+  @Column({ type: 'varchar', nullable: true })
+  peso_promedio: string;
 
   //AVES
   @Column({ type: 'int', nullable: true })
@@ -261,9 +278,6 @@ export class AnimalFinca {
   @Column({ type: 'varchar', nullable: true })
   consumo_agua: string;
 
-  @Column({ type: 'varchar', nullable: true })
-  peso_promedio: string;
-
   @Column({ type: 'int', nullable: true })
   huevos_diarios: number;
 
@@ -277,9 +291,6 @@ export class AnimalFinca {
   vacunas_lote: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  tratamientos: string;
-
-  @Column({ type: 'varchar', length: 100, nullable: true })
   porcentaje_postura: string;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
@@ -287,6 +298,13 @@ export class AnimalFinca {
 
   @Column({ type: 'date', nullable: true })
   fecha_postura: Date;
+
+  @Column({
+    type: 'enum',
+    enum: EtapaAvicola,
+    nullable: true,
+  })
+  etapa_avicola?: EtapaAvicola;
   /* ----------------------------------------- */
 
   //PECES
@@ -328,6 +346,7 @@ export class AnimalFinca {
     nullable: true,
   })
   etapa?: EtapaPez;
+
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   peso_promedio_pez?: number;
 
@@ -399,9 +418,6 @@ export class AnimalFinca {
   @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   peso_actual: number;
 
-  @Column({ type: 'varchar', length: 50, nullable: true })
-  condicion_corporal: string;
-
   @Column({ type: 'varchar', length: 100, nullable: true })
   nivel_entrenamiento: string;
 
@@ -472,8 +488,6 @@ export class AnimalFinca {
   peso?: number;
   @Column({ type: 'decimal', precision: 12, scale: 2, nullable: true })
   ganancia_peso?: number;
-  @Column({ type: 'boolean', default: false })
-  mortalidad?: boolean;
 
   //OVINO
   @Column({ type: 'varchar', length: 50, nullable: true })
@@ -507,6 +521,98 @@ export class AnimalFinca {
     fecha_tratamiento?: Date | string;
     observaciones?: string;
   }[];
+  /*   ----------------------------------------------------- */
+
+  //PORCINO
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  tipo_registro_porcino?: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  corral_galera?: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  lote?: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  proveedor?: string;
+
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  etapa_porcino?: string;
+
+  @Column({ type: 'date', nullable: true })
+  fecha_ingreso_porcino?: Date;
+
+  @Column({ type: 'int', nullable: true, default: 0 })
+  cantidad_inicial_porcino?: number;
+
+  @Column({ type: 'int', nullable: true, default: 0 })
+  cantidad_actual_porcino?: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    default: 0,
+  })
+  consumo_diario_porcino?: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    default: 0,
+  })
+  peso_inicial_porcino?: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    default: 0,
+  })
+  bajas_mortalidad_porcino?: number;
+
+  @Column({ type: 'date', nullable: true })
+  fecha_pesaje_porcino?: Date;
+
+  @Column({ type: 'boolean', default: false })
+  cuarentena_porcino?: boolean;
+
+  @Column({ type: 'date', nullable: true })
+  fecha_salida_porcino?: Date;
+
+  @Column({
+    type: 'decimal',
+    precision: 10,
+    scale: 2,
+    nullable: true,
+    default: 0,
+  })
+  peso_salida_porcino?: number;
+
+  @Column({ type: 'varchar', length: 200, nullable: true })
+  comprador_porcino?: string;
+
+  @Column({
+    type: 'decimal',
+    precision: 12,
+    scale: 2,
+    nullable: true,
+    default: 0,
+  })
+  precio_porcino?: number;
+
+  @Column({
+    type: 'decimal',
+    precision: 5,
+    scale: 2,
+    nullable: true,
+    default: 0,
+  })
+  rendimiento_canal_porcino?: number;
 
   @OneToMany(() => ImagesAminale, (profileImage) => profileImage.animal, {
     eager: true,

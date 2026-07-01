@@ -326,7 +326,7 @@ export class SeedService {
         { nombre: 'Róbalo', abreviatura: 'ROB' },
         { nombre: 'Pacu', abreviatura: 'PAC' },
         { nombre: 'Mojarra', abreviatura: 'MOJ' },
-        { nombre: 'Criollo Piscícola', abreviatura: 'CRI' },
+        { nombre: 'Criollo', abreviatura: 'CRI' },
       ],
     };
 

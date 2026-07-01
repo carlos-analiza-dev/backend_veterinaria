@@ -772,14 +772,6 @@ Por favor verifique las fechas ingresadas.
       }
     }
 
-    if (identificadoresVacios.length > 0) {
-      const mensaje =
-        identificadoresVacios.length === 1
-          ? `La cría #${identificadoresVacios[0]} no tiene identificador. Por favor, ingrese un identificador válido.`
-          : `Las crías #${identificadoresVacios.join(', #')} no tienen identificador. Por favor, ingrese identificadores válidos.`;
-      throw new BadRequestException(mensaje);
-    }
-
     if (identificadoresDuplicados.length > 0) {
       const mensaje = `Los siguientes identificadores están duplicados entre las crías: ${identificadoresDuplicados.join(', ')}. Cada cría debe tener un identificador único.`;
       throw new BadRequestException(mensaje);

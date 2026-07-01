@@ -8,7 +8,7 @@ import { CreatePartoAnimalDto } from './dto/create-parto_animal.dto';
 import { UpdatePartoAnimalDto } from './dto/update-parto_animal.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { PartoAnimal } from './entities/parto_animal.entity';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { ServicioReproductivo } from 'src/servicios_reproductivos/entities/servicios_reproductivo.entity';
 import { CelosAnimal } from 'src/celos_animal/entities/celos_animal.entity';
@@ -16,12 +16,14 @@ import { EstadoCeloAnimal } from 'src/interfaces/celos.animal.enum';
 import {
   EstadoCria,
   EstadoParto,
+  SexoCria,
   TipoParto,
 } from 'src/interfaces/partos.enums';
 import { PartoAnimalValidationService } from './parto_animal.validation.service';
 import { FiltrarPartosDto } from './dto/filtrar-partos.dto';
 import { instanceToPlain } from 'class-transformer';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 
 @Injectable()
 export class PartoAnimalService {
@@ -34,8 +36,11 @@ export class PartoAnimalService {
     private readonly servicioRepository: Repository<ServicioReproductivo>,
     @InjectRepository(CelosAnimal)
     private readonly celoRepository: Repository<CelosAnimal>,
+    @InjectRepository(FincasGanadero)
+    private readonly fincaRepository: Repository<FincasGanadero>,
     private validationService: PartoAnimalValidationService,
   ) {}
+
   async create(createPartoAnimalDto: CreatePartoAnimalDto, cliente: Cliente) {
     try {
       const { hembra, servicio } =
@@ -48,6 +53,21 @@ export class PartoAnimalService {
         );
 
       await this.validationService.validarEdadMinimaParto(hembra);
+
+      const finca_hembra = await this.fincaRepository.findOne({
+        where: { id: hembra.finca.id },
+        relations: ['animales'],
+      });
+
+      if (!finca_hembra) {
+        throw new NotFoundException('Finca no encontrada');
+      }
+
+      const especieFinca = finca_hembra.especies_maneja?.find(
+        (item) => item.especie === hembra.especie.nombre,
+      );
+
+      let cantidadMaxima = especieFinca?.cantidad ?? 0;
 
       let diasGestacion: number;
       let semanasGestacion: number;
@@ -106,11 +126,114 @@ export class PartoAnimalService {
         );
       }
 
+      const animalesCreados: AnimalFinca[] = [];
+      const criasActualizadas = [];
+      let criasVivas = 0;
+
       if (createPartoAnimalDto.crias && createPartoAnimalDto.crias.length > 0) {
         await this.validationService.validarIdentificadoresCrias(
           createPartoAnimalDto.crias,
           hembra.finca.id,
         );
+
+        /*  for (const criaDto of createPartoAnimalDto.crias) {
+          if (criaDto.estado === EstadoCria.VIVA) {
+            const nuevoAnimal = this.animalRepository.create({
+              especie: hembra.especie,
+              sexo: criaDto.sexo === SexoCria.MACHO ? 'Macho' : 'Hembra',
+              finca: {
+                id: finca_hembra.id,
+              },
+
+              fincaId: finca_hembra.id,
+              identificador: criaDto.identificador || this.generateIdentifier(),
+              fecha_nacimiento: criaDto.fecha_nacimiento || new Date(),
+              propietario: hembra.propietario,
+              propietarioId: hembra.propietarioId,
+              madre: hembra,
+              razas_madre: hembra.razas_madre,
+              numero_parto_madre: createPartoAnimalDto.numero_parto ?? 1,
+              nombre_finca_origen_madre:
+                hembra.nombre_finca_origen_madre ?? 'N/D',
+              madreId: hembra.id,
+              padre: servicio?.macho || null,
+              padreId: servicio?.macho?.id || null,
+              creadoPorId: cliente.id,
+              tipo_reproduccion: hembra.tipo_reproduccion,
+              pureza: hembra.pureza,
+              razas: hembra.razas || [],
+              color: criaDto.observaciones?.includes('color') ? 'N/D' : 'N/D',
+              observaciones: criaDto.observaciones || 'Animal nacido en finca',
+              compra_animal: false,
+              animal_vendido: false,
+              animal_muerte: false,
+              edad_promedio: 0,
+            });
+
+            nuevoAnimal.finca = finca_hembra;
+            nuevoAnimal.fincaId = finca_hembra.id;
+
+            const animalGuardado =
+              await this.animalRepository.save(nuevoAnimal);
+            animalesCreados.push(animalGuardado);
+            criasVivas++;
+
+            criaDto.id = animalGuardado.id;
+            criasActualizadas.push(criaDto);
+          } else {
+            criasActualizadas.push(criaDto);
+          }
+        }
+
+        if (animalesCreados.length > 0) {
+          await this.animalRepository.update(
+            {
+              id: In(animalesCreados.map((animal) => animal.id)),
+            },
+            {
+              fincaId: finca_hembra.id,
+            },
+          );
+
+          animalesCreados.forEach((animal) => {
+            animal.fincaId = finca_hembra.id;
+            animal.finca = finca_hembra;
+          });
+        }
+
+        const animalesExistentes = finca_hembra.animales.filter(
+          (animal) =>
+            animal.especie.id === hembra.especie.id &&
+            !animal.animal_muerte &&
+            !animal.animal_vendido,
+        );
+
+        let nuevaCantidad = cantidadMaxima;
+
+        if (animalesExistentes.length === cantidadMaxima) {
+          nuevaCantidad = cantidadMaxima + criasVivas;
+        }
+
+        if (especieFinca) {
+          await this.fincaRepository.update(
+            { id: finca_hembra.id },
+            {
+              especies_maneja: finca_hembra.especies_maneja.map((item) => {
+                if (item.especie === hembra.especie.nombre) {
+                  return {
+                    ...item,
+                    cantidad: nuevaCantidad,
+                  };
+                }
+                return item;
+              }),
+            },
+          );
+        }
+
+        finca_hembra.cantidad_animales =
+          (finca_hembra.cantidad_animales || 0) + criasVivas;
+        await this.fincaRepository.save(finca_hembra); */
       }
 
       const parto = this.partoRepository.create({
@@ -120,13 +243,16 @@ export class PartoAnimalService {
         numero_crias: numeroCrias,
         numero_crias_vivas: numeroCriasVivas,
         numero_crias_muertas: numeroCriasMuertas,
+        crias:
+          criasActualizadas.length > 0
+            ? criasActualizadas
+            : createPartoAnimalDto.crias,
         dias_gestacion: diasGestacion,
         semanas_gestacion: semanasGestacion,
         creadoPorId: cliente.id,
       });
 
       const partoGuardado = await this.partoRepository.save(parto);
-
       await this.animalRepository.save(hembra);
 
       if (servicio) {
@@ -151,6 +277,12 @@ export class PartoAnimalService {
 
       throw new BadRequestException('Error al crear el registro de parto');
     }
+  }
+
+  private generateIdentifier(): string {
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    return `CRI-${timestamp}-${random}`;
   }
 
   async findAll(filtros: FiltrarPartosDto) {

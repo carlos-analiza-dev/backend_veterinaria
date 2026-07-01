@@ -11,6 +11,7 @@ import { NotificacionesAdminsModule } from 'src/notificaciones_admins/notificaci
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { ImagesAminalesService } from 'src/images_aminales/images_aminales.service';
 import { ImagesAminale } from 'src/images_aminales/entities/images_aminale.entity';
+import { PartoAnimal } from 'src/parto_animal/entities/parto_animal.entity';
 
 @Module({
   controllers: [AnimalFincaController],
@@ -22,6 +23,7 @@ import { ImagesAminale } from 'src/images_aminales/entities/images_aminale.entit
       RazaAnimal,
       Cliente,
       ImagesAminale,
+      PartoAnimal,
     ]),
     AuthClientesModule,
     NotificacionesAdminsModule,

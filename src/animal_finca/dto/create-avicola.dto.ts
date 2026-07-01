@@ -14,6 +14,7 @@ import {
 } from 'class-validator';
 import { TipoAlimentacionDto } from './create-animal_finca.dto';
 import { TipoAve } from 'src/interfaces/animales/animales-enums';
+import { EtapaAvicola } from 'src/interfaces/avicola/avicola.enums';
 
 export class CreateAvicolaDto {
   @IsUUID('4', { message: 'La especie debe ser un UUID válido' })
@@ -133,4 +134,10 @@ export class CreateAvicolaDto {
   @IsOptional()
   @IsBoolean({ message: 'El valor de castrado debe ser verdadero o falso' })
   lote_activo?: boolean;
+
+  @IsOptional()
+  @IsEnum(EtapaAvicola, {
+    message: 'La etapa no es válida',
+  })
+  etapa_avicola?: EtapaAvicola;
 }

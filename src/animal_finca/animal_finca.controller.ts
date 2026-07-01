@@ -19,6 +19,7 @@ import {
   UpdateCaprinoFincaDto,
   UpdateOvinoFincaDto,
   UpdatePecesFincaDto,
+  UpdatePorcinoFincaDto,
 } from './dto/update-animal_finca.dto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { UpdateDeathStatusDto } from './dto/update-death-status.dto';
@@ -30,6 +31,8 @@ import { CreateAvicolaDto } from './dto/create-avicola.dto';
 import { CreatePecesDto } from './dto/create-peces.dto';
 import { CreateCaprinoDto } from './dto/crear-caprino.dto';
 import { CreateOvinoDto } from './dto/create-ovino.dto';
+import { CreatePorcinoDto } from './dto/crear-porcino.dto';
+import { CreateAnimalFromCriaDto } from './dto/create-animal-from-cria.dto';
 
 @Controller('animal-finca')
 export class AnimalFincaController {
@@ -108,6 +111,38 @@ export class AnimalFincaController {
       cliente,
       images,
     );
+  }
+
+  @Post('porcino')
+  @UseInterceptors(FilesInterceptor('images', 5))
+  @AuthCliente()
+  createPorcino(
+    @Body() createAnimalFincaDto: CreatePorcinoDto,
+    @GetCliente() cliente: Cliente,
+    @UploadedFiles() images: Express.Multer.File[],
+  ) {
+    return this.animalFincaService.createPorcino(
+      createAnimalFincaDto,
+      cliente,
+      images,
+    );
+  }
+
+  @Post('crear-desde-cria')
+  @AuthCliente()
+  async createAnimalFromCria(
+    @Body() createDto: CreateAnimalFromCriaDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    const animal = await this.animalFincaService.createAnimalFromCria(
+      createDto,
+      cliente,
+    );
+    return {
+      success: true,
+      data: animal,
+      message: 'Animal creado exitosamente desde la cría',
+    };
   }
 
   @Post('carga-masiva/:fincaId/:especieId/:razaId')
@@ -245,6 +280,20 @@ export class AnimalFincaController {
     @GetCliente() cliente: Cliente,
   ) {
     return this.animalFincaService.updateOvino(
+      id,
+      updateAnimalFincaDto,
+      cliente,
+    );
+  }
+
+  @Patch('porcino/:id')
+  @AuthCliente()
+  updatePorcino(
+    @Param('id') id: string,
+    @Body() updateAnimalFincaDto: UpdatePorcinoFincaDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.animalFincaService.updatePorcino(
       id,
       updateAnimalFincaDto,
       cliente,
