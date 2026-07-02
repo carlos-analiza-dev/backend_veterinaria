@@ -175,9 +175,6 @@ export class CreateAnimalFincaDto {
   esterelizado?: boolean;
 
   @IsOptional()
-  @IsBoolean({
-    message: 'El valor de compra del padre debe ser verdadero o falso.',
-  })
   compra_animal?: boolean;
 
   @IsOptional()
@@ -364,10 +361,14 @@ export class CreateAnimalFincaDto {
   nivel_entrenamiento?: string;
 
   @IsOptional()
-  @IsString({
-    message: 'Los resultados de competencias deben ser un texto válido.',
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return JSON.parse(value);
+    return value;
   })
-  resultados_competencias?: string;
+  @IsArray({
+    message: 'Los resultados de competencia deben ser un arreglo valido',
+  })
+  resultados_competencias?: string[];
 
   @IsOptional()
   @IsString({
@@ -376,10 +377,12 @@ export class CreateAnimalFincaDto {
   registro_genealogico?: string;
 
   @IsOptional()
-  @IsString({
-    message: 'El historial reproductivo debe ser un texto válido.',
+  @Transform(({ value }) => {
+    if (typeof value === 'string') return JSON.parse(value);
+    return value;
   })
-  historial_reproductivo?: string;
+  @IsArray({ message: 'El historial reproductivo deben ser un arreglo valido' })
+  historial_reproductivo?: string[];
 
   @Transform(({ value }) => {
     if (value === '' || value === null || value === undefined) {

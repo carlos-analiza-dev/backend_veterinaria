@@ -421,11 +421,11 @@ export class AnimalFinca {
   @Column({ type: 'varchar', length: 100, nullable: true })
   nivel_entrenamiento: string;
 
-  @Column({ type: 'text', nullable: true })
-  resultados_competencias: string;
+  @Column({ type: 'json', nullable: true })
+  resultados_competencias: string[];
 
-  @Column({ type: 'text', nullable: true })
-  historial_reproductivo: string;
+  @Column({ type: 'json', nullable: true })
+  historial_reproductivo: string[];
 
   @Column({ type: 'text', nullable: true })
   registro_genealogico: string;

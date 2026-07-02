@@ -117,6 +117,7 @@ import { MarketplaceVisualizacionesModule } from './marketplace_visualizaciones/
 import { ChatMarketplaceModule } from './chat_marketplace/chat_marketplace.module';
 import { AnunciosPrincipalesModule } from './anuncios_principales/anuncios_principales.module';
 import { ImagesAnunciosModule } from './images_anuncios/images_anuncios.module';
+import { SanidadAnimalModule } from './sanidad_animal/sanidad_animal.module';
 
 @Module({
   imports: [
@@ -351,6 +352,8 @@ import { ImagesAnunciosModule } from './images_anuncios/images_anuncios.module';
     AnunciosPrincipalesModule,
 
     ImagesAnunciosModule,
+
+    SanidadAnimalModule,
   ],
   controllers: [],
   providers: [],

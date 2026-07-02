@@ -21,6 +21,12 @@ export enum EtapaPez {
 }
 
 export class MuestreoDto {
+  @Transform(({ value }) => {
+    if (!value || value === '' || value === 'undefined') {
+      return undefined;
+    }
+    return value;
+  })
   @IsOptional()
   @IsDateString(
     {},
@@ -40,10 +46,16 @@ export class MuestreoDto {
 }
 
 export class RecambioAguaDto {
+  @Transform(({ value }) => {
+    if (!value || value === '' || value === 'undefined') {
+      return undefined;
+    }
+    return value;
+  })
   @IsOptional()
   @IsDateString(
     {},
-    { message: 'La fecha del recambio debe tener formato YYYY-MM-DD' },
+    { message: 'La fecha de recambio debe tener formato YYYY-MM-DD' },
   )
   fecha_recambio?: string;
 
@@ -126,6 +138,12 @@ export class SanidadDto {
 }
 
 export class CosechaDto {
+  @Transform(({ value }) => {
+    if (!value || value === '' || value === 'undefined') {
+      return undefined;
+    }
+    return value;
+  })
   @IsOptional()
   @IsDateString(
     {},
@@ -135,21 +153,17 @@ export class CosechaDto {
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber({}, { message: 'Los kilos cosechados deben ser un número' })
   kilos_cosechados?: number;
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber({}, { message: 'La sobrevivencia debe ser un número' })
   sobrevivencia_porcentaje?: number;
 
   @IsOptional()
-  @IsString({ message: 'El comprador debe ser un texto' })
   comprador?: string;
 
   @IsOptional()
   @Type(() => Number)
-  @IsNumber({}, { message: 'El precio debe ser un número' })
   precio?: number;
 }
 
@@ -183,6 +197,12 @@ export class CreatePecesDto {
   @IsString({ message: 'El proveedor de alevines debe ser un texto' })
   proveedor_alevines?: string;
 
+  @Transform(({ value }) => {
+    if (!value || value === '' || value === 'undefined') {
+      return undefined;
+    }
+    return value;
+  })
   @IsOptional()
   @IsDateString(
     {},
@@ -254,6 +274,12 @@ export class CreatePecesDto {
   @IsNumber({}, { message: 'La talla debe ser un número' })
   talla?: number;
 
+  @Transform(({ value }) => {
+    if (!value || value === '' || value === 'undefined') {
+      return undefined;
+    }
+    return value;
+  })
   @IsOptional()
   @IsDateString(
     {},
