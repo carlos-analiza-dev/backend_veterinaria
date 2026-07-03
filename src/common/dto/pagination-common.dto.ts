@@ -64,6 +64,10 @@ export class PaginationDto {
 
   @IsOptional()
   @IsString()
+  tipo_servicio?: string;
+
+  @IsOptional()
+  @IsString()
   estado?: EstadoPedido;
 
   @IsOptional()
