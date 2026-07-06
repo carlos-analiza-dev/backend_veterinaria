@@ -25,7 +25,7 @@ export class CreateSanidadAnimalDto {
     message: 'El tipo de servicio debe tener entre 1 y 100 caracteres',
   })
   @IsNotEmpty({ message: 'El tipo de servicio es obligatorio' })
-  tipo_Servicio: string;
+  tipo_servicio: string;
 
   @IsString({ message: 'El responsable debe ser un texto' })
   @Length(1, 100, {

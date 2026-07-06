@@ -12,6 +12,7 @@ import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { getPropietarioId } from 'src/utils/get-propietario-id';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { CostosMensualesSanidad } from 'src/interfaces/sanidad-animal/sanidad-animal.interface';
 
 @Injectable()
 export class SanidadAnimalService {
@@ -48,10 +49,7 @@ export class SanidadAnimalService {
 
       return 'Ingreso de sanidad exitoso';
     } catch (error) {
-      if (error instanceof NotFoundException) {
-        throw error;
-      }
-      throw new BadRequestException(`Error al crear el registro de sanidad`);
+      throw error;
     }
   }
 
@@ -70,7 +68,8 @@ export class SanidadAnimalService {
         .createQueryBuilder('sanidad')
         .leftJoinAndSelect('sanidad.animal', 'animal')
         .leftJoinAndSelect('animal.especie', 'especie')
-        .where('sanidad.propietarioId = :propietarioId', { propietarioId });
+        .where('sanidad.propietarioId = :propietarioId', { propietarioId })
+        .andWhere('sanidad.eliminado = :eliminado', { eliminado: false });
 
       if (especie) {
         queryBuilder.andWhere('LOWER(especie.nombre) = LOWER(:especie)', {
@@ -100,6 +99,91 @@ export class SanidadAnimalService {
       throw new BadRequestException(
         `Error al obtener los registros de sanidad`,
       );
+    }
+  }
+
+  async findAllEliminados(
+    paginationDto: PaginationDto,
+    cliente: Cliente,
+  ): Promise<{
+    sanidad: SanidadAnimal[];
+    total: number;
+  }> {
+    const { limit = 10, offset = 0 } = paginationDto;
+    const propietarioId = getPropietarioId(cliente);
+
+    try {
+      const queryBuilder = this.sanidadRepo
+        .createQueryBuilder('sanidad')
+        .leftJoinAndSelect('sanidad.animal', 'animal')
+        .leftJoinAndSelect('animal.especie', 'especie')
+        .where('sanidad.propietarioId = :propietarioId', { propietarioId })
+        .andWhere('sanidad.eliminado = :eliminado', { eliminado: true });
+
+      const total = await queryBuilder.getCount();
+
+      const data = await queryBuilder
+        .orderBy('sanidad.fecha_evento', 'DESC')
+        .take(limit)
+        .skip(offset)
+        .getMany();
+
+      return {
+        sanidad: data,
+        total,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        `Error al obtener los registros de sanidad`,
+      );
+    }
+  }
+
+  async getCostosMensuales(
+    paginationDto: PaginationDto,
+    cliente: Cliente,
+  ): Promise<CostosMensualesSanidad[]> {
+    const propietarioId = getPropietarioId(cliente);
+    const { especie } = paginationDto;
+
+    try {
+      const query = this.sanidadRepo
+        .createQueryBuilder('sanidad')
+        .leftJoin('sanidad.animal', 'animal')
+        .innerJoin('animal.especie', 'especie')
+        .select([
+          `TO_CHAR(sanidad.fecha_evento, 'YYYY-MM') AS mes`,
+          `sanidad.tipo_servicio AS tipo_servicio`,
+          `SUM(sanidad.costo_real)::numeric AS total_costo`,
+          `COUNT(*)::int AS cantidad`,
+        ])
+        .where('sanidad.propietarioId = :propietarioId', { propietarioId })
+        .andWhere('sanidad.eliminado = :eliminado', { eliminado: false })
+        .andWhere(
+          `sanidad.fecha_evento >= (CURRENT_DATE - INTERVAL '12 months')`,
+        );
+
+      if (especie) {
+        query.andWhere('LOWER(TRIM(especie.nombre)) = LOWER(TRIM(:especie))', {
+          especie,
+        });
+      }
+
+      const data = await query
+        .groupBy(`TO_CHAR(sanidad.fecha_evento, 'YYYY-MM')`)
+        .addGroupBy('sanidad.tipo_servicio')
+        .orderBy('mes', 'ASC')
+        .addOrderBy('sanidad.tipo_servicio', 'ASC')
+        .getRawMany();
+
+      return data.map((item) => ({
+        mes: item.mes,
+        tipo_servicio: item.tipo_servicio,
+        total_costo: Number(item.total_costo),
+        cantidad: Number(item.cantidad),
+      }));
+    } catch (error) {
+      throw new BadRequestException('Error al obtener los costos mensuales');
     }
   }
 
@@ -188,7 +272,9 @@ export class SanidadAnimalService {
     try {
       const sanidad = await this.findOne(id);
 
-      await this.sanidadRepo.remove(sanidad);
+      sanidad.eliminado = true;
+
+      await this.sanidadRepo.save(sanidad);
 
       return {
         message: `Registro de sanidad con ID ${id} eliminado correctamente`,
@@ -197,7 +283,8 @@ export class SanidadAnimalService {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      throw new BadRequestException(`Error al eliminar el registro de sanidad`);
+
+      throw new BadRequestException('Error al eliminar el registro de sanidad');
     }
   }
 

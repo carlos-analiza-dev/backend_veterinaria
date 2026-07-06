@@ -27,6 +27,9 @@ export class SanidadAnimal {
   @Column({ nullable: false })
   propietarioId: string;
 
+  @Column({ type: 'boolean', default: false })
+  eliminado: boolean;
+
   //CAMPOS GLOBALES
 
   @Column({ type: 'varchar', length: 100 })

@@ -54,6 +54,24 @@ export class SanidadAnimalController {
     return this.sanidadAnimalService.findByTipoServicio(tipoServicio);
   }
 
+  @Get('eliminados')
+  @AuthCliente()
+  findAllEliminados(
+    @Query() paginationDto: PaginationDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.sanidadAnimalService.findAllEliminados(paginationDto, cliente);
+  }
+
+  @Get('costos')
+  @AuthCliente()
+  getCostosMensuales(
+    @Query() paginationDto: PaginationDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.sanidadAnimalService.getCostosMensuales(paginationDto, cliente);
+  }
+
   @Get('rango-fechas')
   findByDateRange(
     @Query('startDate') startDate: string,
