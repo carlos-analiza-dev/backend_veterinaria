@@ -13,6 +13,7 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { getPropietarioId } from 'src/utils/get-propietario-id';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { CostosMensualesSanidad } from 'src/interfaces/sanidad-animal/sanidad-animal.interface';
+import { HistorialFechasService } from './historial-fechas.service';
 
 @Injectable()
 export class SanidadAnimalService {
@@ -21,6 +22,7 @@ export class SanidadAnimalService {
     private readonly sanidadRepo: Repository<SanidadAnimal>,
     @InjectRepository(AnimalFinca)
     private readonly animalRepo: Repository<AnimalFinca>,
+    private historialFechasService: HistorialFechasService,
   ) {}
 
   async create(
@@ -60,7 +62,13 @@ export class SanidadAnimalService {
     sanidad: SanidadAnimal[];
     total: number;
   }> {
-    const { especie, tipo_servicio, limit = 10, offset = 0 } = paginationDto;
+    const {
+      especie,
+      tipo_servicio,
+      animalId,
+      limit = 10,
+      offset = 0,
+    } = paginationDto;
     const propietarioId = getPropietarioId(cliente);
 
     try {
@@ -80,6 +88,12 @@ export class SanidadAnimalService {
       if (tipo_servicio) {
         queryBuilder.andWhere('sanidad.tipo_servicio = :tipo_servicio', {
           tipo_servicio,
+        });
+      }
+
+      if (animalId) {
+        queryBuilder.andWhere('animal.id = :animalId', {
+          animalId,
         });
       }
 
@@ -109,7 +123,7 @@ export class SanidadAnimalService {
     sanidad: SanidadAnimal[];
     total: number;
   }> {
-    const { limit = 10, offset = 0 } = paginationDto;
+    const { limit = 10, offset = 0, animalId } = paginationDto;
     const propietarioId = getPropietarioId(cliente);
 
     try {
@@ -119,6 +133,12 @@ export class SanidadAnimalService {
         .leftJoinAndSelect('animal.especie', 'especie')
         .where('sanidad.propietarioId = :propietarioId', { propietarioId })
         .andWhere('sanidad.eliminado = :eliminado', { eliminado: true });
+
+      if (animalId) {
+        queryBuilder.andWhere('animal.id = :animalId', {
+          animalId,
+        });
+      }
 
       const total = await queryBuilder.getCount();
 
@@ -144,7 +164,7 @@ export class SanidadAnimalService {
     cliente: Cliente,
   ): Promise<CostosMensualesSanidad[]> {
     const propietarioId = getPropietarioId(cliente);
-    const { especie } = paginationDto;
+    const { especie, animalId } = paginationDto;
 
     try {
       const query = this.sanidadRepo
@@ -166,6 +186,12 @@ export class SanidadAnimalService {
       if (especie) {
         query.andWhere('LOWER(TRIM(especie.nombre)) = LOWER(TRIM(:especie))', {
           especie,
+        });
+      }
+
+      if (animalId) {
+        query.andWhere('animal.id = :animalId', {
+          animalId,
         });
       }
 
@@ -239,9 +265,19 @@ export class SanidadAnimalService {
   async update(
     id: string,
     updateSanidadAnimalDto: UpdateSanidadAnimalDto,
-  ): Promise<SanidadAnimal> {
+    cliente: Cliente,
+  ) {
     try {
-      const existingSanidad = await this.findOne(id);
+      const existingSanidad = await this.sanidadRepo.findOne({
+        where: { id, eliminado: false },
+        relations: ['animal'],
+      });
+
+      if (!existingSanidad) {
+        throw new NotFoundException(
+          `No se encontró un evento sanitario con el ID: ${id}`,
+        );
+      }
 
       if (updateSanidadAnimalDto.animalId) {
         const animal = await this.animalRepo.findOne({
@@ -255,9 +291,50 @@ export class SanidadAnimalService {
         }
       }
 
+      const fechaEventoAnterior = existingSanidad.fecha_evento;
+      const proximaFechaAnterior = existingSanidad.proxima_fecha_evento;
+
       await this.sanidadRepo.update(id, updateSanidadAnimalDto);
 
-      return await this.findOne(id);
+      const sanidadActualizada = await this.sanidadRepo.findOne({
+        where: { id },
+      });
+
+      if (!sanidadActualizada) {
+        throw new NotFoundException(
+          `No se encontró el evento sanitario actualizado con el ID: ${id}`,
+        );
+      }
+
+      const fechaEventoCambio =
+        fechaEventoAnterior &&
+        sanidadActualizada.fecha_evento &&
+        new Date(fechaEventoAnterior).getTime() !==
+          new Date(sanidadActualizada.fecha_evento).getTime();
+
+      const proximaFechaCambio =
+        proximaFechaAnterior &&
+        sanidadActualizada.proxima_fecha_evento &&
+        new Date(proximaFechaAnterior).getTime() !==
+          new Date(sanidadActualizada.proxima_fecha_evento).getTime();
+
+      if (fechaEventoCambio || proximaFechaCambio) {
+        await this.historialFechasService.registrarCambioFechas(
+          existingSanidad,
+          fechaEventoAnterior,
+          proximaFechaAnterior,
+          sanidadActualizada.fecha_evento,
+          sanidadActualizada.proxima_fecha_evento,
+          'Fechas Actualziadas',
+          cliente,
+        );
+      }
+
+      return {
+        message: 'Evento de Sanidad Actualizado con éxito',
+        cambios_registrados: fechaEventoCambio || proximaFechaCambio,
+        data: sanidadActualizada,
+      };
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;

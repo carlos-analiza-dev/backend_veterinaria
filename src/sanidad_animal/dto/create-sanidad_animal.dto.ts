@@ -554,4 +554,35 @@ export class CreateSanidadAnimalDto {
     message: 'La etapa de los peces no puede exceder los 100 caracteres',
   })
   etapa_peces?: string;
+
+  //SIFONEO PECES
+  @IsString({ message: 'El area sifoneo de los peces debe ser un texto' })
+  @IsOptional()
+  @Length(0, 100, {
+    message: 'El area sifoneo de los peces no puede exceder los 100 caracteres',
+  })
+  area_sifoneo?: string;
+
+  @IsNumber(
+    { maxDecimalPlaces: 2 },
+    {
+      message:
+        'Las horas de trabajo sifoneo estimada debe ser un número con máximo 2 decimales',
+    },
+  )
+  @Min(0, {
+    message: 'Las horas de trabajo sifoneo estimada no puede ser negativa',
+  })
+  @IsOptional()
+  horas_trabajo?: number;
+
+  @IsString({
+    message: 'El equipo utilizado sifoneo de los peces debe ser un texto',
+  })
+  @IsOptional()
+  @Length(0, 100, {
+    message:
+      'El equipo utilizado sifoneo de los peces no puede exceder los 100 caracteres',
+  })
+  equipo_utilizado?: string;
 }

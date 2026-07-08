@@ -33,6 +33,7 @@ import { CreateCaprinoDto } from './dto/crear-caprino.dto';
 import { CreateOvinoDto } from './dto/create-ovino.dto';
 import { CreatePorcinoDto } from './dto/crear-porcino.dto';
 import { CreateAnimalFromCriaDto } from './dto/create-animal-from-cria.dto';
+import { DescarteAnimalDto } from './dto/descarte-animal.dto';
 
 @Controller('animal-finca')
 export class AnimalFincaController {
@@ -145,6 +146,16 @@ export class AnimalFincaController {
     };
   }
 
+  @Post('descartar/:id')
+  @AuthCliente()
+  descartarAnimal(
+    @Param('id') id: string,
+    @Body() descarteDto: DescarteAnimalDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.animalFincaService.descartarAnimal(id, descarteDto, cliente);
+  }
+
   @Post('carga-masiva/:fincaId/:especieId/:razaId')
   @UseInterceptors(FileInterceptor('file'))
   @AuthCliente()
@@ -164,6 +175,15 @@ export class AnimalFincaController {
     );
   }
 
+  @Get('propietario')
+  @AuthCliente()
+  findAllAnimales(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.animalFincaService.findAllAnimales(cliente, paginationDto);
+  }
+
   @Get('/propietario-animales/:propietarioId')
   @AuthCliente()
   findAll(
@@ -176,15 +196,6 @@ export class AnimalFincaController {
       propietarioId,
       paginationDto,
     );
-  }
-
-  @Get('propietario')
-  @AuthCliente()
-  findAllAnimales(
-    @GetCliente() cliente: Cliente,
-    @Query() paginationDto: PaginationDto,
-  ) {
-    return this.animalFincaService.findAllAnimales(cliente, paginationDto);
   }
 
   @Get('/animales/:fincaId/:especieId/:razaId')

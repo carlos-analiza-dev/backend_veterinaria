@@ -267,4 +267,14 @@ export class SanidadAnimal {
 
   @Column({ type: 'varchar', length: 100, default: 'N/D' })
   etapa_peces: string;
+
+  //SIFONEO PECES
+  @Column({ type: 'varchar', length: 100, default: 'N/D' })
+  area_sifoneo: string;
+
+  @Column({ type: 'decimal', default: 0 })
+  horas_trabajo: number;
+
+  @Column({ type: 'varchar', length: 100, default: 'N/D' })
+  equipo_utilizado: string;
 }

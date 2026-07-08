@@ -16,10 +16,15 @@ import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator
 import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { HistorialFechasService } from './historial-fechas.service';
 
 @Controller('sanidad-animal')
 export class SanidadAnimalController {
-  constructor(private readonly sanidadAnimalService: SanidadAnimalService) {}
+  constructor(
+    private readonly sanidadAnimalService: SanidadAnimalService,
+
+    private readonly sanidadHistorialFechasService: HistorialFechasService,
+  ) {}
 
   @Post()
   @AuthCliente()
@@ -52,6 +57,18 @@ export class SanidadAnimalController {
   @Get('tipo/:tipoServicio')
   findByTipoServicio(@Param('tipoServicio') tipoServicio: string) {
     return this.sanidadAnimalService.findByTipoServicio(tipoServicio);
+  }
+
+  @Get('cambios-fechas')
+  @AuthCliente()
+  findAllCambiosFechas(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.sanidadHistorialFechasService.obtenerHistorialPorCliente(
+      cliente,
+      paginationDto,
+    );
   }
 
   @Get('eliminados')
@@ -89,11 +106,17 @@ export class SanidadAnimalController {
   }
 
   @Patch(':id')
+  @AuthCliente()
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateSanidadAnimalDto: UpdateSanidadAnimalDto,
+    @GetCliente() cliente: Cliente,
   ) {
-    return this.sanidadAnimalService.update(id, updateSanidadAnimalDto);
+    return this.sanidadAnimalService.update(
+      id,
+      updateSanidadAnimalDto,
+      cliente,
+    );
   }
 
   @Delete(':id')

@@ -6,13 +6,20 @@ import { SanidadAnimal } from './entities/sanidad_animal.entity';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { HistorialFechasSanidad } from './entities/historial-fechas-sanidad.entity';
+import { HistorialFechasService } from './historial-fechas.service';
 
 @Module({
   controllers: [SanidadAnimalController],
   imports: [
-    TypeOrmModule.forFeature([SanidadAnimal, AnimalFinca, Cliente]),
+    TypeOrmModule.forFeature([
+      SanidadAnimal,
+      AnimalFinca,
+      Cliente,
+      HistorialFechasSanidad,
+    ]),
     AuthClientesModule,
   ],
-  providers: [SanidadAnimalService],
+  providers: [SanidadAnimalService, HistorialFechasService],
 })
 export class SanidadAnimalModule {}

@@ -173,7 +173,7 @@ export class AuthClientesService {
                 year,
               );
             } catch (emailError) {
-              console.error(
+              console.warn(
                 `Error enviando email a admin ${admin.email}:`,
                 emailError,
               );

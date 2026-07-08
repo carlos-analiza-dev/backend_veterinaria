@@ -109,6 +109,15 @@ export class AnimalFinca {
   @Column({ type: 'bool', default: false })
   animal_vendido: boolean;
 
+  @Column({ type: 'bool', default: false })
+  descartado: boolean;
+
+  @Column({ type: 'varchar', length: 100, default: 'N/D' })
+  razon_descarte?: string;
+
+  @Column({ type: 'date', nullable: true })
+  fecha_descarte?: string;
+
   @ManyToOne(() => AnimalFinca, { nullable: true })
   @JoinColumn({ name: 'padreId' })
   padre: AnimalFinca;
@@ -197,6 +206,13 @@ export class AnimalFinca {
   @ManyToOne(() => Cliente, { nullable: true })
   @JoinColumn({ name: 'creadoPorId' })
   creado_por: Cliente;
+
+  @Column({ nullable: true })
+  descartadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'descartadoPorId' })
+  descartado_por: Cliente;
 
   @Column({ nullable: true })
   actualizadoPorId: string;

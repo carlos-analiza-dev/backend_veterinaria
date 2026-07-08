@@ -44,6 +44,7 @@ import {
 import { EstadoCria, SexoCria } from 'src/interfaces/partos.enums';
 import { CreateAnimalFromCriaDto } from './dto/create-animal-from-cria.dto';
 import { PartoAnimal } from 'src/parto_animal/entities/parto_animal.entity';
+import { DescarteAnimalDto } from './dto/descarte-animal.dto';
 @Injectable()
 export class AnimalFincaService {
   constructor(
@@ -431,7 +432,7 @@ export class AnimalFincaService {
               );
             uploadedImages.push(uploadedImage);
           } catch (imageError) {
-            console.error(
+            console.warn(
               `Error al subir imagen para animal ${nuevoAnimal.id}:`,
               imageError,
             );
@@ -691,7 +692,7 @@ export class AnimalFincaService {
               );
             uploadedImages.push(uploadedImage);
           } catch (imageError) {
-            console.error(
+            console.warn(
               `Error al subir imagen para avícola ${nuevoAvicola.id}:`,
               imageError,
             );
@@ -966,7 +967,7 @@ export class AnimalFincaService {
               );
             uploadedImages.push(uploadedImage);
           } catch (imageError) {
-            console.error(
+            console.warn(
               `Error al subir imagen para pez ${nuevoPez.id}:`,
               imageError,
             );
@@ -1335,7 +1336,7 @@ export class AnimalFincaService {
               );
             uploadedImages.push(uploadedImage);
           } catch (imageError) {
-            console.error(
+            console.warn(
               `Error al subir imagen para animal ${nuevoAnimal.id}:`,
               imageError,
             );
@@ -1720,7 +1721,7 @@ export class AnimalFincaService {
               );
             uploadedImages.push(uploadedImage);
           } catch (imageError) {
-            console.error(
+            console.warn(
               `Error al subir imagen para animal ${nuevoAnimal.id}:`,
               imageError,
             );
@@ -2019,7 +2020,7 @@ export class AnimalFincaService {
               );
             uploadedImages.push(uploadedImage);
           } catch (imageError) {
-            console.error(
+            console.warn(
               `Error al subir imagen para animal ${nuevoAnimal.id}:`,
               imageError,
             );
@@ -2511,6 +2512,9 @@ export class AnimalFincaService {
         })
         .andWhere('animal.animal_vendido = :animal_vendido', {
           animal_vendido: false,
+        })
+        .andWhere('animal.descartado = :descartado', {
+          descartado: false,
         });
 
       if (cliente.rol === TipoCliente.PROPIETARIO) {
@@ -2609,7 +2613,7 @@ export class AnimalFincaService {
   }
 
   async findAllAnimales(cliente: Cliente, paginationDto: PaginationDto) {
-    const { sexo, especieId } = paginationDto;
+    const { sexo, especie } = paginationDto;
     try {
       const propietarioId = getPropietarioId(cliente);
 
@@ -2627,6 +2631,9 @@ export class AnimalFincaService {
         })
         .andWhere('animal.animal_vendido = :animal_vendido', {
           animal_vendido: false,
+        })
+        .andWhere('animal.descartado = :descartado', {
+          descartado: false,
         });
 
       if (sexo) {
@@ -2635,10 +2642,18 @@ export class AnimalFincaService {
         });
       }
 
-      if (especieId) {
-        query.andWhere('especie.id = :especieId', {
-          especieId,
-        });
+      if (especie) {
+        const valor = especie.trim();
+
+        if (isUUID(valor)) {
+          query.andWhere('especie.id = :especieId', {
+            especieId: valor,
+          });
+        } else {
+          query.andWhere('LOWER(especie.nombre) = LOWER(:nombre)', {
+            nombre: valor,
+          });
+        }
       }
 
       if (cliente.rol === TipoCliente.PROPIETARIO) {
@@ -2699,6 +2714,9 @@ export class AnimalFincaService {
         })
         .andWhere('animal.animal_muerte = :animal_muerte', {
           animal_muerte: false,
+        })
+        .andWhere('animal.descartado = :descartado', {
+          descartado: false,
         })
         .orderBy('animal.fecha_registro', 'DESC')
         .getMany();
@@ -4935,6 +4953,29 @@ export class AnimalFincaService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async descartarAnimal(
+    id: string,
+    descarteDto: DescarteAnimalDto,
+    cliente: Cliente,
+  ) {
+    const animal = await this.findOne(id);
+
+    if (!animal) {
+      throw new NotFoundException('El animal que intentas descartar no existe');
+    }
+
+    animal.descartado = descarteDto.descartado ?? true;
+    animal.razon_descarte = descarteDto.razon_descarte ?? 'N/D';
+    animal.fecha_descarte = descarteDto.fecha_descarte;
+    animal.descartadoPorId = cliente.id;
+
+    await this.animalRepo.save(animal);
+
+    return {
+      message: 'Animal descartado correctamente',
+    };
   }
 
   async updateDeathStatus(
