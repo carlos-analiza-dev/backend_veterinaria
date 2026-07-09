@@ -1,23 +1,26 @@
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsDateString, IsOptional, IsString } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsInt,
+  IsOptional,
+  IsString,
+  Min,
+} from 'class-validator';
 
 export class DescarteAnimalDto {
-  @IsOptional()
-  @Transform(({ value }) => {
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-    return value;
+  @IsInt({
+    message: 'La cantidad debe ser un número entero.',
   })
-  @IsBoolean({
-    message: 'El campo "descartado" debe ser un valor booleano (true o false).',
+  @Min(1, {
+    message: 'La cantidad debe ser mayor a 0.',
   })
-  descartado?: boolean;
+  cantidad: number;
 
-  @IsOptional()
   @IsString({
     message: 'La razón de descarte debe ser una cadena de texto.',
   })
-  razon_descarte?: string;
+  razon_descarte: string;
 
   @Transform(({ value }) => {
     if (!value || value === '' || value === 'undefined') {
@@ -33,4 +36,15 @@ export class DescarteAnimalDto {
     },
   )
   fecha_descarte?: string;
+
+  @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  @IsBoolean({
+    message: 'El campo "descartado" debe ser un valor booleano (true o false).',
+  })
+  descartado?: boolean;
 }

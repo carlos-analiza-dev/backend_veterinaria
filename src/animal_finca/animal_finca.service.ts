@@ -16,7 +16,7 @@ import {
 } from './dto/update-animal_finca.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AnimalFinca } from './entities/animal_finca.entity';
-import { DataSource, EntityManager, In, Like, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
@@ -45,6 +45,9 @@ import { EstadoCria, SexoCria } from 'src/interfaces/partos.enums';
 import { CreateAnimalFromCriaDto } from './dto/create-animal-from-cria.dto';
 import { PartoAnimal } from 'src/parto_animal/entities/parto_animal.entity';
 import { DescarteAnimalDto } from './dto/descarte-animal.dto';
+import { DescartesAnimal } from 'src/descartes_animal/entities/descartes_animal.entity';
+import { CreateMortalidadAnimalDto } from './dto/mortalidad-animal';
+import { MortalidadAnimal } from 'src/mortalidad_animal/entities/mortalidad_animal.entity';
 @Injectable()
 export class AnimalFincaService {
   constructor(
@@ -62,6 +65,10 @@ export class AnimalFincaService {
     private readonly partoRepository: Repository<PartoAnimal>,
     private readonly notificacionesService: NotificacionesAdminsService,
     private serviceImagesAnimal: ImagesAminalesService,
+    @InjectRepository(DescartesAnimal)
+    private descarteRepo: Repository<DescartesAnimal>,
+    @InjectRepository(MortalidadAnimal)
+    private mortalidadRepo: Repository<MortalidadAnimal>,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -4978,27 +4985,248 @@ export class AnimalFincaService {
     };
   }
 
+  async descartarAves(
+    id: string,
+    descarteDto: DescarteAnimalDto,
+    cliente: Cliente,
+  ) {
+    const animal = await this.findOne(id);
+
+    if (!animal) {
+      throw new NotFoundException(
+        'El lote de aves que intentas descartar no existe',
+      );
+    }
+
+    if (!animal.cantidad_lote && animal.cantidad_lote !== 0) {
+      throw new BadRequestException(
+        'Este animal no tiene una cantidad de lote definida',
+      );
+    }
+
+    if (descarteDto.cantidad > animal.cantidad_lote) {
+      throw new BadRequestException(
+        `La cantidad a descartar (${descarteDto.cantidad}) excede la cantidad actual (${animal.cantidad_lote})`,
+      );
+    }
+
+    const cantidadAnterior = animal.cantidad_lote;
+    const cantidadNueva = cantidadAnterior - descarteDto.cantidad;
+
+    animal.descartado = descarteDto.descartado ?? true;
+    animal.razon_descarte = descarteDto.razon_descarte ?? 'N/D';
+    animal.fecha_descarte = descarteDto.fecha_descarte;
+    animal.descartadoPorId = cliente.id;
+    animal.cantidad_lote = cantidadNueva;
+
+    const animal_save = await this.animalRepo.save(animal);
+
+    const descartes = this.descarteRepo.create({
+      animalId: animal_save.id,
+      razon_descarte: descarteDto.razon_descarte,
+      cantidad: descarteDto.cantidad,
+      fecha_descarte: descarteDto.fecha_descarte,
+      registradoPorId: cliente.id,
+    });
+
+    await this.descarteRepo.save(descartes);
+
+    return {
+      message: `Ave descartada correctamente del lote ${animal.lote}`,
+    };
+  }
+
+  async descartarPeces(
+    id: string,
+    descarteDto: DescarteAnimalDto,
+    cliente: Cliente,
+  ) {
+    const animal = await this.findOne(id);
+
+    if (!animal) {
+      throw new NotFoundException(
+        'El lote de porcinos que intentas descartar no existe',
+      );
+    }
+
+    if (!animal.cantidad_actual && animal.cantidad_actual !== 0) {
+      throw new BadRequestException(
+        'Este animal no tiene una cantidad de lote definida',
+      );
+    }
+
+    if (descarteDto.cantidad > animal.cantidad_actual) {
+      throw new BadRequestException(
+        `La cantidad a descartar (${descarteDto.cantidad}) excede la cantidad actual (${animal.cantidad_actual})`,
+      );
+    }
+
+    const cantidadAnterior = animal.cantidad_actual;
+    const cantidadNueva = cantidadAnterior - descarteDto.cantidad;
+
+    animal.descartado = descarteDto.descartado ?? true;
+    animal.razon_descarte = descarteDto.razon_descarte ?? 'N/D';
+    animal.fecha_descarte = descarteDto.fecha_descarte;
+    animal.descartadoPorId = cliente.id;
+    animal.cantidad_actual = cantidadNueva;
+
+    const animal_save = await this.animalRepo.save(animal);
+
+    const descartes = this.descarteRepo.create({
+      animalId: animal_save.id,
+      razon_descarte: descarteDto.razon_descarte,
+      cantidad: descarteDto.cantidad,
+      fecha_descarte: descarteDto.fecha_descarte,
+      registradoPorId: cliente.id,
+    });
+
+    await this.descarteRepo.save(descartes);
+
+    return {
+      message: `Ave descartada correctamente del lote ${animal.lote}`,
+    };
+  }
+
   async updateDeathStatus(
     id: string,
-    updateData: UpdateDeathStatusDto,
-  ): Promise<AnimalFinca> {
-    const { animal_muerte, razon_muerte } = updateData;
+    mortalidadAnimal: CreateMortalidadAnimalDto,
+    cliente: Cliente,
+  ) {
+    const { muerto, razon_muerte, cantidad, fecha_mortalidad } =
+      mortalidadAnimal;
 
     const animal = await this.animalRepo.findOne({ where: { id } });
     if (!animal) {
       throw new NotFoundException(`Animal con ID ${id} no encontrado`);
     }
 
-    if (animal_muerte && !razon_muerte) {
+    if (!razon_muerte) {
       throw new BadRequestException(
         'Debe proporcionar una razón de muerte cuando el animal ha fallecido',
       );
     }
 
-    animal.animal_muerte = animal_muerte;
-    animal.razon_muerte = animal_muerte ? razon_muerte : 'N/D';
+    animal.animal_muerte = muerto;
+    animal.razon_muerte = razon_muerte ?? 'N/D';
+    const animal_save = await this.animalRepo.save(animal);
 
-    return await this.animalRepo.save(animal);
+    const mortalidad = this.mortalidadRepo.create({
+      animalId: animal_save.id,
+      cantidad: cantidad,
+      fecha_mortalidad,
+      razon_muerte,
+      registradoPorId: cliente.id,
+    });
+
+    await this.mortalidadRepo.save(mortalidad);
+
+    return 'Mortalidad de Ave Ingresado Correctamente';
+  }
+
+  async updateDeathStatusAves(
+    id: string,
+    mortalidadAnimal: CreateMortalidadAnimalDto,
+    cliente: Cliente,
+  ) {
+    const { razon_muerte, cantidad, fecha_mortalidad, muerto } =
+      mortalidadAnimal;
+
+    const animal = await this.animalRepo.findOne({ where: { id } });
+    if (!animal) {
+      throw new NotFoundException(`Animal con ID ${id} no encontrado`);
+    }
+
+    if (!razon_muerte) {
+      throw new BadRequestException(
+        'Debe proporcionar una razón de muerte cuando el animal ha fallecido',
+      );
+    }
+
+    if (!animal.cantidad_lote && animal.cantidad_lote !== 0) {
+      throw new BadRequestException(
+        'Este animal no tiene una cantidad de lote definida',
+      );
+    }
+
+    if (cantidad > animal.cantidad_lote) {
+      throw new BadRequestException(
+        `La cantidad a descartar (${cantidad}) excede la cantidad actual (${animal.cantidad_lote})`,
+      );
+    }
+
+    const cantidadAnterior = animal.cantidad_lote;
+    const cantidadNueva = cantidadAnterior - cantidad;
+
+    animal.animal_muerte = muerto ?? true;
+    animal.razon_muerte = razon_muerte ?? 'N/D';
+    animal.cantidad_lote = cantidadNueva;
+
+    const animal_save = await this.animalRepo.save(animal);
+
+    const mortalidad = this.mortalidadRepo.create({
+      animalId: animal_save.id,
+      cantidad: cantidad,
+      fecha_mortalidad,
+      razon_muerte,
+      registradoPorId: cliente.id,
+    });
+
+    await this.mortalidadRepo.save(mortalidad);
+
+    return 'Mortalidad de Ave Ingresado Correctamente';
+  }
+
+  async updateDeathStatusPeces(
+    id: string,
+    mortalidadAnimal: CreateMortalidadAnimalDto,
+    cliente: Cliente,
+  ) {
+    const { razon_muerte, cantidad, fecha_mortalidad, muerto } =
+      mortalidadAnimal;
+
+    const animal = await this.animalRepo.findOne({ where: { id } });
+    if (!animal) {
+      throw new NotFoundException(`Animal con ID ${id} no encontrado`);
+    }
+
+    if (!razon_muerte) {
+      throw new BadRequestException(
+        'Debe proporcionar una razón de muerte cuando el animal ha fallecido',
+      );
+    }
+
+    if (!animal.cantidad_actual && animal.cantidad_actual !== 0) {
+      throw new BadRequestException(
+        'Este animal no tiene una cantidad de lote definida',
+      );
+    }
+
+    if (cantidad > animal.cantidad_actual) {
+      throw new BadRequestException(
+        `La cantidad a descartar (${cantidad}) excede la cantidad actual (${animal.cantidad_actual})`,
+      );
+    }
+
+    const cantidadAnterior = animal.cantidad_actual;
+    const cantidadNueva = cantidadAnterior - cantidad;
+
+    animal.animal_muerte = muerto ?? true;
+    animal.razon_muerte = razon_muerte ?? 'N/D';
+    animal.cantidad_actual = cantidadNueva;
+
+    const animal_save = await this.animalRepo.save(animal);
+
+    const mortalidad = this.mortalidadRepo.create({
+      animalId: animal_save.id,
+      cantidad: cantidad,
+      fecha_mortalidad,
+      razon_muerte,
+      registradoPorId: cliente.id,
+    });
+
+    await this.mortalidadRepo.save(mortalidad);
+
+    return 'Mortalidad de Peces Ingresado Correctamente';
   }
 
   remove(id: number) {

@@ -118,6 +118,8 @@ import { ChatMarketplaceModule } from './chat_marketplace/chat_marketplace.modul
 import { AnunciosPrincipalesModule } from './anuncios_principales/anuncios_principales.module';
 import { ImagesAnunciosModule } from './images_anuncios/images_anuncios.module';
 import { SanidadAnimalModule } from './sanidad_animal/sanidad_animal.module';
+import { MortalidadAnimalModule } from './mortalidad_animal/mortalidad_animal.module';
+import { DescartesAnimalModule } from './descartes_animal/descartes_animal.module';
 
 @Module({
   imports: [
@@ -354,6 +356,10 @@ import { SanidadAnimalModule } from './sanidad_animal/sanidad_animal.module';
     ImagesAnunciosModule,
 
     SanidadAnimalModule,
+
+    MortalidadAnimalModule,
+
+    DescartesAnimalModule,
   ],
   controllers: [],
   providers: [],

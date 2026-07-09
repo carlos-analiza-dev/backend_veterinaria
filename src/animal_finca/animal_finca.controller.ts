@@ -34,6 +34,7 @@ import { CreateOvinoDto } from './dto/create-ovino.dto';
 import { CreatePorcinoDto } from './dto/crear-porcino.dto';
 import { CreateAnimalFromCriaDto } from './dto/create-animal-from-cria.dto';
 import { DescarteAnimalDto } from './dto/descarte-animal.dto';
+import { CreateMortalidadAnimalDto } from './dto/mortalidad-animal';
 
 @Controller('animal-finca')
 export class AnimalFincaController {
@@ -156,6 +157,26 @@ export class AnimalFincaController {
     return this.animalFincaService.descartarAnimal(id, descarteDto, cliente);
   }
 
+  @Post('descartar-aves/:id')
+  @AuthCliente()
+  descartarAves(
+    @Param('id') id: string,
+    @Body() descarteDto: DescarteAnimalDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.animalFincaService.descartarAves(id, descarteDto, cliente);
+  }
+
+  @Post('descartar-peces/:id')
+  @AuthCliente()
+  descartarPeces(
+    @Param('id') id: string,
+    @Body() descarteDto: DescarteAnimalDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.animalFincaService.descartarPeces(id, descarteDto, cliente);
+  }
+
   @Post('carga-masiva/:fincaId/:especieId/:razaId')
   @UseInterceptors(FileInterceptor('file'))
   @AuthCliente()
@@ -217,13 +238,52 @@ export class AnimalFincaController {
   }
 
   @Patch(':id/death-status')
+  @AuthCliente()
   async updateDeathStatus(
     @Param('id') id: string,
-    @Body() updateDeathStatusDto: UpdateDeathStatusDto,
+    @Body() mortalidadAnimal: CreateMortalidadAnimalDto,
+    @GetCliente() cliente: Cliente,
   ) {
     const updatedAnimal = await this.animalFincaService.updateDeathStatus(
       id,
-      updateDeathStatusDto,
+      mortalidadAnimal,
+      cliente,
+    );
+    return {
+      message: 'Estado de muerte actualizado correctamente',
+      data: updatedAnimal,
+    };
+  }
+
+  @Patch(':id/death-status-aves')
+  @AuthCliente()
+  async updateDeathStatusAves(
+    @Param('id') id: string,
+    @Body() mortalidadAnimal: CreateMortalidadAnimalDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    const updatedAnimal = await this.animalFincaService.updateDeathStatusAves(
+      id,
+      mortalidadAnimal,
+      cliente,
+    );
+    return {
+      message: 'Estado de muerte actualizado correctamente',
+      data: updatedAnimal,
+    };
+  }
+
+  @Patch(':id/death-status-peces')
+  @AuthCliente()
+  async updateDeathStatusPeces(
+    @Param('id') id: string,
+    @Body() mortalidadAnimal: CreateMortalidadAnimalDto,
+    @GetCliente() cliente: Cliente,
+  ) {
+    const updatedAnimal = await this.animalFincaService.updateDeathStatusPeces(
+      id,
+      mortalidadAnimal,
+      cliente,
     );
     return {
       message: 'Estado de muerte actualizado correctamente',

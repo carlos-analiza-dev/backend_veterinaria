@@ -12,6 +12,8 @@ import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { ImagesAminalesService } from 'src/images_aminales/images_aminales.service';
 import { ImagesAminale } from 'src/images_aminales/entities/images_aminale.entity';
 import { PartoAnimal } from 'src/parto_animal/entities/parto_animal.entity';
+import { DescartesAnimal } from 'src/descartes_animal/entities/descartes_animal.entity';
+import { MortalidadAnimal } from 'src/mortalidad_animal/entities/mortalidad_animal.entity';
 
 @Module({
   controllers: [AnimalFincaController],
@@ -24,6 +26,8 @@ import { PartoAnimal } from 'src/parto_animal/entities/parto_animal.entity';
       Cliente,
       ImagesAminale,
       PartoAnimal,
+      DescartesAnimal,
+      MortalidadAnimal,
     ]),
     AuthClientesModule,
     NotificacionesAdminsModule,
