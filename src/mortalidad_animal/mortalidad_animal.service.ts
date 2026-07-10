@@ -12,11 +12,12 @@ export class MortalidadAnimalService {
   ) {}
 
   async obtenerMortalidadPorMesYEspecie(paginationDto: PaginationDto) {
-    const { mes } = paginationDto;
+    const { mes, fincaId } = paginationDto;
 
     const query = this.mortalidadRepo
       .createQueryBuilder('mortalidad')
       .innerJoin('mortalidad.animal', 'animal')
+      .innerJoin('animal.finca', 'finca')
       .innerJoin('animal.especie', 'especie')
       .select('especie.id', 'especieId')
       .addSelect('especie.nombre', 'especie')
@@ -26,6 +27,10 @@ export class MortalidadAnimalService {
       query.where(`TO_CHAR(mortalidad.fecha_mortalidad, 'YYYY-MM') = :mes`, {
         mes,
       });
+    }
+
+    if (fincaId) {
+      query.andWhere('finca.id = :fincaId', { fincaId });
     }
 
     return query

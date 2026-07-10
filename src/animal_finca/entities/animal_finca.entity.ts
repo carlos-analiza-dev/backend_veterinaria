@@ -413,14 +413,6 @@ export class AnimalFinca {
     laboratorio?: string;
   };
 
-  @Column({ type: 'jsonb', nullable: true })
-  cosecha?: {
-    fecha_cosecha: string;
-    kilos_cosechados?: number;
-    sobrevivencia_porcentaje?: number;
-    comprador?: string;
-    precio?: number;
-  };
   /* ----------------------------------------- */
 
   //EQUINO

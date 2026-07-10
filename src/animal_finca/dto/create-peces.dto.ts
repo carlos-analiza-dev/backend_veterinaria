@@ -137,36 +137,6 @@ export class SanidadDto {
   laboratorio?: string;
 }
 
-export class CosechaDto {
-  @Transform(({ value }) => {
-    if (!value || value === '' || value === 'undefined') {
-      return undefined;
-    }
-    return value;
-  })
-  @IsOptional()
-  @IsDateString(
-    {},
-    { message: 'La fecha de cosecha debe tener formato YYYY-MM-DD' },
-  )
-  fecha_cosecha?: string;
-
-  @IsOptional()
-  @Type(() => Number)
-  kilos_cosechados?: number;
-
-  @IsOptional()
-  @Type(() => Number)
-  sobrevivencia_porcentaje?: number;
-
-  @IsOptional()
-  comprador?: string;
-
-  @IsOptional()
-  @Type(() => Number)
-  precio?: number;
-}
-
 export class CreatePecesDto {
   @IsUUID('4', { message: 'La especie debe ser un UUID válido' })
   @IsNotEmpty({ message: 'La especie del animal es obligatoria' })
@@ -346,25 +316,6 @@ export class CreatePecesDto {
   @ValidateNested()
   @Type(() => SanidadDto)
   sanidad?: SanidadDto;
-
-  @Transform(({ value }) => {
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return {};
-      }
-    }
-
-    if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
-      return value;
-    }
-    return {};
-  })
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => CosechaDto)
-  cosecha?: CosechaDto;
 
   @Transform(({ value }) => {
     if (typeof value === 'string') {

@@ -759,7 +759,6 @@ export class AnimalFincaService {
       consumo,
       conversion_alimenticia,
       sanidad,
-      cosecha,
       lote_activo,
     } = createPecesDto;
 
@@ -956,7 +955,6 @@ export class AnimalFincaService {
         consumo_pez: consumo,
         conversion_alimenticia,
         sanidad: sanidad || {},
-        cosecha: cosecha || {},
         animal_muerte: false,
         animal_vendido: false,
       });
@@ -3508,7 +3506,7 @@ export class AnimalFincaService {
       consumo,
       conversion_alimenticia,
       sanidad,
-      cosecha,
+
       lote_activo,
     } = updatePecesDto;
 
@@ -3743,7 +3741,6 @@ export class AnimalFincaService {
         consumo_pez: consumo,
         conversion_alimenticia,
         sanidad: sanidad || pezExistente.sanidad || {},
-        cosecha: cosecha || pezExistente.cosecha || {},
         actualizado_por: cliente,
         actualizadoPorId: cliente.id,
       };
