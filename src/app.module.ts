@@ -120,6 +120,7 @@ import { ImagesAnunciosModule } from './images_anuncios/images_anuncios.module';
 import { SanidadAnimalModule } from './sanidad_animal/sanidad_animal.module';
 import { MortalidadAnimalModule } from './mortalidad_animal/mortalidad_animal.module';
 import { DescartesAnimalModule } from './descartes_animal/descartes_animal.module';
+import { DatosAgroservicioModule } from './datos-agroservicio/datos-agroservicio.module';
 
 @Module({
   imports: [
@@ -360,6 +361,8 @@ import { DescartesAnimalModule } from './descartes_animal/descartes_animal.modul
     MortalidadAnimalModule,
 
     DescartesAnimalModule,
+
+    DatosAgroservicioModule,
   ],
   controllers: [],
   providers: [],

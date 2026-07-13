@@ -5,11 +5,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { NotificacionesAdmin } from './entities/notificaciones_admin.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { AuthModule } from 'src/auth/auth.module';
+import { NotificacionesCronServicio } from './notificaciones-cron.service';
 
 @Module({
   controllers: [NotificacionesAdminsController],
   imports: [TypeOrmModule.forFeature([NotificacionesAdmin, User]), AuthModule],
   exports: [NotificacionesAdminsService],
-  providers: [NotificacionesAdminsService],
+  providers: [NotificacionesAdminsService, NotificacionesCronServicio],
 })
 export class NotificacionesAdminsModule {}

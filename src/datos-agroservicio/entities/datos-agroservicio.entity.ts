@@ -1,0 +1,52 @@
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { Pai } from 'src/pais/entities/pai.entity';
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  JoinColumn,
+  OneToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+
+@Entity('datos-agroservicio')
+export class DatosAgroservicio {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @Column({ unique: true })
+  nombre_agroservicio: string;
+
+  @Column({ unique: true, length: 14 })
+  rtn: string;
+
+  @OneToOne(() => Cliente, { eager: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'propietarioId' })
+  propietario: Cliente;
+
+  @Column()
+  propietarioId: string;
+
+  @OneToOne(() => Pai, { eager: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'paisId' })
+  pais: Cliente;
+
+  @Column()
+  paisId: string;
+
+  @Column()
+  correo: string;
+
+  @Column()
+  telefono: string;
+
+  @Column('text')
+  direccion: string;
+
+  @CreateDateColumn()
+  created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
+}
