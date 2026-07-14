@@ -121,6 +121,12 @@ import { SanidadAnimalModule } from './sanidad_animal/sanidad_animal.module';
 import { MortalidadAnimalModule } from './mortalidad_animal/mortalidad_animal.module';
 import { DescartesAnimalModule } from './descartes_animal/descartes_animal.module';
 import { DatosAgroservicioModule } from './datos-agroservicio/datos-agroservicio.module';
+import { PermisosClientesAgroModule } from './permisos_clientes_agro/permisos_clientes_agro.module';
+import { PermisosRolesAgroModule } from './permisos-roles-agro/permisos-roles-agro.module';
+import { RolesAgroModule } from './roles-agro/roles-agro.module';
+import { EmpleadosAgroModule } from './empleados-agro/empleados-agro.module';
+import { RolesPermisosAgroModule } from './roles-permisos-agro/roles-permisos-agro.module';
+import { AgroSucursalesModule } from './agro-sucursales/agro-sucursales.module';
 
 @Module({
   imports: [
@@ -363,6 +369,18 @@ import { DatosAgroservicioModule } from './datos-agroservicio/datos-agroservicio
     DescartesAnimalModule,
 
     DatosAgroservicioModule,
+
+    PermisosClientesAgroModule,
+
+    PermisosRolesAgroModule,
+
+    RolesAgroModule,
+
+    EmpleadosAgroModule,
+
+    RolesPermisosAgroModule,
+
+    AgroSucursalesModule,
   ],
   controllers: [],
   providers: [],

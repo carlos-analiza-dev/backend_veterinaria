@@ -4,6 +4,7 @@ import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_
 import { DescuentosCliente } from 'src/descuentos_clientes/entities/descuentos_cliente.entity';
 import { DescuentosInsumo } from 'src/descuentos_insumos/entities/descuentos_insumo.entity';
 import { DescuentosProducto } from 'src/descuentos_producto/entities/descuentos_producto.entity';
+import { EmpleadosAgro } from 'src/empleados-agro/entities/empleados-agro.entity';
 import { EscalasProducto } from 'src/escalas_producto/entities/escalas_producto.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
@@ -40,6 +41,9 @@ export class Pai {
 
   @OneToMany(() => Cliente, (cliente) => cliente.pais)
   cliente: Cliente[];
+
+  @OneToMany(() => EmpleadosAgro, (empleado) => empleado.pais)
+  empleado: EmpleadosAgro[];
 
   @OneToMany(() => ServiciosPai, (precio) => precio.pais)
   preciosServicios: ServiciosPai[];
