@@ -1,3 +1,4 @@
+import { AgroSucursale } from 'src/agro-sucursales/entities/agro-sucursale.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import {
@@ -5,6 +6,7 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
+  OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
@@ -34,6 +36,9 @@ export class DatosAgroservicio {
 
   @Column()
   paisId: string;
+
+  @OneToMany(() => AgroSucursale, (sucursal) => sucursal.agroservicio)
+  sucursales: AgroSucursale[];
 
   @Column()
   correo: string;

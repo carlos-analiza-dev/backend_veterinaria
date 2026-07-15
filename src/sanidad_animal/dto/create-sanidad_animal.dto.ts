@@ -222,25 +222,13 @@ export class CreateSanidadAnimalDto {
   })
   actividad?: string;
 
+  @IsString({ message: 'Los dias de descansi deben ser un texto' })
   @IsOptional()
-  @Transform(({ value }) => {
-    if (typeof value === 'string') return JSON.parse(value);
-    return value;
-  })
-  @IsArray({
-    message: 'Los dias de descanso deben ser un arreglo valido',
-  })
-  dias_descanso?: string[];
+  dias_descanso?: string;
 
+  @IsString({ message: 'La maquinaria o producto utilizado debe ser un texto' })
   @IsOptional()
-  @Transform(({ value }) => {
-    if (typeof value === 'string') return JSON.parse(value);
-    return value;
-  })
-  @IsArray({
-    message: 'Los productos/maquinaria utilizada deben ser un arreglo valido',
-  })
-  producto_maquinaria_utilizada?: string[];
+  producto_maquinaria_utilizada?: string;
 
   @IsNumber(
     { maxDecimalPlaces: 2 },

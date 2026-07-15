@@ -118,11 +118,11 @@ export class SanidadAnimal {
   @Column({ type: 'varchar', length: 100, default: 'N/D' })
   actividad: string;
 
-  @Column({ type: 'json', nullable: true })
-  dias_descanso: string[];
+  @Column({ type: 'varchar', nullable: true })
+  dias_descanso: string;
 
-  @Column({ type: 'json', nullable: true })
-  producto_maquinaria_utilizada: string[];
+  @Column({ type: 'varchar', nullable: true })
+  producto_maquinaria_utilizada: string;
 
   @Column({ type: 'decimal', nullable: true, default: 0 })
   carga_animal: number;

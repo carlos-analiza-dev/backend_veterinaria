@@ -1,3 +1,5 @@
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
 import { EmpleadosAgro } from 'src/empleados-agro/entities/empleados-agro.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
@@ -76,6 +78,28 @@ export class AgroSucursale {
 
   @Column({ type: 'uuid', nullable: true })
   gerenteId: string;
+
+  @ManyToOne(
+    () => DatosAgroservicio,
+    (agroservicio) => agroservicio.sucursales,
+    {
+      eager: false,
+      nullable: false,
+      onDelete: 'CASCADE',
+    },
+  )
+  @JoinColumn({ name: 'agroservicioId' })
+  agroservicio: DatosAgroservicio;
+
+  @Column({ type: 'uuid' })
+  agroservicioId: string;
+
+  @Column({ nullable: true })
+  creadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'creadoPorId' })
+  creado_por: Cliente;
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
