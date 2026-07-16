@@ -40,9 +40,6 @@ export class EmpleadosAgro {
   @Column('text')
   sexo: string;
 
-  @Column({ type: 'boolean', default: false })
-  verified: boolean;
-
   @ManyToOne(() => RolesAgro, { eager: true })
   @JoinColumn({ name: 'roleId' })
   role: RolesAgro;
@@ -68,7 +65,12 @@ export class EmpleadosAgro {
   @JoinColumn({ name: 'sucursalId' })
   sucursal: AgroSucursale;
 
-  creadoPor: Cliente;
+  @Column({ nullable: true })
+  creadoPorId: string;
+
+  @ManyToOne(() => Cliente, { nullable: true })
+  @JoinColumn({ name: 'creadoPorId' })
+  creado_por: Cliente;
 
   @Column({ type: 'boolean', default: true })
   isActive: boolean;

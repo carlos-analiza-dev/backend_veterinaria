@@ -15,10 +15,12 @@ import { Role } from 'src/roles/entities/role.entity';
 import { ProfileImage } from 'src/profile_images/entities/profile_image.entity';
 import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { ValidationService } from 'src/validations/validation-uniques.service';
+import { EmpleadosAgro } from 'src/empleados-agro/entities/empleados-agro.entity';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, MailService],
+  providers: [AuthService, JwtStrategy, MailService, ValidationService],
   exports: [TypeOrmModule, JwtModule, PassportModule, JwtStrategy],
   imports: [
     ConfigModule,
@@ -31,6 +33,7 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
       ProfileImage,
       Sucursal,
       Cliente,
+      EmpleadosAgro,
     ]),
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({

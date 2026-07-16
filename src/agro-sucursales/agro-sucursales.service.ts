@@ -85,8 +85,22 @@ export class AgroSucursalesService {
       if (!gerente) {
         throw new NotFoundException('El gerente seleccionado no existe.');
       }
-    }
 
+      const sucursalAsignada = await this.sucursalRepo.findOne({
+        where: {
+          gerente: {
+            id: gerenteId,
+          },
+        },
+        select: ['id', 'nombre'],
+      });
+
+      if (sucursalAsignada) {
+        throw new BadRequestException(
+          `El empleado ya es gerente de la sucursal "${sucursalAsignada.nombre}". No puede ser gerente de dos sucursales al mismo tiempo.`,
+        );
+      }
+    }
     const existeNombre = await this.sucursalRepo.findOne({
       where: {
         nombre: rest.nombre,
@@ -238,6 +252,22 @@ export class AgroSucursalesService {
 
         if (!gerente) {
           throw new NotFoundException('El gerente seleccionado no existe.');
+        }
+
+        const sucursalAsignada = await this.sucursalRepo.findOne({
+          where: {
+            gerente: {
+              id: gerenteId,
+            },
+          },
+          select: ['id', 'nombre'],
+          relations: ['gerente'],
+        });
+
+        if (sucursalAsignada && sucursalAsignada.id !== sucursal.id) {
+          throw new BadRequestException(
+            `El empleado ya es gerente de la sucursal "${sucursalAsignada.nombre}". No puede ser gerente de dos sucursales al mismo tiempo.`,
+          );
         }
 
         sucursal.gerente = gerente;

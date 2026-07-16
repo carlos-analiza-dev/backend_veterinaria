@@ -71,8 +71,5 @@ export class CreateAgroSucursaleDto {
   municipioId: string;
 
   @IsOptional()
-  @IsUUID('4', {
-    message: 'El gerente seleccionado no es válido.',
-  })
   gerenteId?: string;
 }

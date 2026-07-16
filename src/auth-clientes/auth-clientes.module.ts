@@ -18,10 +18,16 @@ import { NotificacionesAdminsModule } from 'src/notificaciones_admins/notificaci
 import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cliente_finca_trabajador.entity';
+import { ValidationService } from 'src/validations/validation-uniques.service';
 
 @Module({
   controllers: [AuthClientesController],
-  providers: [AuthClientesService, MailService, JwtClienteStrategy],
+  providers: [
+    AuthClientesService,
+    MailService,
+    JwtClienteStrategy,
+    ValidationService,
+  ],
   imports: [
     ConfigModule,
     TypeOrmModule.forFeature([

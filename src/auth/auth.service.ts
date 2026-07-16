@@ -25,14 +25,12 @@ import { Role } from 'src/roles/entities/role.entity';
 import { ValidRoles } from 'src/interfaces/valid-roles.interface';
 import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 import { VerifiedAccountDto } from './dto/verify-account';
-import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { ValidationService } from 'src/validations/validation-uniques.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     @InjectRepository(User) private readonly userRepository: Repository<User>,
-    @InjectRepository(Cliente)
-    private readonly clienteRepository: Repository<Cliente>,
     @InjectRepository(Pai) private readonly paisRepo: Repository<Pai>,
     @InjectRepository(MunicipiosDepartamentosPai)
     private readonly municipioRepo: Repository<MunicipiosDepartamentosPai>,
@@ -44,6 +42,7 @@ export class AuthService {
     private readonly sucursalRepository: Repository<Sucursal>,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
+    private readonly validationService: ValidationService,
   ) {}
   async create(createUserDto: CreateUserDto) {
     const {
@@ -61,29 +60,11 @@ export class AuthService {
       sexo,
     } = createUserDto;
 
-    const correo_existe = await this.userRepository.findOne({
-      where: { email },
-    });
-    if (correo_existe)
-      throw new NotFoundException(
-        'Ya existe un usuario registrado con este correo electronico',
-      );
-
-    const cliente_existe = await this.clienteRepository.findOne({
-      where: { email },
-    });
-    if (cliente_existe)
-      throw new NotFoundException(
-        'Ya existe un usuario registrado con este correo electronico',
-      );
-
-    const identificacion_existe = await this.userRepository.findOne({
-      where: { identificacion },
-    });
-    if (identificacion_existe)
-      throw new NotFoundException(
-        'Ya existe un usuario registrado con esta identificacion',
-      );
+    await Promise.all([
+      this.validationService.validarEmail(email),
+      this.validationService.validarIdentificacion(identificacion),
+      this.validationService.validarTelefono(telefono),
+    ]);
 
     const pais_existe = await this.paisRepo.findOne({ where: { id: paisId } });
     if (!pais_existe) {
@@ -490,26 +471,23 @@ export class AuthService {
       });
 
       if (updateUsuarioDto.email && updateUsuarioDto.email !== usuario.email) {
-        const emailExiste = await this.userRepository.findOne({
-          where: { email: updateUsuarioDto.email },
-        });
-        if (emailExiste && emailExiste.id !== userId) {
-          throw new BadRequestException(
-            'El correo electrónico ya está registrado',
-          );
-        }
+        await this.validationService.validarEmail(updateUsuarioDto.email);
       }
 
       if (
         updateUsuarioDto.identificacion &&
         updateUsuarioDto.identificacion !== usuario.identificacion
       ) {
-        const identificacionExiste = await this.userRepository.findOne({
-          where: { identificacion: updateUsuarioDto.identificacion },
-        });
-        if (identificacionExiste && identificacionExiste.id !== userId) {
-          throw new BadRequestException('La identificación ya está registrada');
-        }
+        await this.validationService.validarIdentificacion(
+          updateUsuarioDto.identificacion,
+        );
+      }
+
+      if (
+        updateUsuarioDto.telefono &&
+        updateUsuarioDto.telefono !== usuario.telefono
+      ) {
+        await this.validationService.validarTelefono(updateUsuarioDto.telefono);
       }
 
       await this.userRepository.save(usuario);

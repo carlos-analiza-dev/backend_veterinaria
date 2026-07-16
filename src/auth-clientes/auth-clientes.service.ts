@@ -28,12 +28,13 @@ import { NotificacionesAdminsService } from 'src/notificaciones_admins/notificac
 import { NotificationType } from 'src/interfaces/nptificaciones.type';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
 import { getPropietarioId } from 'src/utils/get-propietario-id';
-import { formatearFecha, formatearFechaEs } from 'src/helpers/format-date';
+import { formatearFechaEs } from 'src/helpers/format-date';
 import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
 import { CreateAuthTrabajadorDto } from './dto/create-trabajador.dto';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cliente_finca_trabajador.entity';
 import { UpdateAuthTrabajadotDto } from './dto/update-trabajdor.dto';
+import { ValidationService } from 'src/validations/validation-uniques.service';
 
 @Injectable()
 export class AuthClientesService {
@@ -55,6 +56,7 @@ export class AuthClientesService {
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly notificacionService: NotificacionesAdminsService,
+    private readonly validationService: ValidationService,
   ) {}
   async create(createClienteDto: CreateAuthClienteDto) {
     const {
@@ -70,37 +72,11 @@ export class AuthClientesService {
       sexo,
     } = createClienteDto;
 
-    const usuario_existe = await this.userRepository.findOne({
-      where: { email },
-    });
-    if (usuario_existe)
-      throw new NotFoundException(
-        'Ya existe un usuario registrado con este correo electronico',
-      );
-
-    const cliente_existe = await this.clienteRepository.findOne({
-      where: { email },
-    });
-    if (cliente_existe)
-      throw new NotFoundException(
-        'Ya existe un usuario registrado con este correo electronico',
-      );
-
-    const identificacion_existe = await this.userRepository.findOne({
-      where: { identificacion },
-    });
-    if (identificacion_existe)
-      throw new NotFoundException(
-        'Ya existe un usuario registrado con esta identificacion',
-      );
-
-    const identificacion_existe_cliente = await this.clienteRepository.findOne({
-      where: { identificacion },
-    });
-    if (identificacion_existe_cliente)
-      throw new NotFoundException(
-        'Ya existe un usuario registrado con esta identificacion',
-      );
+    await Promise.all([
+      this.validationService.validarEmail(email),
+      this.validationService.validarIdentificacion(identificacion),
+      this.validationService.validarTelefono(telefono),
+    ]);
 
     const pais_existe = await this.paisRepo.findOne({ where: { id: paisId } });
     if (!pais_existe) {
@@ -916,43 +892,15 @@ export class AuthClientesService {
       }
 
       if (email && email !== trabajador.email) {
-        const [usuarioExiste, clienteExiste] = await Promise.all([
-          this.userRepository.findOne({ where: { email } }),
-          this.clienteRepository.findOne({ where: { email } }),
-        ]);
-
-        if (usuarioExiste || clienteExiste) {
-          throw new BadRequestException(
-            'Ya existe un usuario registrado con este correo electrónico',
-          );
-        }
+        await this.validationService.validarEmail(email);
       }
 
       if (identificacion && identificacion !== trabajador.identificacion) {
-        const [identificacionExiste, identificacionExisteCliente] =
-          await Promise.all([
-            this.userRepository.findOne({ where: { identificacion } }),
-            this.clienteRepository.findOne({ where: { identificacion } }),
-          ]);
-
-        if (identificacionExiste || identificacionExisteCliente) {
-          throw new BadRequestException(
-            'Ya existe un usuario registrado con esta identificación',
-          );
-        }
+        await this.validationService.validarIdentificacion(identificacion);
       }
 
       if (telefono && telefono !== trabajador.telefono) {
-        const [telefonoExiste, telefonoExisteCliente] = await Promise.all([
-          this.userRepository.findOne({ where: { telefono } }),
-          this.clienteRepository.findOne({ where: { telefono } }),
-        ]);
-
-        if (telefonoExiste || telefonoExisteCliente) {
-          throw new BadRequestException(
-            'Ya existe un usuario registrado con este teléfono',
-          );
-        }
+        await this.validationService.validarTelefono(telefono);
       }
 
       if (paisId && paisId !== trabajador.pais?.id) {

@@ -1,20 +1,41 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { EmpleadosAgroService } from './empleados-agro.service';
 import { CreateEmpleadosAgroDto } from './dto/create-empleados-agro.dto';
 import { UpdateEmpleadosAgroDto } from './dto/update-empleados-agro.dto';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Controller('empleados-agro')
 export class EmpleadosAgroController {
   constructor(private readonly empleadosAgroService: EmpleadosAgroService) {}
 
   @Post()
-  create(@Body() createEmpleadosAgroDto: CreateEmpleadosAgroDto) {
-    return this.empleadosAgroService.create(createEmpleadosAgroDto);
+  @AuthCliente()
+  create(
+    @GetCliente() cliente: Cliente,
+    @Body() createEmpleadosAgroDto: CreateEmpleadosAgroDto,
+  ) {
+    return this.empleadosAgroService.create(createEmpleadosAgroDto, cliente);
   }
 
   @Get()
-  findAll() {
-    return this.empleadosAgroService.findAll();
+  @AuthCliente()
+  findAll(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.empleadosAgroService.findAll(cliente, paginationDto);
   }
 
   @Get(':id')
@@ -23,8 +44,11 @@ export class EmpleadosAgroController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateEmpleadosAgroDto: UpdateEmpleadosAgroDto) {
-    return this.empleadosAgroService.update(+id, updateEmpleadosAgroDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateEmpleadosAgroDto: UpdateEmpleadosAgroDto,
+  ) {
+    return this.empleadosAgroService.update(id, updateEmpleadosAgroDto);
   }
 
   @Delete(':id')
