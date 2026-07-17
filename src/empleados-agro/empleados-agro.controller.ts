@@ -15,6 +15,10 @@ import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { LoginEmpleadoDto } from './dto/login-empleado.dto';
+import { AuthEmpleado } from './decorators/auth-empleado.decorator';
+import { GetEmpleado } from './decorators/get-empleado.decorator';
+import { EmpleadosAgro } from './entities/empleados-agro.entity';
 
 @Controller('empleados-agro')
 export class EmpleadosAgroController {
@@ -27,6 +31,17 @@ export class EmpleadosAgroController {
     @Body() createEmpleadosAgroDto: CreateEmpleadosAgroDto,
   ) {
     return this.empleadosAgroService.create(createEmpleadosAgroDto, cliente);
+  }
+
+  @Post('login')
+  loginUser(@Body() loginEmpleadoDto: LoginEmpleadoDto) {
+    return this.empleadosAgroService.login(loginEmpleadoDto);
+  }
+
+  @Get('check-status')
+  @AuthEmpleado()
+  checkAuthStatus(@GetEmpleado() empleadoAgro: EmpleadosAgro) {
+    return this.empleadosAgroService.checkAuthStatus(empleadoAgro);
   }
 
   @Get()

@@ -82,16 +82,25 @@ export class RolesPermisosAgroService {
       const rolExiste = await this.rolesRepository.findOne({
         where: { id: rolId },
       });
-      if (!rolExiste)
-        throw new NotFoundException('No se encontro el rol seleccionado');
+
+      if (!rolExiste) {
+        throw new NotFoundException('No se encontró el rol seleccionado');
+      }
+
       const permisos = await this.permisosRepository.find({
         where: { roles: { rol: { id: rolId } } },
       });
-      if (!permisos || permisos.length === 0)
+
+      if (!permisos.length) {
         throw new NotFoundException(
           'No se encontraron permisos disponibles para este rol',
         );
-      return permisos;
+      }
+
+      return permisos.map((permiso) => ({
+        ...permiso,
+        url: permiso.url.replace('/agro-propietario', '/agro-empleados'),
+      }));
     } catch (error) {
       throw error;
     }

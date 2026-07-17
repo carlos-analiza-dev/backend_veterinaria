@@ -1,5 +1,6 @@
 import { AgroSucursale } from 'src/agro-sucursales/entities/agro-sucursale.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { LogosAgroservicio } from 'src/logos-agroservicios/entities/logos-agroservicio.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import {
   Column,
@@ -39,6 +40,12 @@ export class DatosAgroservicio {
 
   @OneToMany(() => AgroSucursale, (sucursal) => sucursal.agroservicio)
   sucursales: AgroSucursale[];
+
+  @OneToOne(() => LogosAgroservicio, (logo) => logo.agroservicio, {
+    cascade: true,
+    eager: true,
+  })
+  logo: LogosAgroservicio;
 
   @Column()
   correo: string;

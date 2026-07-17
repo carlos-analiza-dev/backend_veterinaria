@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -21,6 +22,11 @@ import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroser
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { getPropietarioId } from 'src/utils/get-propietario-id';
 import { ValidationService } from 'src/validations/validation-uniques.service';
+import { LoginEmpleadoDto } from './dto/login-empleado.dto';
+import { JwtPayload } from 'src/interfaces/jwt-payload.interface';
+import { JwtService } from '@nestjs/jwt';
+import { TipoPaquete } from 'src/interfaces/paquetes/paquetes.enum';
+import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
 
 @Injectable()
 export class EmpleadosAgroService {
@@ -39,7 +45,10 @@ export class EmpleadosAgroService {
     private readonly municipioRepo: Repository<MunicipiosDepartamentosPai>,
     @InjectRepository(DatosAgroservicio)
     private readonly datosAgroRepo: Repository<DatosAgroservicio>,
+    @InjectRepository(ClientePaquete)
+    private readonly clientePaqueteRepo: Repository<ClientePaquete>,
     private readonly validationService: ValidationService,
+    private readonly jwtService: JwtService,
   ) {}
   async create(createDto: CreateEmpleadosAgroDto, cliente: Cliente) {
     const {
@@ -135,6 +144,178 @@ export class EmpleadosAgroService {
     } catch (error) {
       this.handleDatabaseErrors(error);
     }
+  }
+
+  async login(loginDto: LoginEmpleadoDto) {
+    const { email, password } = loginDto;
+
+    try {
+      const empleado = await this.empleadoRepo
+        .createQueryBuilder('empleado')
+        .leftJoinAndSelect('empleado.role', 'role')
+        .leftJoinAndSelect('empleado.sucursal', 'sucursal')
+        .leftJoinAndSelect('empleado.pais', 'pais')
+        .leftJoinAndSelect('empleado.departamento', 'departamento')
+        .leftJoinAndSelect('empleado.municipio', 'municipio')
+        .select([
+          'empleado.id',
+          'empleado.nombre',
+          'empleado.identificacion',
+          'empleado.telefono',
+          'empleado.email',
+          'empleado.password',
+          'empleado.direccion',
+          'empleado.sexo',
+          'empleado.isActive',
+
+          'role.id',
+          'role.name',
+          'role.description',
+
+          'sucursal.id',
+          'sucursal.nombre',
+          'sucursal.tipo',
+
+          'pais.id',
+          'pais.nombre',
+
+          'departamento.id',
+          'departamento.nombre',
+
+          'municipio.id',
+          'municipio.nombre',
+        ])
+        .where('empleado.email = :email', { email })
+        .getOne();
+
+      if (!empleado) {
+        throw new UnauthorizedException('Credenciales incorrectas.');
+      }
+
+      const isValidPassword = bcrypt.compareSync(password, empleado.password);
+      if (!isValidPassword) {
+        throw new UnauthorizedException('Credenciales incorrectas.');
+      }
+
+      if (!empleado.isActive) {
+        throw new UnauthorizedException(
+          'El empleado se encuentra desactivado.',
+        );
+      }
+
+      const sucursal = await this.sucursalRepo.findOne({
+        where: { id: empleado.sucursal.id },
+        relations: ['agroservicio', 'agroservicio.propietario'],
+      });
+
+      if (!sucursal) {
+        throw new UnauthorizedException('La sucursal del empleado no existe.');
+      }
+
+      if (!sucursal.agroservicio) {
+        throw new UnauthorizedException(
+          'La sucursal no está asociada a un agroservicio.',
+        );
+      }
+
+      const agroservicio = sucursal.agroservicio;
+
+      if (!agroservicio.propietario) {
+        throw new UnauthorizedException(
+          'El agroservicio no tiene un propietario registrado.',
+        );
+      }
+
+      const propietario = agroservicio.propietario;
+
+      const paqueteActivo = await this.clientePaqueteRepo
+        .createQueryBuilder('clientePaquete')
+        .innerJoinAndSelect('clientePaquete.paquete', 'paquete')
+        .where('clientePaquete.clienteId = :propietarioId', {
+          propietarioId: propietario.id,
+        })
+        .andWhere('clientePaquete.activo = :activo', { activo: true })
+        .andWhere('paquete.tipo = :tipo', { tipo: TipoPaquete.AGRO_GESTION })
+        .andWhere('clientePaquete.fechaFin > :now', { now: new Date() })
+        .getOne();
+
+      if (!paqueteActivo) {
+        throw new UnauthorizedException(
+          'El agroservicio no tiene un plan AGRO_GESTION activo. Contacta al propietario para activarlo.',
+        );
+      }
+
+      if (
+        paqueteActivo.fechaFin &&
+        new Date(paqueteActivo.fechaFin) < new Date()
+      ) {
+        throw new UnauthorizedException(
+          'El plan AGRO_GESTION del agroservicio ha vencido. Contacta al propietario para renovarlo.',
+        );
+      }
+
+      const token = this.jwtService.sign({
+        id: empleado.id,
+        email: empleado.email,
+        rol: 'empleado',
+        agroservicioId: agroservicio.id,
+      });
+
+      delete empleado.password;
+
+      return {
+        ...empleado,
+        token,
+        agroservicio: {
+          id: agroservicio.id,
+          nombre: agroservicio.nombre_agroservicio,
+          rtn: agroservicio.rtn,
+          correo: agroservicio.correo,
+          telefono: agroservicio.telefono,
+          direccion: agroservicio.direccion,
+          propietario: {
+            id: propietario.id,
+            nombre: propietario.nombre,
+            email: propietario.email,
+            identificacion: propietario.identificacion,
+            telefono: propietario.telefono,
+          },
+        },
+        paquete: {
+          id: paqueteActivo.id,
+          nombre: paqueteActivo.paquete.nombre,
+          tipo: paqueteActivo.paquete.tipo,
+          fechaInicio: paqueteActivo.fechaInicio,
+          fechaFin: paqueteActivo.fechaFin,
+          diasRestantes: this.calcularDiasRestantes(paqueteActivo.fechaFin),
+        },
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  private calcularDiasRestantes(fechaFin: Date): number {
+    if (!fechaFin) return 0;
+    const now = new Date();
+    const diffTime = new Date(fechaFin).getTime() - now.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  }
+
+  async checkAuthStatus(empleado: EmpleadosAgro) {
+    delete empleado.password;
+    return {
+      ...empleado,
+      token: this.getJwtToken({ id: empleado.id }),
+    };
+  }
+
+  private getJwtToken(payload: JwtPayload) {
+    if (!this.jwtService) {
+      throw new InternalServerErrorException('JwtService no está disponible');
+    }
+    return this.jwtService.sign(payload);
   }
 
   async findAll(

@@ -127,6 +127,7 @@ import { RolesAgroModule } from './roles-agro/roles-agro.module';
 import { EmpleadosAgroModule } from './empleados-agro/empleados-agro.module';
 import { RolesPermisosAgroModule } from './roles-permisos-agro/roles-permisos-agro.module';
 import { AgroSucursalesModule } from './agro-sucursales/agro-sucursales.module';
+import { LogosAgroserviciosModule } from './logos-agroservicios/logos-agroservicios.module';
 
 @Module({
   imports: [
@@ -381,6 +382,8 @@ import { AgroSucursalesModule } from './agro-sucursales/agro-sucursales.module';
     RolesPermisosAgroModule,
 
     AgroSucursalesModule,
+
+    LogosAgroserviciosModule,
   ],
   controllers: [],
   providers: [],
