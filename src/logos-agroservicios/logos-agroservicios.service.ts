@@ -85,10 +85,14 @@ export class LogosAgroserviciosService {
   async findAll(propietarioId: string) {
     const imagenLogo = await this.logoAgroRepo.findOne({
       where: { agroservicio: { propietarioId } },
+      relations: ['agroservicio'],
     });
     if (!imagenLogo)
       throw new NotFoundException('No se encontro logo para el agroservicio');
-    return imagenLogo;
+    return {
+      ...imagenLogo,
+      agroservicio: imagenLogo.agroservicio.nombre_agroservicio,
+    };
   }
 
   async remove(id: string): Promise<{ message: string }> {

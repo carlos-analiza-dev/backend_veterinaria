@@ -1,3 +1,4 @@
+import { AgroProveedore } from 'src/agro-proveedores/entities/agro-proveedore.entity';
 import { AgroSucursale } from 'src/agro-sucursales/entities/agro-sucursale.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { LogosAgroservicio } from 'src/logos-agroservicios/entities/logos-agroservicio.entity';
@@ -46,6 +47,9 @@ export class DatosAgroservicio {
     eager: true,
   })
   logo: LogosAgroservicio;
+
+  @OneToMany(() => AgroProveedore, (proveedor) => proveedor.agroservicio)
+  proveedores: AgroProveedore[];
 
   @Column()
   correo: string;
