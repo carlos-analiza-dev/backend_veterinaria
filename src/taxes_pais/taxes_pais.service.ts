@@ -63,6 +63,31 @@ export class TaxesPaisService {
     }
   }
 
+  async findAllPais(paisId: string) {
+    try {
+      const pais_exist = await this.paisRepo.findOne({ where: { id: paisId } });
+
+      if (!pais_exist) {
+        throw new NotFoundException('No se encontró el país seleccionado');
+      }
+      const taxes = await this.taxes_repo.find({
+        where: {
+          pais: { id: paisId },
+        },
+        relations: ['pais'],
+        order: { nombre: 'ASC' },
+      });
+      if (!taxes || taxes.length === 0) {
+        throw new NotFoundException(
+          'No se encontraron taxes disponibles para este pais',
+        );
+      }
+      return taxes;
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async findOne(id: string) {
     const taxe = await this.taxes_repo.findOne({
       where: { id },

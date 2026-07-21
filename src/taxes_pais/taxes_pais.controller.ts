@@ -30,6 +30,11 @@ export class TaxesPaisController {
     return this.taxesPaisService.findAll(user);
   }
 
+  @Get('pais/:paisId')
+  findAllPais(@Param('paisId') paisId: string) {
+    return this.taxesPaisService.findAllPais(paisId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.taxesPaisService.findOne(id);

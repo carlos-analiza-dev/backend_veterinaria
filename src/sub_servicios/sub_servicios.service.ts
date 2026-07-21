@@ -21,8 +21,6 @@ import { CreateServicioDto } from './dto/create-servicio.dto';
 import { CreateProductoDto } from './dto/create-producto.dto';
 import { UpdateServicioDto } from './dto/update-servicio.dto';
 import { User } from 'src/auth/entities/auth.entity';
-import { ServicioInsumo } from 'src/servicio_insumos/entities/servicio_insumo.entity';
-import { Insumo } from 'src/insumos/entities/insumo.entity';
 import { UpdateProductoDto } from './dto/update-producto.dto';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { TipoProducto } from 'src/tipo_producto/entities/tipo_producto.entity';
@@ -47,10 +45,6 @@ export class SubServiciosService {
     private readonly serviciosPaiRepo: Repository<ServiciosPai>,
     @InjectRepository(TaxesPai)
     private readonly taxesPaiRepo: Repository<TaxesPai>,
-    @InjectRepository(ServicioInsumo)
-    private readonly servicioInsumoRepo: Repository<ServicioInsumo>,
-    @InjectRepository(Insumo)
-    private readonly insumoRepo: Repository<Insumo>,
     @InjectRepository(TipoProducto)
     private readonly tipoProductoRepo: Repository<TipoProducto>,
     @InjectRepository(Subcategoria)

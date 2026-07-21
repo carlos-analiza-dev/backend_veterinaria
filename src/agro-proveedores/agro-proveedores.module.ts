@@ -9,6 +9,9 @@ import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/en
 import { EmpleadosAgro } from 'src/empleados-agro/entities/empleados-agro.entity';
 import { AuditoriaProveedor } from './entities/auditoria_proveedores.entity';
 import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
+import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
+import { EmpleadosAgroModule } from 'src/empleados-agro/empleados-agro.module';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 
 @Module({
   controllers: [AgroProveedoresController],
@@ -22,7 +25,9 @@ import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroser
       AuditoriaProveedor,
       DatosAgroservicio,
     ]),
+    AuthClientesModule,
+    EmpleadosAgroModule,
   ],
-  providers: [AgroProveedoresService],
+  providers: [AgroProveedoresService, AgroservicioValidationService],
 })
 export class AgroProveedoresModule {}

@@ -21,6 +21,7 @@ import {
 import { SearchProveedorDto } from 'src/proveedores/dto/search-proveedor.dto';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 
 @Injectable()
 export class AgroProveedoresService {
@@ -37,10 +38,12 @@ export class AgroProveedoresService {
     private readonly auditProveedor: Repository<AuditoriaProveedor>,
     @InjectRepository(DatosAgroservicio)
     private readonly agroServicio: Repository<DatosAgroservicio>,
+    private readonly validationAgroService: AgroservicioValidationService,
   ) {}
 
   async create(createProveedorDto: CreateAgroProveedoreDto, cliente: Cliente) {
     const paisId = cliente.pais.id ?? '';
+    const propietarioId = cliente.id ?? '';
     const {
       nit_rtn,
       nrc,
@@ -57,13 +60,8 @@ export class AgroProveedoresService {
     } = createProveedorDto;
 
     try {
-      const agroservicio = await this.agroServicio.findOne({
-        where: { propietarioId: cliente.id },
-      });
-      if (!agroservicio)
-        throw new NotFoundException(
-          'No se encontro un agroservicio asociado para ingresar el proveedor',
-        );
+      const agroservicio =
+        await this.validationAgroService.obtenerAgroservicio(propietarioId);
 
       const existeNitRtn = await this.agroProRepo.findOneBy({
         nit_rtn,
@@ -135,6 +133,7 @@ export class AgroProveedoresService {
     empleado: EmpleadosAgro,
   ) {
     const paisId = empleado.pais.id ?? '';
+    const propietarioId = empleado.creadoPorId ?? '';
     const {
       nit_rtn,
       nrc,
@@ -151,13 +150,8 @@ export class AgroProveedoresService {
     } = createProveedorDto;
 
     try {
-      const agroservicio = await this.agroServicio.findOne({
-        where: { propietarioId: empleado.creadoPorId },
-      });
-      if (!agroservicio)
-        throw new NotFoundException(
-          'No se encontro un agroservicio asociado para ingresar el proveedor',
-        );
+      const agroservicio =
+        await this.validationAgroService.obtenerAgroservicio(propietarioId);
 
       const existeNitRtn = await this.agroProRepo.findOneBy({
         nit_rtn,
@@ -311,10 +305,17 @@ export class AgroProveedoresService {
     }
   }
 
-  async findAllActive(paisId: string) {
+  async findAllActive(propietarioId: string) {
+    const agroservicio = await this.agroServicio.findOne({
+      where: { propietarioId },
+    });
+    if (!agroservicio)
+      throw new NotFoundException(
+        'No se encontro un agroservicio asociado para ingresar el proveedor',
+      );
     try {
       const proveedores = await this.agroProRepo.find({
-        where: { is_active: true, pais: { id: paisId } },
+        where: { is_active: true, agroservicio: { id: agroservicio.id } },
 
         order: { nombre_legal: 'ASC' },
       });

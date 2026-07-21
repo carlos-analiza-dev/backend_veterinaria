@@ -58,9 +58,9 @@ export class AgroProveedoresController {
     );
   }
 
-  @Get('activos/:paisId')
-  findAllActive(@Param('paisId', ParseUUIDPipe) paisId: string) {
-    return this.agroProveedoresService.findAllActive(paisId);
+  @Get('activos/:propietarioId')
+  findAllActive(@Param('propietarioId', ParseUUIDPipe) propietarioId: string) {
+    return this.agroProveedoresService.findAllActive(propietarioId);
   }
 
   @Get('pais/:paisId')
