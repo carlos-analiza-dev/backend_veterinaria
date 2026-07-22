@@ -22,6 +22,7 @@ import { GetEmpleado } from 'src/empleados-agro/decorators/get-empleado.decorato
 import { EmpleadosAgro } from 'src/empleados-agro/entities/empleados-agro.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { FilesInterceptor } from '@nestjs/platform-express';
+import { CreateEscalasAgroProductoDto } from './dto/create-escala-agro-producto.dto';
 
 @Controller('agro-productos')
 export class AgroProductosController {
@@ -46,6 +47,13 @@ export class AgroProductosController {
       createAgroProductoDto,
       empleado,
     );
+  }
+
+  @Post('escala')
+  createEscala(
+    @Body() createEscalasAgroProductoDto: CreateEscalasAgroProductoDto,
+  ) {
+    return this.agroProductosService.createEscala(createEscalasAgroProductoDto);
   }
 
   @Post('upload/:productoId')

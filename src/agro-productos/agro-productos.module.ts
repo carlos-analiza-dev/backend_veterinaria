@@ -16,9 +16,19 @@ import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { EmpleadosAgroModule } from 'src/empleados-agro/empleados-agro.module';
 import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 import { ImagesAgroProductos } from './entities/images-agro-productos.entity';
+import { EscalasProductoAgro } from './entities/escalas-agro-producto.entity';
+import { DescuentosProductoAgro } from './entities/descuentos-agro-productos.entity';
+import { EscalasAgroProductoController } from './escalas-agro-productos.controller';
+import { EscalasAgroProductoService } from './escalas-agro-productos.service';
+import { DescuentosProductoController } from './descuentos-agro.productos.controller';
+import { DescuentoAgroProductoService } from './descuentos-agro-productos.service';
 
 @Module({
-  controllers: [AgroProductosController],
+  controllers: [
+    AgroProductosController,
+    EscalasAgroProductoController,
+    DescuentosProductoController,
+  ],
   imports: [
     TypeOrmModule.forFeature([
       AgroProducto,
@@ -32,10 +42,17 @@ import { ImagesAgroProductos } from './entities/images-agro-productos.entity';
       DatosAgroservicio,
       AuditoriaProducto,
       ImagesAgroProductos,
+      EscalasProductoAgro,
+      DescuentosProductoAgro,
     ]),
     AuthClientesModule,
     EmpleadosAgroModule,
   ],
-  providers: [AgroProductosService, AgroservicioValidationService],
+  providers: [
+    AgroProductosService,
+    EscalasAgroProductoService,
+    DescuentoAgroProductoService,
+    AgroservicioValidationService,
+  ],
 })
 export class AgroProductosModule {}

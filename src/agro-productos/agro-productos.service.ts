@@ -16,7 +16,6 @@ import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
 import { TipoProducto } from 'src/tipo_producto/entities/tipo_producto.entity';
 import { Subcategoria } from 'src/subcategorias/entities/subcategoria.entity';
 import { AgroProducto } from './entities/agro-producto.entity';
-import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
 import {
   AccionProducto,
   AuditoriaProducto,
@@ -29,12 +28,12 @@ import { AgroservicioValidationService } from 'src/validations/validation-agrose
 import { EmpleadosAgro } from 'src/empleados-agro/entities/empleados-agro.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { ImagesAgroProductos } from './entities/images-agro-productos.entity';
+import { CreateEscalasAgroProductoDto } from './dto/create-escala-agro-producto.dto';
+import { EscalasProductoAgro } from './entities/escalas-agro-producto.entity';
 
 @Injectable()
 export class AgroProductosService {
   constructor(
-    @InjectRepository(DatosAgroservicio)
-    private readonly agroservicio: Repository<DatosAgroservicio>,
     @InjectRepository(AgroProducto)
     private readonly productoRepo: Repository<AgroProducto>,
     @InjectRepository(Pai)
@@ -55,6 +54,8 @@ export class AgroProductosService {
     private readonly auditRepo: Repository<AuditoriaProducto>,
     @InjectRepository(ImagesAgroProductos)
     private readonly imagesRepo: Repository<ImagesAgroProductos>,
+    @InjectRepository(EscalasProductoAgro)
+    private readonly escalasRepo: Repository<EscalasProductoAgro>,
     private readonly validationAgroService: AgroservicioValidationService,
   ) {}
   async create(cliente: Cliente, createDto: CreateAgroProductoDto) {
@@ -317,6 +318,53 @@ export class AgroProductosService {
     });
 
     return 'Producto Creado Exitosamente';
+  }
+
+  async createEscala(
+    createEscalasAgroProductoDto: CreateEscalasAgroProductoDto,
+  ) {
+    const {
+      cantidad_comprada,
+      costo,
+      bonificacion,
+      productoId,
+      proveedorId,
+      paisId,
+      isActive,
+    } = createEscalasAgroProductoDto;
+    try {
+      const producto_existe = await this.productoRepo.findOne({
+        where: { id: productoId },
+      });
+      if (!producto_existe)
+        throw new NotFoundException('No se encontro el producto seleccionado');
+
+      const proveedor_existe = await this.proveedorRepo.findOne({
+        where: { id: proveedorId },
+      });
+      if (!proveedor_existe)
+        throw new NotFoundException('No se encontro el proveedor seleccionado');
+
+      const pais_existe = await this.paisRepo.findOne({
+        where: { id: paisId },
+      });
+      if (!pais_existe)
+        throw new NotFoundException('No se encontro el pais seleccionado');
+
+      const escala = this.escalasRepo.create({
+        cantidad_comprada,
+        bonificacion,
+        costo,
+        isActive,
+        producto: producto_existe,
+        pais: pais_existe,
+        proveedor: proveedor_existe,
+      });
+      await this.escalasRepo.save(escala);
+      return 'Escala del producto creada exitosamente';
+    } catch (error) {
+      throw error;
+    }
   }
 
   async uploadImagesProducto(
