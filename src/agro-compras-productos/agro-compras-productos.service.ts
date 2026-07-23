@@ -1,45 +1,50 @@
 import {
+  BadRequestException,
   Injectable,
   NotFoundException,
-  BadRequestException,
 } from '@nestjs/common';
+import { CreateAgroComprasProductoDto } from './dto/create-agro-compras-producto.dto';
+import { UpdateAgroComprasProductoDto } from './dto/update-agro-compras-producto.dto';
+import { AgroComprasProducto } from './entities/agro-compras-producto.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import { CreateCompraDto } from './dto/create-compra.dto';
-import { UpdateCompraDto } from './dto/update-compra.dto';
-import { Compra } from './entities/compra.entity';
-import { CompraDetalle } from './entities/compra-detalle.entity';
-import { Lote } from '../lotes/entities/lote.entity';
-import { User } from '../auth/entities/auth.entity';
-import { Sucursal } from '../sucursales/entities/sucursal.entity';
-import { Proveedor } from '../proveedores/entities/proveedor.entity';
-import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
+import { DataSource, Repository } from 'typeorm';
+import { CompraDetalleAgroProducto } from './entities/compra-detalle-agro-producto.entity';
+import { LoteAgroProducto } from './entities/lote-agro-compra.entity';
+import { AgroSucursale } from 'src/agro-sucursales/entities/agro-sucursale.entity';
+import { AgroProveedore } from 'src/agro-proveedores/entities/agro-proveedore.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { instanceToPlain } from 'class-transformer';
-import { Pai } from 'src/pais/entities/pai.entity';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { EmpleadosAgro } from 'src/empleados-agro/entities/empleados-agro.entity';
+import {
+  AccionCompra,
+  AuditoriaCompra,
+} from './entities/audit-compras-agro-productos.entity';
 
 @Injectable()
-export class ComprasService {
+export class AgroComprasProductosService {
   constructor(
-    @InjectRepository(Compra)
-    private readonly compraRepository: Repository<Compra>,
-    @InjectRepository(CompraDetalle)
-    private readonly compraDetalleRepository: Repository<CompraDetalle>,
-    @InjectRepository(Lote)
-    private readonly loteRepository: Repository<Lote>,
+    @InjectRepository(AgroComprasProducto)
+    private readonly compraRepository: Repository<AgroComprasProducto>,
+    @InjectRepository(CompraDetalleAgroProducto)
+    private readonly compraDetalleRepository: Repository<CompraDetalleAgroProducto>,
+    @InjectRepository(LoteAgroProducto)
+    private readonly loteRepository: Repository<LoteAgroProducto>,
 
-    @InjectRepository(Sucursal)
-    private readonly sucursalRepository: Repository<Sucursal>,
-    @InjectRepository(Proveedor)
-    private readonly proveedorRepository: Repository<Proveedor>,
-    @InjectRepository(SubServicio)
-    private readonly servicioRepository: Repository<SubServicio>,
-    @InjectRepository(Pai)
-    private readonly paisRepository: Repository<Pai>,
+    @InjectRepository(AgroSucursale)
+    private readonly sucursalRepository: Repository<AgroSucursale>,
+    @InjectRepository(AgroProveedore)
+    private readonly proveedorRepository: Repository<AgroProveedore>,
+    private readonly agroServicioService: AgroservicioValidationService,
     private readonly dataSource: DataSource,
   ) {}
 
-  async create(createCompraDto: CreateCompraDto, user: User) {
+  async create(
+    createCompraDto: CreateAgroComprasProductoDto,
+    cliente: Cliente,
+  ) {
+    const propietarioId = cliente.id ?? '';
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -56,12 +61,6 @@ export class ComprasService {
       });
       if (!sucursal_exist)
         throw new NotFoundException('No se encontro la sucursal seleccionado');
-
-      const pais_exist = await this.paisRepository.findOne({
-        where: { id: createCompraDto.paisId },
-      });
-      if (!pais_exist)
-        throw new NotFoundException('El pais seleccionado no existe');
 
       const productosIds = createCompraDto.detalles.map((d) => d.productoId);
       const productosUnicos = new Set(productosIds);
@@ -94,6 +93,9 @@ export class ComprasService {
         };
       });
 
+      const agroservicio =
+        await this.agroServicioService.obtenerAgroservicio(propietarioId);
+
       const compra = this.compraRepository.create({
         ...createCompraDto,
         numero_factura: createCompraDto.numero_factura,
@@ -101,9 +103,7 @@ export class ComprasService {
         impuestos: impuestosCompra,
         descuentos: descuentosCompra,
         total: subtotalCompra - descuentosCompra + impuestosCompra,
-        createdById: user.id,
-        updatedById: user.id,
-        pais: pais_exist,
+        agroservicioId: agroservicio.id,
       });
 
       const compraGuardada = await queryRunner.manager.save(compra);
@@ -139,8 +139,112 @@ export class ComprasService {
     }
   }
 
-  async findAll(user: User, paginationDto: PaginationDto) {
-    const paisId = user.pais.id;
+  async createEmpleado(
+    createCompraDto: CreateAgroComprasProductoDto,
+    empleado: EmpleadosAgro,
+  ) {
+    const propietarioId = empleado.creadoPorId ?? '';
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const proveedor_exist = await this.proveedorRepository.findOne({
+        where: { id: createCompraDto.proveedorId },
+      });
+      if (!proveedor_exist)
+        throw new NotFoundException('No se encontro el proveedor seleccionado');
+
+      const sucursal_exist = await this.sucursalRepository.findOne({
+        where: { id: createCompraDto.sucursalId },
+      });
+      if (!sucursal_exist)
+        throw new NotFoundException('No se encontro la sucursal seleccionado');
+
+      const productosIds = createCompraDto.detalles.map((d) => d.productoId);
+      const productosUnicos = new Set(productosIds);
+      if (productosIds.length !== productosUnicos.size) {
+        throw new BadRequestException('Productos duplicados en los detalles');
+      }
+
+      let subtotalCompra = 0;
+      let impuestosCompra = 0;
+      let descuentosCompra = 0;
+
+      const detallesCalculados = createCompraDto.detalles.map((detalle) => {
+        const cantidad_total =
+          Number(detalle.cantidad) + (Number(detalle.bonificacion) || 0);
+        const subtotalDetalle =
+          Number(detalle.cantidad) * Number(detalle.costo_por_unidad);
+        const monto_total =
+          subtotalDetalle -
+          (Number(detalle.descuentos) || 0) +
+          (Number(detalle.impuestos) || 0);
+
+        subtotalCompra += subtotalDetalle;
+        impuestosCompra += Number(detalle.impuestos) || 0;
+        descuentosCompra += Number(detalle.descuentos) || 0;
+
+        return {
+          ...detalle,
+          cantidad_total,
+          monto_total,
+        };
+      });
+
+      const agroservicio =
+        await this.agroServicioService.obtenerAgroservicio(propietarioId);
+
+      const compra = this.compraRepository.create({
+        ...createCompraDto,
+        numero_factura: createCompraDto.numero_factura,
+        subtotal: subtotalCompra,
+        impuestos: impuestosCompra,
+        descuentos: descuentosCompra,
+        total: subtotalCompra - descuentosCompra + impuestosCompra,
+        agroservicioId: agroservicio.id,
+      });
+
+      const compraGuardada = await queryRunner.manager.save(compra);
+
+      for (const detalleCalculado of detallesCalculados) {
+        const detalle = this.compraDetalleRepository.create({
+          ...detalleCalculado,
+          compraId: compraGuardada.id,
+        });
+        await queryRunner.manager.save(detalle);
+
+        const costoRealPorUnidad =
+          detalleCalculado.monto_total / detalleCalculado.cantidad_total;
+
+        const lote = this.loteRepository.create({
+          id_producto: detalleCalculado.productoId,
+          cantidad: detalleCalculado.cantidad_total,
+          costo: Number(detalleCalculado.costo_por_unidad),
+          costo_por_unidad: costoRealPorUnidad,
+          id_compra: compraGuardada.id,
+          id_sucursal: createCompraDto.sucursalId,
+        });
+        await queryRunner.manager.save(lote);
+      }
+
+      await queryRunner.manager.save(AuditoriaCompra, {
+        compraId: compraGuardada.id,
+        empleadoId: empleado.id,
+        accion: AccionCompra.CREAR,
+      });
+
+      await queryRunner.commitTransaction();
+      return await this.findOne(compraGuardada.id);
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async findAll(propietarioId: string, paginationDto: PaginationDto) {
     const {
       limit = 10,
       offset = 0,
@@ -149,6 +253,10 @@ export class ComprasService {
       tipoPago = '',
     } = paginationDto;
 
+    const agroservicio =
+      await this.agroServicioService.obtenerAgroservicio(propietarioId);
+    const agroservicioId = agroservicio.id;
+
     try {
       const queryBuilder = this.compraRepository
         .createQueryBuilder('compra')
@@ -156,10 +264,12 @@ export class ComprasService {
         .leftJoinAndSelect('compra.lotes', 'lotes')
         .leftJoinAndSelect('compra.proveedor', 'proveedor')
         .leftJoinAndSelect('compra.sucursal', 'sucursal')
-        .leftJoinAndSelect('compra.pais', 'pais')
+        .leftJoinAndSelect('compra.agroservicio', 'agroservicio')
         .orderBy('compra.created_at', 'DESC');
 
-      queryBuilder.andWhere('compra.paisId = :paisId', { paisId });
+      queryBuilder.andWhere('compra.agroservicioId = :agroservicioId', {
+        agroservicioId,
+      });
 
       if (proveedor && proveedor.trim() !== '') {
         queryBuilder.andWhere(
@@ -229,12 +339,11 @@ export class ComprasService {
     return compra;
   }
 
-  async update(id: string, updateCompraDto: UpdateCompraDto, user: User) {
+  async update(id: string, updateCompraDto: UpdateAgroComprasProductoDto) {
     const compra = await this.findOne(id);
 
     Object.assign(compra, {
       ...updateCompraDto,
-      updatedById: user.id,
     });
 
     return await this.compraRepository.save(compra);
@@ -245,7 +354,6 @@ export class ComprasService {
     await this.compraRepository.remove(compra);
   }
 
-  // Método existente getExistenciasProducto
   async getExistenciasProducto(productoId: string, sucursalId?: string) {
     const whereCondition: any = { id_producto: productoId };
     if (sucursalId) {
@@ -293,7 +401,6 @@ export class ComprasService {
     };
   }
 
-  // Método para reducir inventario (FIFO)
   async reducirInventario(
     productoId: string,
     sucursalId: string,
@@ -304,7 +411,7 @@ export class ComprasService {
         id_producto: productoId,
         id_sucursal: sucursalId,
       },
-      order: { id: 'ASC' }, // FIFO
+      order: { id: 'ASC' },
     });
 
     let cantidadPendiente = cantidadSolicitada;

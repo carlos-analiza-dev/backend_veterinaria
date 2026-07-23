@@ -130,6 +130,7 @@ import { AgroSucursalesModule } from './agro-sucursales/agro-sucursales.module';
 import { LogosAgroserviciosModule } from './logos-agroservicios/logos-agroservicios.module';
 import { AgroProveedoresModule } from './agro-proveedores/agro-proveedores.module';
 import { AgroProductosModule } from './agro-productos/agro-productos.module';
+import { AgroComprasProductosModule } from './agro-compras-productos/agro-compras-productos.module';
 
 @Module({
   imports: [
@@ -390,6 +391,8 @@ import { AgroProductosModule } from './agro-productos/agro-productos.module';
     AgroProveedoresModule,
 
     AgroProductosModule,
+
+    AgroComprasProductosModule,
   ],
   controllers: [],
   providers: [],

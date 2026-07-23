@@ -17,7 +17,6 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../auth/entities/auth.entity';
 import { ValidRoles } from '../interfaces/valid-roles.interface';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
-import { InventarioQueryDto } from './dto/inventario-query.dto';
 
 @Controller('compras')
 @Auth()

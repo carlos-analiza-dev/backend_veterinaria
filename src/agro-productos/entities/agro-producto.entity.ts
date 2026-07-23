@@ -54,6 +54,9 @@ export class AgroProducto {
   })
   disponible: boolean;
 
+  @Column({ length: 50, default: 'N/D' })
+  codigo: string;
+
   @Column({
     type: 'varchar',
     length: 20,

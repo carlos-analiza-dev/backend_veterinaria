@@ -167,6 +167,11 @@ export class AgroProductosService {
       }
     }
 
+    const codigo = await this.generarCodigoProducto(
+      createDto.categoriaId,
+      createDto.tipo_producto_id,
+    );
+
     const producto = this.productoRepo.create({
       ...rest,
       codigo_barra,
@@ -178,6 +183,7 @@ export class AgroProductosService {
       tipo_producto: tipoProducto,
       marca,
       tax,
+      codigo,
     });
 
     await this.productoRepo.save(producto);
@@ -296,6 +302,11 @@ export class AgroProductosService {
       }
     }
 
+    const codigo = await this.generarCodigoProducto(
+      createDto.categoriaId,
+      createDto.tipo_producto_id,
+    );
+
     const producto = this.productoRepo.create({
       ...rest,
       codigo_barra,
@@ -307,6 +318,7 @@ export class AgroProductosService {
       tipo_producto: tipoProducto,
       marca,
       tax,
+      codigo,
     });
 
     await this.productoRepo.save(producto);
@@ -483,6 +495,27 @@ export class AgroProductosService {
       productos,
       total,
     };
+  }
+
+  async findTodos(propietarioId: string): Promise<AgroProducto[]> {
+    const agroservicio =
+      await this.validationAgroService.obtenerAgroservicio(propietarioId);
+
+    return await this.productoRepo
+      .createQueryBuilder('producto')
+      .leftJoinAndSelect('producto.images', 'images')
+      .leftJoinAndSelect('producto.pais', 'pais')
+      .leftJoinAndSelect('producto.marca', 'marca')
+      .leftJoinAndSelect('producto.proveedor', 'proveedor')
+      .leftJoinAndSelect('producto.categoria', 'categoria')
+      .leftJoinAndSelect('producto.subcategoria', 'subcategoria')
+      .leftJoinAndSelect('producto.tipo_producto', 'tipoProducto')
+      .leftJoinAndSelect('producto.tax', 'tax')
+      .where('producto.agroservicioId = :agroservicioId', {
+        agroservicioId: agroservicio.id,
+      })
+      .orderBy('producto.nombre', 'ASC')
+      .getMany();
   }
 
   findOne(id: number) {
@@ -665,8 +698,19 @@ export class AgroProductosService {
       }
     }
 
+    const categoriaCambio = categoria?.id !== producto.categoria?.id;
+
+    const tipoCambio = tipoProducto?.id !== producto.tipo_producto?.id;
+
+    let codigo = producto.codigo;
+
+    if (categoriaCambio || tipoCambio) {
+      codigo = await this.generarCodigoProducto(categoria.id, tipoProducto.id);
+    }
+
     Object.assign(producto, {
       ...rest,
+      codigo,
       codigo_barra: codigo_barra || producto.codigo_barra,
       pais,
       marca,
@@ -862,8 +906,19 @@ export class AgroProductosService {
       }
     }
 
+    const categoriaCambio = categoria?.id !== producto.categoria?.id;
+
+    const tipoCambio = tipoProducto?.id !== producto.tipo_producto?.id;
+
+    let codigo = producto.codigo;
+
+    if (categoriaCambio || tipoCambio) {
+      codigo = await this.generarCodigoProducto(categoria.id, tipoProducto.id);
+    }
+
     Object.assign(producto, {
       ...rest,
+      codigo,
       codigo_barra: codigo_barra || producto.codigo_barra,
       pais,
       marca,
@@ -921,5 +976,42 @@ export class AgroProductosService {
 
   remove(id: number) {
     return `This action removes a #${id} agroProducto`;
+  }
+
+  private async generarCodigoProducto(
+    categoriaId: string,
+    tipoProductoId: string,
+  ): Promise<string> {
+    const categoria = await this.categoriaRepo.findOne({
+      where: { id: categoriaId },
+    });
+
+    if (!categoria) {
+      throw new NotFoundException('Categoría no encontrada');
+    }
+
+    const tipoProducto = await this.tipoProductoRepo.findOne({
+      where: { id: tipoProductoId },
+    });
+
+    if (!tipoProducto) {
+      throw new NotFoundException('Tipo de producto no encontrado');
+    }
+
+    const categoriaCode = categoria.nombre.trim().substring(0, 3).toUpperCase();
+
+    const tipoCode = tipoProducto.nombre.trim().substring(0, 3).toUpperCase();
+
+    const correlativo =
+      (await this.productoRepo.count({
+        where: {
+          categoria: { id: categoriaId },
+          tipo_producto: { id: tipoProductoId },
+        },
+      })) + 1;
+
+    const correlativoFormat = correlativo.toString().padStart(6, '0');
+
+    return `${categoriaCode}-${tipoCode}-${correlativoFormat}`;
   }
 }

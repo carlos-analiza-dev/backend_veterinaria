@@ -38,6 +38,17 @@ export class AgroSucursalesController {
     return this.agroSucursalesService.findAll(cliente, paginationDto);
   }
 
+  @Get('sucursales')
+  @AuthCliente()
+  findTodas(@GetCliente() cliente: Cliente) {
+    return this.agroSucursalesService.findTodas(cliente);
+  }
+
+  @Get('empleado/:id')
+  findOneEmpleado(@Param('id') id: string) {
+    return this.agroSucursalesService.findOneEmpleado(id);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.agroSucursalesService.findOne(id);

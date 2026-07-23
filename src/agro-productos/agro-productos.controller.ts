@@ -73,6 +73,11 @@ export class AgroProductosController {
     return this.agroProductosService.findAll(propietarioId, paginationDto);
   }
 
+  @Get('agroservicio/todos/:propietarioId')
+  findTodos(@Param('propietarioId', ParseUUIDPipe) propietarioId: string) {
+    return this.agroProductosService.findTodos(propietarioId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.agroProductosService.findOne(+id);

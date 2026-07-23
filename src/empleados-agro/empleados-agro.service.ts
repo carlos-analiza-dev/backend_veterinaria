@@ -178,6 +178,7 @@ export class EmpleadosAgroService {
 
           'pais.id',
           'pais.nombre',
+          'pais.simbolo_moneda',
 
           'departamento.id',
           'departamento.nombre',
