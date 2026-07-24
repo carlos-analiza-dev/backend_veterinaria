@@ -19,6 +19,7 @@ import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { SearchProveedorDto } from 'src/proveedores/dto/search-proveedor.dto';
 import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Controller('agro-proveedores')
 export class AgroProveedoresController {
@@ -45,6 +46,15 @@ export class AgroProveedoresController {
       createProveedorDto,
       empleado,
     );
+  }
+
+  @Get('auditoria')
+  @AuthCliente()
+  findAuditoria(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.agroProveedoresService.findAuditoria(cliente, paginationDto);
   }
 
   @Get('agroservicio/:propietarioId')

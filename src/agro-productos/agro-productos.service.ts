@@ -56,6 +56,8 @@ export class AgroProductosService {
     private readonly imagesRepo: Repository<ImagesAgroProductos>,
     @InjectRepository(EscalasProductoAgro)
     private readonly escalasRepo: Repository<EscalasProductoAgro>,
+    @InjectRepository(AuditoriaProducto)
+    private readonly auditoriaRepo: Repository<AuditoriaProducto>,
     private readonly validationAgroService: AgroservicioValidationService,
   ) {}
   async create(cliente: Cliente, createDto: CreateAgroProductoDto) {
@@ -435,6 +437,46 @@ export class AgroProductosService {
     }
 
     return imagenesGuardadas;
+  }
+
+  async findAuditoria(cliente: Cliente, paginationDto: PaginationDto) {
+    const { limit = 10, offset = 0 } = paginationDto;
+
+    const query = this.auditoriaRepo
+      .createQueryBuilder('auditoria')
+      .leftJoin('auditoria.producto', 'producto')
+      .leftJoin('auditoria.empleado', 'empleado')
+      .leftJoin('empleado.role', 'rol')
+      .leftJoin('producto.agroservicio', 'agroservicio')
+      .where('agroservicio.propietarioId = :propietarioId', {
+        propietarioId: cliente.id,
+      })
+      .select([
+        'auditoria.id',
+        'auditoria.accion',
+        'auditoria.fecha',
+
+        'producto.id',
+        'producto.nombre',
+
+        'empleado.id',
+        'empleado.nombre',
+
+        'rol.id',
+        'rol.name',
+      ])
+      .orderBy('auditoria.fecha', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      total,
+      limit,
+      offset,
+      data,
+    };
   }
 
   async findAll(

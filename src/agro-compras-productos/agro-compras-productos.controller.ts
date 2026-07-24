@@ -47,6 +47,18 @@ export class AgroComprasProductosController {
     );
   }
 
+  @Get('auditoria')
+  @AuthCliente()
+  findAuditoria(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.agroComprasProductosService.findAuditoria(
+      cliente,
+      paginationDto,
+    );
+  }
+
   @Get('agro-compras/:propietarioId')
   findAll(
     @Param('propietarioId', ParseUUIDPipe) propietarioId: string,

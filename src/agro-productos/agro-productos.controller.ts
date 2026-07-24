@@ -65,6 +65,15 @@ export class AgroProductosController {
     return this.agroProductosService.uploadImagesProducto(productoId, imagenes);
   }
 
+  @Get('auditoria')
+  @AuthCliente()
+  findAuditoria(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.agroProductosService.findAuditoria(cliente, paginationDto);
+  }
+
   @Get('agroservicio/:propietarioId')
   findAll(
     @Param('propietarioId', ParseUUIDPipe) propietarioId: string,

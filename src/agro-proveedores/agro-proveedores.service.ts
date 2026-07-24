@@ -22,6 +22,7 @@ import { SearchProveedorDto } from 'src/proveedores/dto/search-proveedor.dto';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
 import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Injectable()
 export class AgroProveedoresService {
@@ -38,6 +39,8 @@ export class AgroProveedoresService {
     private readonly auditProveedor: Repository<AuditoriaProveedor>,
     @InjectRepository(DatosAgroservicio)
     private readonly agroServicio: Repository<DatosAgroservicio>,
+    @InjectRepository(AuditoriaProveedor)
+    private readonly auditoriaRepo: Repository<AuditoriaProveedor>,
     private readonly validationAgroService: AgroservicioValidationService,
   ) {}
 
@@ -222,6 +225,32 @@ export class AgroProveedoresService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async findAuditoria(cliente: Cliente, paginationDto: PaginationDto) {
+    const { limit = 10, offset = 0 } = paginationDto;
+
+    const query = this.auditoriaRepo
+      .createQueryBuilder('auditoria')
+      .leftJoinAndSelect('auditoria.proveedor', 'proveedor')
+      .leftJoinAndSelect('auditoria.empleado', 'empleado')
+      .leftJoinAndSelect('empleado.role', 'rol')
+      .leftJoin('proveedor.agroservicio', 'agroservicio')
+      .where('agroservicio.propietarioId = :propietarioId', {
+        propietarioId: cliente.id,
+      })
+      .orderBy('auditoria.fecha', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      total,
+      limit,
+      offset,
+      data,
+    };
   }
 
   async findAll(propietarioId: string, searchProveedorDto: SearchProveedorDto) {

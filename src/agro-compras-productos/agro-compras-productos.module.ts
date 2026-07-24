@@ -12,9 +12,11 @@ import { AgroProveedore } from 'src/agro-proveedores/entities/agro-proveedore.en
 import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { EmpleadosAgroModule } from 'src/empleados-agro/empleados-agro.module';
+import { AgroProductosController } from './lotes-agro-productos.controller';
+import { LotesAgroProductosService } from './lotes-agro-productos.service';
 
 @Module({
-  controllers: [AgroComprasProductosController],
+  controllers: [AgroComprasProductosController, AgroProductosController],
   imports: [
     TypeOrmModule.forFeature([
       AgroComprasProducto,
@@ -28,6 +30,10 @@ import { EmpleadosAgroModule } from 'src/empleados-agro/empleados-agro.module';
     AuthClientesModule,
     EmpleadosAgroModule,
   ],
-  providers: [AgroComprasProductosService, AgroservicioValidationService],
+  providers: [
+    AgroComprasProductosService,
+    AgroservicioValidationService,
+    LotesAgroProductosService,
+  ],
 })
 export class AgroComprasProductosModule {}

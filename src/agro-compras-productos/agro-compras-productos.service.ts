@@ -36,6 +36,8 @@ export class AgroComprasProductosService {
     private readonly sucursalRepository: Repository<AgroSucursale>,
     @InjectRepository(AgroProveedore)
     private readonly proveedorRepository: Repository<AgroProveedore>,
+    @InjectRepository(AuditoriaCompra)
+    private readonly auditoriaRepo: Repository<AuditoriaCompra>,
     private readonly agroServicioService: AgroservicioValidationService,
     private readonly dataSource: DataSource,
   ) {}
@@ -242,6 +244,52 @@ export class AgroComprasProductosService {
     } finally {
       await queryRunner.release();
     }
+  }
+
+  async findAuditoria(cliente: Cliente, paginationDto: PaginationDto) {
+    const { limit = 10, offset = 0 } = paginationDto;
+
+    const query = this.auditoriaRepo
+      .createQueryBuilder('auditoria')
+      .leftJoin('auditoria.compra', 'compra')
+      .leftJoin('compra.proveedor', 'proveedor')
+      .leftJoin('auditoria.empleado', 'empleado')
+      .leftJoin('empleado.role', 'rol')
+      .leftJoin('compra.agroservicio', 'agroservicio')
+      .where('agroservicio.propietarioId = :propietarioId', {
+        propietarioId: cliente.id,
+      })
+      .select([
+        'auditoria.id',
+        'auditoria.accion',
+        'auditoria.fecha',
+
+        'compra.id',
+        'compra.numero_factura',
+        'compra.fecha',
+        'compra.total',
+
+        'proveedor.id',
+        'proveedor.nombre_legal',
+
+        'empleado.id',
+        'empleado.nombre',
+
+        'rol.id',
+        'rol.name',
+      ])
+      .orderBy('auditoria.fecha', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      total,
+      limit,
+      offset,
+      data,
+    };
   }
 
   async findAll(propietarioId: string, paginationDto: PaginationDto) {
