@@ -223,10 +223,48 @@ export class AgroSucursalesService {
       .getMany();
   }
 
-  async findOneEmpleado(id: string) {
+  async findByPropietario(propietarioId: string): Promise<AgroSucursale[]> {
+    return await this.sucursalRepo
+      .createQueryBuilder('sucursal')
+      .leftJoinAndSelect('sucursal.pais', 'pais')
+      .leftJoinAndSelect('sucursal.departamento', 'departamento')
+      .leftJoinAndSelect('sucursal.municipio', 'municipio')
+      .leftJoinAndSelect('sucursal.gerente', 'gerente')
+      .innerJoin('sucursal.agroservicio', 'agroservicio')
+      .where('sucursal.isActive = :isActive', { isActive: true })
+      .andWhere('agroservicio.propietarioId = :propietarioId', {
+        propietarioId,
+      })
+      .select([
+        'sucursal.id',
+        'sucursal.nombre',
+        'sucursal.tipo',
+        'sucursal.latitud',
+        'sucursal.longitud',
+        'sucursal.direccion_complemento',
+        'sucursal.createdAt',
+
+        'pais.id',
+        'pais.nombre',
+
+        'departamento.id',
+        'departamento.nombre',
+
+        'municipio.id',
+        'municipio.nombre',
+
+        'gerente.id',
+        'gerente.nombre',
+      ])
+      .orderBy('sucursal.nombre', 'ASC')
+      .getMany();
+  }
+
+  async findOneEmpleado(empleado: EmpleadosAgro) {
+    const empleadoId = empleado.id ?? '';
     const sucursal = await this.sucursalRepo.findOne({
       where: {
-        empleados: { id },
+        empleados: { id: empleadoId },
         isActive: true,
       },
     });

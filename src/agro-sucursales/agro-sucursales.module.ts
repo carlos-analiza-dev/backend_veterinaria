@@ -10,6 +10,7 @@ import { Pai } from 'src/pais/entities/pai.entity';
 import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { EmpleadosAgroModule } from 'src/empleados-agro/empleados-agro.module';
 
 @Module({
   controllers: [AgroSucursalesController],
@@ -22,8 +23,10 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
       Pai,
       DatosAgroservicio,
       Cliente,
+      EmpleadosAgro,
     ]),
     AuthClientesModule,
+    EmpleadosAgroModule,
   ],
   providers: [AgroSucursalesService],
 })

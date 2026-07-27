@@ -15,6 +15,9 @@ import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator
 import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { AuthEmpleado } from 'src/empleados-agro/decorators/auth-empleado.decorator';
+import { GetEmpleado } from 'src/empleados-agro/decorators/get-empleado.decorator';
+import { EmpleadosAgro } from 'src/empleados-agro/entities/empleados-agro.entity';
 
 @Controller('agro-sucursales')
 export class AgroSucursalesController {
@@ -44,9 +47,15 @@ export class AgroSucursalesController {
     return this.agroSucursalesService.findTodas(cliente);
   }
 
-  @Get('empleado/:id')
-  findOneEmpleado(@Param('id') id: string) {
-    return this.agroSucursalesService.findOneEmpleado(id);
+  @Get('empleado')
+  @AuthEmpleado()
+  findOneEmpleado(@GetEmpleado() empleado: EmpleadosAgro) {
+    return this.agroSucursalesService.findOneEmpleado(empleado);
+  }
+
+  @Get('sucursales/empleado/:propietarioId')
+  findByPropietario(@Param('propietarioId') propietarioId: string) {
+    return this.agroSucursalesService.findByPropietario(propietarioId);
   }
 
   @Get(':id')

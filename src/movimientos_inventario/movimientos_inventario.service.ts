@@ -5,132 +5,246 @@ import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MovimientosInventario } from './entities/movimientos_inventario.entity';
 import { Repository } from 'typeorm';
+import { AgroMovimientosInventario } from './entities/agro-movimientos-inventario.entity';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 
 @Injectable()
 export class MovimientosInventarioService {
   constructor(
     @InjectRepository(MovimientosInventario)
-    private readonly movimientoInvRepository:Repository<MovimientosInventario>
-  ){}
+    private readonly movimientoInvRepository: Repository<MovimientosInventario>,
+    @InjectRepository(AgroMovimientosInventario)
+    private readonly movimientoInvAgroRepository: Repository<AgroMovimientosInventario>,
+    private readonly validationAgroService: AgroservicioValidationService,
+  ) {}
   create(createMovimientosInventarioDto: CreateMovimientosInventarioDto) {
     return 'This action adds a new movimientosInventario';
   }
 
-async findAll(paginationDto: PaginationDto) {
-  const {
-    limit = 10,
-    offset = 0,
-    fechaInicio,
-    fechaFin,
-    sucursal,
-  } = paginationDto;
+  async findAll(paginationDto: PaginationDto) {
+    const {
+      limit = 10,
+      offset = 0,
+      fechaInicio,
+      fechaFin,
+      sucursal,
+    } = paginationDto;
 
-  try {
-    const queryBuilder = this.movimientoInvRepository
-      .createQueryBuilder('movimiento')
-      .leftJoinAndSelect('movimiento.lote', 'lote')
-      .leftJoinAndSelect('lote.producto', 'producto')
-      .leftJoinAndSelect('movimiento.sucursalOrigen', 'sucursalOrigen')
-      .leftJoinAndSelect('movimiento.sucursalDestino', 'sucursalDestino')
-      .orderBy('movimiento.created_at', 'DESC')
-      .take(limit)
-      .skip(offset);
+    try {
+      const queryBuilder = this.movimientoInvRepository
+        .createQueryBuilder('movimiento')
+        .leftJoinAndSelect('movimiento.lote', 'lote')
+        .leftJoinAndSelect('lote.producto', 'producto')
+        .leftJoinAndSelect('movimiento.sucursalOrigen', 'sucursalOrigen')
+        .leftJoinAndSelect('movimiento.sucursalDestino', 'sucursalDestino')
+        .orderBy('movimiento.created_at', 'DESC')
+        .take(limit)
+        .skip(offset);
 
-  
-    if (fechaInicio && fechaFin) {
-      queryBuilder.andWhere(
-        'DATE(movimiento.created_at) BETWEEN :fechaInicio AND :fechaFin',
-        {
+      if (fechaInicio && fechaFin) {
+        queryBuilder.andWhere(
+          'DATE(movimiento.created_at) BETWEEN :fechaInicio AND :fechaFin',
+          {
+            fechaInicio,
+            fechaFin,
+          },
+        );
+      } else if (fechaInicio) {
+        queryBuilder.andWhere('DATE(movimiento.created_at) >= :fechaInicio', {
           fechaInicio,
+        });
+      } else if (fechaFin) {
+        queryBuilder.andWhere('DATE(movimiento.created_at) <= :fechaFin', {
           fechaFin,
-        },
-      );
-    } else if (fechaInicio) {
-      queryBuilder.andWhere(
-        'DATE(movimiento.created_at) >= :fechaInicio',
-        {
-          fechaInicio,
-        },
-      );
-    } else if (fechaFin) {
-      queryBuilder.andWhere(
-        'DATE(movimiento.created_at) <= :fechaFin',
-        {
-          fechaFin,
-        },
-      );
-    }
+        });
+      }
 
-  
-    if (sucursal) {
-      queryBuilder.andWhere(
-        `(movimiento.sucursal_origen_id = :sucursal 
+      if (sucursal) {
+        queryBuilder.andWhere(
+          `(movimiento.sucursal_origen_id = :sucursal 
           OR movimiento.sucursal_destino_id = :sucursal)`,
-        { sucursal },
+          { sucursal },
+        );
+      }
+
+      const [movimientos, total] = await queryBuilder.getManyAndCount();
+
+      return {
+        total,
+        limit,
+        offset,
+        movimientos: movimientos.map((movimiento) =>
+          this.mappingMovimientos(movimiento),
+        ),
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Error al obtener los movimientos de inventario',
       );
     }
-
-    const [movimientos, total] = await queryBuilder.getManyAndCount();
-
-    return {
-      total,
-      limit,
-      offset,
-   movimientos: movimientos.map((movimiento) =>
-    this.mappingMovimientos(movimiento),
-  ),
-    };
-  } catch (error) {
-    throw new InternalServerErrorException(
-      'Error al obtener los movimientos de inventario',
-    );
   }
-}
 
-private mappingMovimientos(movimiento: MovimientosInventario) {
-  return {
-    id: movimiento.id,
-    tipo: movimiento.tipo,
-    cantidad: movimiento.cantidad,
-    created_at: movimiento.created_at,
+  async findAllAgroservicio(
+    propietarioId: string,
+    paginationDto: PaginationDto,
+  ) {
+    const {
+      limit = 10,
+      offset = 0,
+      fechaInicio,
+      fechaFin,
+      sucursal,
+    } = paginationDto;
 
-    lote: movimiento.lote
-      ? {
-          id: movimiento.lote.id,
-          producto: movimiento.lote.producto,
-          cantidad: movimiento.lote.cantidad,
-          costo: movimiento.lote.costo,
-          costo_por_unidad: movimiento.lote.costo_por_unidad,
-        }
-      : null,
+    const agroservicio =
+      await this.validationAgroService.obtenerAgroservicio(propietarioId);
+    const agroservicioId = agroservicio.id;
 
-    sucursalOrigen: movimiento.sucursalOrigen
-      ? {
-          id: movimiento.sucursalOrigen.id,
-          nombre: movimiento.sucursalOrigen.nombre,
-          tipo: movimiento.sucursalOrigen.tipo,
-          direccion_complemento:
-            movimiento.sucursalOrigen.direccion_complemento,
-        }
-      : null,
+    try {
+      const queryBuilder = this.movimientoInvAgroRepository
+        .createQueryBuilder('movimiento')
+        .leftJoinAndSelect('movimiento.lote', 'lote')
+        .leftJoinAndSelect('lote.sucursal', 'sucursal')
+        .leftJoin('sucursal.agroservicio', 'agroservicio')
+        .leftJoinAndSelect('lote.producto', 'producto')
+        .leftJoinAndSelect('movimiento.sucursalOrigen', 'sucursalOrigen')
+        .leftJoinAndSelect('movimiento.sucursalDestino', 'sucursalDestino')
+        .andWhere('agroservicio.id = :agroservicioId', {
+          agroservicioId,
+        })
+        .orderBy('movimiento.created_at', 'DESC')
+        .take(limit)
+        .skip(offset);
 
-    sucursalDestino: movimiento.sucursalDestino
-      ? {
-          id: movimiento.sucursalDestino.id,
-          nombre: movimiento.sucursalDestino.nombre,
-          tipo: movimiento.sucursalDestino.tipo,
-          direccion_complemento:
-            movimiento.sucursalDestino.direccion_complemento,
-        }
-      : null,
-  };
-}
+      if (fechaInicio && fechaFin) {
+        queryBuilder.andWhere(
+          'DATE(movimiento.created_at) BETWEEN :fechaInicio AND :fechaFin',
+          {
+            fechaInicio,
+            fechaFin,
+          },
+        );
+      } else if (fechaInicio) {
+        queryBuilder.andWhere('DATE(movimiento.created_at) >= :fechaInicio', {
+          fechaInicio,
+        });
+      } else if (fechaFin) {
+        queryBuilder.andWhere('DATE(movimiento.created_at) <= :fechaFin', {
+          fechaFin,
+        });
+      }
+
+      if (sucursal) {
+        queryBuilder.andWhere(
+          `(movimiento.sucursal_origen_id = :sucursal 
+          OR movimiento.sucursal_destino_id = :sucursal)`,
+          { sucursal },
+        );
+      }
+
+      const [movimientos, total] = await queryBuilder.getManyAndCount();
+
+      return {
+        total,
+        limit,
+        offset,
+        movimientos: movimientos.map((movimiento) =>
+          this.mappingMovimientosAgro(movimiento),
+        ),
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(
+        'Error al obtener los movimientos de inventario',
+      );
+    }
+  }
+
+  private mappingMovimientos(movimiento: MovimientosInventario) {
+    return {
+      id: movimiento.id,
+      tipo: movimiento.tipo,
+      cantidad: movimiento.cantidad,
+      created_at: movimiento.created_at,
+
+      lote: movimiento.lote
+        ? {
+            id: movimiento.lote.id,
+            producto: movimiento.lote.producto,
+            cantidad: movimiento.lote.cantidad,
+            costo: movimiento.lote.costo,
+            costo_por_unidad: movimiento.lote.costo_por_unidad,
+          }
+        : null,
+
+      sucursalOrigen: movimiento.sucursalOrigen
+        ? {
+            id: movimiento.sucursalOrigen.id,
+            nombre: movimiento.sucursalOrigen.nombre,
+            tipo: movimiento.sucursalOrigen.tipo,
+            direccion_complemento:
+              movimiento.sucursalOrigen.direccion_complemento,
+          }
+        : null,
+
+      sucursalDestino: movimiento.sucursalDestino
+        ? {
+            id: movimiento.sucursalDestino.id,
+            nombre: movimiento.sucursalDestino.nombre,
+            tipo: movimiento.sucursalDestino.tipo,
+            direccion_complemento:
+              movimiento.sucursalDestino.direccion_complemento,
+          }
+        : null,
+    };
+  }
+
+  private mappingMovimientosAgro(movimiento: AgroMovimientosInventario) {
+    return {
+      id: movimiento.id,
+      tipo: movimiento.tipo,
+      cantidad: movimiento.cantidad,
+      created_at: movimiento.created_at,
+
+      lote: movimiento.lote
+        ? {
+            id: movimiento.lote.id,
+            producto: movimiento.lote.producto,
+            cantidad: movimiento.lote.cantidad,
+            costo: movimiento.lote.costo,
+            costo_por_unidad: movimiento.lote.costo_por_unidad,
+          }
+        : null,
+
+      sucursalOrigen: movimiento.sucursalOrigen
+        ? {
+            id: movimiento.sucursalOrigen.id,
+            nombre: movimiento.sucursalOrigen.nombre,
+            tipo: movimiento.sucursalOrigen.tipo,
+            direccion_complemento:
+              movimiento.sucursalOrigen.direccion_complemento,
+          }
+        : null,
+
+      sucursalDestino: movimiento.sucursalDestino
+        ? {
+            id: movimiento.sucursalDestino.id,
+            nombre: movimiento.sucursalDestino.nombre,
+            tipo: movimiento.sucursalDestino.tipo,
+            direccion_complemento:
+              movimiento.sucursalDestino.direccion_complemento,
+          }
+        : null,
+    };
+  }
 
   findOne(id: number) {
     return `This action returns a #${id} movimientosInventario`;
   }
 
-  update(id: number, updateMovimientosInventarioDto: UpdateMovimientosInventarioDto) {
+  update(
+    id: number,
+    updateMovimientosInventarioDto: UpdateMovimientosInventarioDto,
+  ) {
     return `This action updates a #${id} movimientosInventario`;
   }
 

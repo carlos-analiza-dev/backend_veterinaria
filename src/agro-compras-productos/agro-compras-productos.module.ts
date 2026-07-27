@@ -14,6 +14,7 @@ import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { EmpleadosAgroModule } from 'src/empleados-agro/empleados-agro.module';
 import { AgroProductosController } from './lotes-agro-productos.controller';
 import { LotesAgroProductosService } from './lotes-agro-productos.service';
+import { AuditoriaMovimientosAgro } from 'src/movimientos_inventario/entities/audit-movimientos-agro.entity';
 
 @Module({
   controllers: [AgroComprasProductosController, AgroProductosController],
@@ -26,6 +27,7 @@ import { LotesAgroProductosService } from './lotes-agro-productos.service';
       AgroSucursale,
       AgroProveedore,
       DatosAgroservicio,
+      AuditoriaMovimientosAgro,
     ]),
     AuthClientesModule,
     EmpleadosAgroModule,

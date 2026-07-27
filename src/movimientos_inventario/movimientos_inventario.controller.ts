@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { MovimientosInventarioService } from './movimientos_inventario.service';
 import { CreateMovimientosInventarioDto } from './dto/create-movimientos_inventario.dto';
 import { UpdateMovimientosInventarioDto } from './dto/update-movimientos_inventario.dto';
@@ -7,17 +16,34 @@ import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 
 @Controller('movimientos-inventario')
 export class MovimientosInventarioController {
-  constructor(private readonly movimientosInventarioService: MovimientosInventarioService) {}
+  constructor(
+    private readonly movimientosInventarioService: MovimientosInventarioService,
+  ) {}
 
   @Post()
-  create(@Body() createMovimientosInventarioDto: CreateMovimientosInventarioDto) {
-    return this.movimientosInventarioService.create(createMovimientosInventarioDto);
+  create(
+    @Body() createMovimientosInventarioDto: CreateMovimientosInventarioDto,
+  ) {
+    return this.movimientosInventarioService.create(
+      createMovimientosInventarioDto,
+    );
   }
 
   @Get()
   @Auth()
-  findAll(@Query() paginationDto:PaginationDto) {
+  findAll(@Query() paginationDto: PaginationDto) {
     return this.movimientosInventarioService.findAll(paginationDto);
+  }
+
+  @Get('agroservicio/:propietarioId')
+  findAllAgroservicio(
+    @Param('propietarioId') propietarioId: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.movimientosInventarioService.findAllAgroservicio(
+      propietarioId,
+      paginationDto,
+    );
   }
 
   @Get(':id')
@@ -26,8 +52,14 @@ export class MovimientosInventarioController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateMovimientosInventarioDto: UpdateMovimientosInventarioDto) {
-    return this.movimientosInventarioService.update(+id, updateMovimientosInventarioDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateMovimientosInventarioDto: UpdateMovimientosInventarioDto,
+  ) {
+    return this.movimientosInventarioService.update(
+      +id,
+      updateMovimientosInventarioDto,
+    );
   }
 
   @Delete(':id')
