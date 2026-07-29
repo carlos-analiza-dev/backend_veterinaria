@@ -5,7 +5,6 @@ import { Marca } from 'src/marcas/entities/marca.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { UnidadVenta } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { Subcategoria } from 'src/subcategorias/entities/subcategoria.entity';
-import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
 import { TipoProducto } from 'src/tipo_producto/entities/tipo_producto.entity';
 import {
   Column,
@@ -18,6 +17,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { ImagesAgroProductos } from './images-agro-productos.entity';
+import { AgroImpuesto } from 'src/agro_impuestos/entities/agro_impuesto.entity';
 
 @Entity('agro-productos')
 export class AgroProducto {
@@ -175,11 +175,19 @@ export class AgroProducto {
   @JoinColumn()
   tipo_producto: TipoProducto;
 
-  @ManyToOne(() => TaxesPai, {
+  @Column({
+    type: 'uuid',
     nullable: true,
+    name: 'taxId',
   })
-  @JoinColumn()
-  tax?: TaxesPai;
+  taxId?: string;
+
+  @ManyToOne(() => AgroImpuesto, {
+    nullable: true,
+    createForeignKeyConstraints: false,
+  })
+  @JoinColumn({ name: 'taxId' })
+  tax?: AgroImpuesto;
 
   @ManyToOne(() => Pai)
   @JoinColumn()

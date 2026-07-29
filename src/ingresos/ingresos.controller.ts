@@ -32,8 +32,11 @@ export class IngresosController {
 
   @Get()
   @AuthCliente()
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.ingresosService.findAll(paginationDto);
+  findAll(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.ingresosService.findAll(cliente, paginationDto);
   }
 
   @Get(':id')

@@ -725,13 +725,16 @@ export class DashboardService {
   }
 
   //PLANILLA
-  async getTotalPagadoPorRango(paginationDto: PaginationDto) {
+  async getTotalPagadoPorRango(cliente: Cliente, paginationDto: PaginationDto) {
+    const propietarioId = getPropietarioId(cliente);
     const { fechaInicio, fechaFin, metodoPago } = paginationDto;
 
     const query = this.detallePlanilla
       .createQueryBuilder('detalle')
+      .innerJoin('detalle.planilla', 'planilla')
       .select('SUM(detalle.totalAPagar)', 'totalPagado')
-      .where('detalle.pagado = :pagado', { pagado: true });
+      .where('detalle.pagado = :pagado', { pagado: true })
+      .andWhere('planilla.propietarioId = :propietarioId', { propietarioId });
 
     if (fechaInicio && fechaFin) {
       query.andWhere(
@@ -757,7 +760,9 @@ export class DashboardService {
     };
   }
 
-  async getResumenPorEstado() {
+  async getResumenPorEstado(cliente: Cliente) {
+    const propietarioId = getPropietarioId(cliente);
+
     const resumen = await this.planillaRepository
       .createQueryBuilder('planilla')
       .select('planilla.estado', 'estado')
@@ -767,16 +772,20 @@ export class DashboardService {
       .addSelect('SUM(planilla.totalHorasExtras)', 'totalHorasExtras')
       .addSelect('SUM(planilla.totalBonificaciones)', 'totalBonificaciones')
       .addSelect('SUM(planilla.totalDeducciones)', 'totalDeducciones')
+      .where('planilla.propietarioId = :propietarioId', { propietarioId })
       .groupBy('planilla.estado')
       .getRawMany();
 
     return resumen;
   }
 
-  async getAnalisisHorasExtras(paginationDto: PaginationDto) {
+  async getAnalisisHorasExtras(cliente: Cliente, paginationDto: PaginationDto) {
+    const propietarioId = getPropietarioId(cliente);
     const { fechaInicio, fechaFin } = paginationDto;
+
     const query = this.detallePlanilla
       .createQueryBuilder('detalle')
+      .innerJoin('detalle.planilla', 'planilla')
       .select('SUM(detalle.horasExtraDiurnas)', 'totalHorasDiurnas')
       .addSelect('SUM(detalle.horasExtraNocturnas)', 'totalHorasNocturnas')
       .addSelect('SUM(detalle.horasExtraFestivas)', 'totalHorasFestivas')
@@ -785,7 +794,8 @@ export class DashboardService {
         'COUNT(DISTINCT detalle.trabajadorId)',
         'trabajadoresConHorasExtras',
       )
-      .where('detalle.pagado = :pagado', { pagado: true });
+      .where('detalle.pagado = :pagado', { pagado: true })
+      .andWhere('planilla.propietarioId = :propietarioId', { propietarioId });
 
     if (fechaInicio && fechaFin) {
       query.andWhere(
@@ -808,15 +818,19 @@ export class DashboardService {
     };
   }
 
-  async getReporteMetodosPago(paginationDto: PaginationDto) {
+  async getReporteMetodosPago(cliente: Cliente, paginationDto: PaginationDto) {
+    const propietarioId = getPropietarioId(cliente);
     const { fechaInicio, fechaFin } = paginationDto;
+
     const query = this.detallePlanilla
       .createQueryBuilder('detalle')
+      .innerJoin('detalle.planilla', 'planilla')
       .select('detalle.metodoPago', 'metodoPago')
       .addSelect('COUNT(detalle.id)', 'cantidadPagos')
       .addSelect('SUM(detalle.totalAPagar)', 'totalPagado')
       .addSelect('AVG(detalle.totalAPagar)', 'promedioPorPago')
       .where('detalle.pagado = :pagado', { pagado: true })
+      .andWhere('planilla.propietarioId = :propietarioId', { propietarioId })
       .groupBy('detalle.metodoPago');
 
     if (fechaInicio && fechaFin) {

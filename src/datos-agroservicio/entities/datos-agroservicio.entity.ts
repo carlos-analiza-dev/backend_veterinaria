@@ -1,5 +1,7 @@
 import { AgroProveedore } from 'src/agro-proveedores/entities/agro-proveedore.entity';
 import { AgroSucursale } from 'src/agro-sucursales/entities/agro-sucursale.entity';
+import { AgroRangoFactura } from 'src/agro_facturacion/entities/rangos-agro-factura.entity';
+import { AgroImpuesto } from 'src/agro_impuestos/entities/agro_impuesto.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { LogosAgroservicio } from 'src/logos-agroservicios/entities/logos-agroservicio.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
@@ -50,6 +52,12 @@ export class DatosAgroservicio {
 
   @OneToMany(() => AgroProveedore, (proveedor) => proveedor.agroservicio)
   proveedores: AgroProveedore[];
+
+  @OneToMany(() => AgroImpuesto, (tax) => tax.agroservicio)
+  impuestos: AgroImpuesto[];
+
+  @OneToMany(() => AgroRangoFactura, (rango) => rango.agroservicio)
+  rango_factura: AgroRangoFactura[];
 
   @Column()
   correo: string;

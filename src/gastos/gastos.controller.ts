@@ -31,8 +31,11 @@ export class GastosController {
 
   @Get()
   @AuthCliente()
-  findAll(@Query() paginationDto: PaginationDto) {
-    return this.gastosService.findAll(paginationDto);
+  findAll(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.gastosService.findAll(cliente, paginationDto);
   }
 
   @Get(':id')

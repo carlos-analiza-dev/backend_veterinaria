@@ -97,7 +97,8 @@ export class IngresosService {
     }
   }
 
-  async findAll(paginationDto: PaginationDto) {
+  async findAll(cliente: Cliente, paginationDto: PaginationDto) {
+    const propietarioId = getPropietarioId(cliente);
     const {
       limit = 10,
       offset = 0,
@@ -109,7 +110,11 @@ export class IngresosService {
       fechaFin,
     } = paginationDto;
 
-    const where: FindOptionsWhere<Ingreso> = {};
+    const where: FindOptionsWhere<Ingreso> = {
+      finca: {
+        propietario: { id: propietarioId },
+      },
+    };
 
     if (fincaId && fincaId !== '') {
       where.finca = { id: fincaId };

@@ -131,6 +131,8 @@ import { LogosAgroserviciosModule } from './logos-agroservicios/logos-agroservic
 import { AgroProveedoresModule } from './agro-proveedores/agro-proveedores.module';
 import { AgroProductosModule } from './agro-productos/agro-productos.module';
 import { AgroComprasProductosModule } from './agro-compras-productos/agro-compras-productos.module';
+import { AgroImpuestosModule } from './agro_impuestos/agro_impuestos.module';
+import { AgroFacturacionModule } from './agro_facturacion/agro_facturacion.module';
 
 @Module({
   imports: [
@@ -393,6 +395,10 @@ import { AgroComprasProductosModule } from './agro-compras-productos/agro-compra
     AgroProductosModule,
 
     AgroComprasProductosModule,
+
+    AgroImpuestosModule,
+
+    AgroFacturacionModule,
   ],
   controllers: [],
   providers: [],

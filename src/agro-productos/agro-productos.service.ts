@@ -12,7 +12,6 @@ import { Pai } from 'src/pais/entities/pai.entity';
 import { Marca } from 'src/marcas/entities/marca.entity';
 import { AgroProveedore } from 'src/agro-proveedores/entities/agro-proveedore.entity';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
-import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
 import { TipoProducto } from 'src/tipo_producto/entities/tipo_producto.entity';
 import { Subcategoria } from 'src/subcategorias/entities/subcategoria.entity';
 import { AgroProducto } from './entities/agro-producto.entity';
@@ -30,6 +29,7 @@ import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { ImagesAgroProductos } from './entities/images-agro-productos.entity';
 import { CreateEscalasAgroProductoDto } from './dto/create-escala-agro-producto.dto';
 import { EscalasProductoAgro } from './entities/escalas-agro-producto.entity';
+import { AgroImpuesto } from 'src/agro_impuestos/entities/agro_impuesto.entity';
 
 @Injectable()
 export class AgroProductosService {
@@ -44,8 +44,8 @@ export class AgroProductosService {
     private readonly proveedorRepo: Repository<AgroProveedore>,
     @InjectRepository(Categoria)
     private readonly categoriaRepo: Repository<Categoria>,
-    @InjectRepository(TaxesPai)
-    private readonly taxesPaiRepo: Repository<TaxesPai>,
+    @InjectRepository(AgroImpuesto)
+    private readonly taxesPaiRepo: Repository<AgroImpuesto>,
     @InjectRepository(TipoProducto)
     private readonly tipoProductoRepo: Repository<TipoProducto>,
     @InjectRepository(Subcategoria)
@@ -157,7 +157,7 @@ export class AgroProductosService {
       throw new NotFoundException('Tipo de producto no encontrado.');
     }
 
-    let tax: TaxesPai | null = null;
+    let tax: AgroImpuesto | null = null;
 
     if (taxId) {
       tax = await this.taxesPaiRepo.findOneBy({
@@ -292,7 +292,7 @@ export class AgroProductosService {
       throw new NotFoundException('Tipo de producto no encontrado.');
     }
 
-    let tax: TaxesPai | null = null;
+    let tax: AgroImpuesto | null = null;
 
     if (taxId) {
       tax = await this.taxesPaiRepo.findOneBy({
@@ -725,7 +725,7 @@ export class AgroProductosService {
       }
     }
 
-    let tax: TaxesPai | null = producto.tax;
+    let tax: AgroImpuesto | null = producto.tax;
     if (taxId !== undefined) {
       if (taxId === null) {
         tax = null;
@@ -933,7 +933,7 @@ export class AgroProductosService {
       }
     }
 
-    let tax: TaxesPai | null = producto.tax;
+    let tax: AgroImpuesto | null = producto.tax;
     if (taxId !== undefined) {
       if (taxId === null) {
         tax = null;

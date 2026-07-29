@@ -6,7 +6,6 @@ import { AgroProducto } from './entities/agro-producto.entity';
 import { AgroProveedore } from 'src/agro-proveedores/entities/agro-proveedore.entity';
 import { Categoria } from 'src/categorias/entities/categoria.entity';
 import { Subcategoria } from 'src/subcategorias/entities/subcategoria.entity';
-import { TaxesPai } from 'src/taxes_pais/entities/taxes_pai.entity';
 import { TipoProducto } from 'src/tipo_producto/entities/tipo_producto.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import { Marca } from 'src/marcas/entities/marca.entity';
@@ -22,6 +21,7 @@ import { EscalasAgroProductoController } from './escalas-agro-productos.controll
 import { EscalasAgroProductoService } from './escalas-agro-productos.service';
 import { DescuentosProductoController } from './descuentos-agro.productos.controller';
 import { DescuentoAgroProductoService } from './descuentos-agro-productos.service';
+import { AgroImpuesto } from 'src/agro_impuestos/entities/agro_impuesto.entity';
 
 @Module({
   controllers: [
@@ -35,7 +35,7 @@ import { DescuentoAgroProductoService } from './descuentos-agro-productos.servic
       AgroProveedore,
       Categoria,
       Subcategoria,
-      TaxesPai,
+      AgroImpuesto,
       TipoProducto,
       Pai,
       Marca,

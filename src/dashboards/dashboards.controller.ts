@@ -155,23 +155,36 @@ export class DashboardsController {
 
   //PLANILLAS
   @Get('total-pagado')
-  async getTotalPagado(@Query() paginationDto: PaginationDto) {
-    return this.dashboardService.getTotalPagadoPorRango(paginationDto);
+  @AuthCliente()
+  async getTotalPagado(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.dashboardService.getTotalPagadoPorRango(cliente, paginationDto);
   }
 
   @Get('resumen-estados')
-  async getResumenEstados() {
-    return this.dashboardService.getResumenPorEstado();
+  @AuthCliente()
+  async getResumenEstados(@GetCliente() cliente: Cliente) {
+    return this.dashboardService.getResumenPorEstado(cliente);
   }
 
   @Get('horas-extras')
-  async getHorasExtras(@Query() paginationDto: PaginationDto) {
-    return this.dashboardService.getAnalisisHorasExtras(paginationDto);
+  @AuthCliente()
+  async getHorasExtras(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.dashboardService.getAnalisisHorasExtras(cliente, paginationDto);
   }
 
   @Get('metodos-pago')
-  async getMetodosPago(@Query() paginationDto: PaginationDto) {
-    return this.dashboardService.getReporteMetodosPago(paginationDto);
+  @AuthCliente()
+  async getMetodosPago(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.dashboardService.getReporteMetodosPago(cliente, paginationDto);
   }
 
   //CULTIVOS

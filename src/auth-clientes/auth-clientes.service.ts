@@ -345,10 +345,7 @@ export class AuthClientesService {
       const token = this.getJwtToken({ id: cliente.id });
       delete cliente.password;
 
-      const propietarioId =
-        cliente.rol !== TipoCliente.PROPIETARIO
-          ? cliente.propietario?.id
-          : cliente.id;
+      const propietarioId = getPropietarioId(cliente);
 
       const ahora = new Date();
 
