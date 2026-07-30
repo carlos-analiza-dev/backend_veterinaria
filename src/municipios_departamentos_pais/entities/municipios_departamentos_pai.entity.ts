@@ -1,3 +1,4 @@
+import { AgroCliente } from 'src/agro_clientes/entities/agro_cliente.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { User } from 'src/auth/entities/auth.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
@@ -37,6 +38,9 @@ export class MunicipiosDepartamentosPai {
 
   @OneToMany(() => Cliente, (cliente) => cliente.municipio)
   clientes: Cliente[];
+
+  @OneToMany(() => AgroCliente, (cliente) => cliente.municipio)
+  agro_clientes: AgroCliente[];
 
   @OneToMany(() => EmpleadosAgro, (empleado) => empleado.municipio)
   empleados: EmpleadosAgro[];

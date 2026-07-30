@@ -24,6 +24,10 @@ export class PaginationDto {
 
   @IsOptional()
   @IsString()
+  search?: string;
+
+  @IsOptional()
+  @IsString()
   sexo?: string;
 
   @IsOptional()
@@ -65,6 +69,14 @@ export class PaginationDto {
   @IsOptional()
   @IsString()
   tipo_servicio?: string;
+
+  @IsOptional()
+  @IsString()
+  municipio?: string;
+
+  @IsOptional()
+  @IsString()
+  departamento?: string;
 
   @IsOptional()
   @IsString()

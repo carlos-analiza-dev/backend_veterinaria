@@ -133,6 +133,7 @@ import { AgroProductosModule } from './agro-productos/agro-productos.module';
 import { AgroComprasProductosModule } from './agro-compras-productos/agro-compras-productos.module';
 import { AgroImpuestosModule } from './agro_impuestos/agro_impuestos.module';
 import { AgroFacturacionModule } from './agro_facturacion/agro_facturacion.module';
+import { AgroClientesModule } from './agro_clientes/agro_clientes.module';
 
 @Module({
   imports: [
@@ -399,6 +400,8 @@ import { AgroFacturacionModule } from './agro_facturacion/agro_facturacion.modul
     AgroImpuestosModule,
 
     AgroFacturacionModule,
+
+    AgroClientesModule,
   ],
   controllers: [],
   providers: [],

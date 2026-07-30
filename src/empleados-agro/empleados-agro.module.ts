@@ -18,6 +18,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtEmpleadoStrategy } from './strategies/jwt.strategy';
 import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
+import { AuditoriaEmpleados } from './entities/auditoria_empleados.entity';
 
 @Module({
   controllers: [EmpleadosAgroController],
@@ -34,6 +35,7 @@ import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.en
       User,
       DatosAgroservicio,
       ClientePaquete,
+      AuditoriaEmpleados,
     ]),
     AuthClientesModule,
     PassportModule.register({ defaultStrategy: 'jwt-empleado' }),
