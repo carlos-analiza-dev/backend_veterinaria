@@ -11,6 +11,12 @@ import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { EmpleadosAgroModule } from 'src/empleados-agro/empleados-agro.module';
 import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
+import { AgroFacturaDetalle } from './entities/agro_factura_detalle.entity';
+import { AgroProducto } from 'src/agro-productos/entities/agro-producto.entity';
+import { AgroCliente } from 'src/agro_clientes/entities/agro_cliente.entity';
+import { LoteAgroProducto } from 'src/agro-compras-productos/entities/lote-agro-compra.entity';
+import { AgroMovimientosLote } from 'src/movimientos_lotes/entities/agro_movimientos_lotes.entity';
+import { AuditoriaFacturacion } from './entities/audit_facturacion.entity';
 
 @Module({
   controllers: [AgroFacturacionController, AgroRangoFacturaController],
@@ -20,6 +26,12 @@ import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroser
       AgroRangoFactura,
       AuditoriaAgroFacturacion,
       DatosAgroservicio,
+      AgroFacturaDetalle,
+      AgroProducto,
+      AgroCliente,
+      LoteAgroProducto,
+      AgroMovimientosLote,
+      AuditoriaFacturacion,
     ]),
     AuthClientesModule,
     EmpleadosAgroModule,

@@ -28,4 +28,31 @@ export class FacturaPdfController {
   ) {
     return this.facturaPdfService.generarFacturaPreview(id, res, user);
   }
+
+  @Get('agroservicio/:id/pdf/:propietarioId')
+  async generarAgroFacturaPDF(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Param('propietarioId') propietarioId: string,
+  ) {
+    return this.facturaPdfService.generarAgroFacturaPDF(
+      id,
+      res,
+      false,
+      propietarioId,
+    );
+  }
+
+  @Get('agroservicio/:id/preview/:propietarioId')
+  async generarAgroFacturaPreview(
+    @Param('id') id: string,
+    @Res() res: Response,
+    @Param('propietarioId') propietarioId: string,
+  ) {
+    return this.facturaPdfService.generarAgroFacturaPreview(
+      id,
+      res,
+      propietarioId,
+    );
+  }
 }

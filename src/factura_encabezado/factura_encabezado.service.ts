@@ -31,6 +31,15 @@ import {
 } from 'src/movimientos_lotes/entities/movimientos_lote.entity';
 import { Sucursal } from 'src/sucursales/entities/sucursal.entity';
 import { ValidRoles } from 'src/interfaces/valid-roles.interface';
+import {
+  convertirEnterosALetras,
+  convertirNumeroALetras,
+} from 'src/helpers/convertir_numeros_letras';
+import {
+  validarCancelacionMismoDia,
+  validarTiempoCancelacion,
+  validarVigenciaAutorizacion,
+} from 'src/helpers/funciones_facturacion';
 
 @Injectable()
 export class FacturaEncabezadoService {
@@ -171,7 +180,7 @@ export class FacturaEncabezadoService {
 
           descuentos_rebajas: montoDescuento,
           total: totalFinal,
-          total_letras: this.convertirNumeroALetras(totalConDescuento),
+          total_letras: convertirEnterosALetras(totalFinal),
         };
 
         if (descuento) {
@@ -249,9 +258,8 @@ export class FacturaEncabezadoService {
         }
 
         factura.estado = EstadoFactura.PROCESADA;
-        const facturaActualizada = await transactionalEntityManager.save(
-          factura,
-        );
+        const facturaActualizada =
+          await transactionalEntityManager.save(factura);
 
         return facturaActualizada;
       },
@@ -492,7 +500,7 @@ export class FacturaEncabezadoService {
           );
         }
 
-        this.validarCancelacionMismoDia(factura.created_at);
+        validarCancelacionMismoDia(factura.created_at);
         this.validarAutorizacionCancelacion(factura, user);
 
         const movimientosOriginales = await transactionalEntityManager.find(
@@ -556,7 +564,7 @@ export class FacturaEncabezadoService {
     }
 
     if (factura.fecha_autorizacion_cancelacion) {
-      this.validarVigenciaAutorizacion(factura.fecha_autorizacion_cancelacion);
+      validarVigenciaAutorizacion(factura.fecha_autorizacion_cancelacion);
     }
 
     if (factura.usuario_id !== user.id) {
@@ -571,91 +579,7 @@ export class FacturaEncabezadoService {
       );
     }
 
-    this.validarTiempoCancelacion(factura.created_at);
-  }
-
-  private validarVigenciaAutorizacion(fechaAutorizacion: Date): void {
-    const ahora = new Date();
-    const vigenciaHoras = 24;
-    const tiempoTranscurrido = ahora.getTime() - fechaAutorizacion.getTime();
-    const tiempoLimiteMs = vigenciaHoras * 60 * 60 * 1000;
-
-    if (tiempoTranscurrido > tiempoLimiteMs) {
-      throw new BadRequestException(
-        'La autorización de cancelación ha expirado. Solicite una nueva autorización.',
-      );
-    }
-  }
-
-  private validarCancelacionMismoDia(fechaCreacion: Date): void {
-    const hoy = new Date();
-    const fechaFactura = new Date(fechaCreacion);
-
-    const hoyNormalizado = new Date(
-      hoy.getFullYear(),
-      hoy.getMonth(),
-      hoy.getDate(),
-    );
-    const fechaFacturaNormalizada = new Date(
-      fechaFactura.getFullYear(),
-      fechaFactura.getMonth(),
-      fechaFactura.getDate(),
-    );
-
-    if (hoyNormalizado.getTime() !== fechaFacturaNormalizada.getTime()) {
-      throw new BadRequestException(
-        'Solo se pueden cancelar facturas el mismo día en que fueron generadas',
-      );
-    }
-  }
-
-  private validarTiempoCancelacion(fechaCreacion: Date): void {
-    const ahora = new Date();
-    const fechaFactura = new Date(fechaCreacion);
-
-    const tiempoLimiteMs = 3 * 60 * 60 * 1000;
-    const tiempoTranscurrido = ahora.getTime() - fechaFactura.getTime();
-
-    if (tiempoTranscurrido > tiempoLimiteMs) {
-      throw new BadRequestException(
-        'Ha excedido el tiempo límite para cancelar esta factura. Contacte a un administrador.',
-      );
-    }
-  }
-
-  private agruparMovimientosPorProducto(
-    movimientos: MovimientosLote[],
-  ): Map<string, number> {
-    const agrupados = new Map<string, number>();
-
-    for (const movimiento of movimientos) {
-      const cantidadActual = agrupados.get(movimiento.producto_id) || 0;
-      agrupados.set(
-        movimiento.producto_id,
-        cantidadActual + Math.abs(movimiento.cantidad),
-      );
-    }
-
-    return agrupados;
-  }
-
-  private async validarMovimientosConFactura(
-    movimientosPorProducto: Map<string, number>,
-    detallesFactura: FacturaDetalle[],
-  ): Promise<void> {
-    for (const detalle of detallesFactura) {
-      if (detalle.producto_servicio?.tipo === 'producto') {
-        const cantidadMovimientos =
-          movimientosPorProducto.get(detalle.id_producto_servicio) || 0;
-
-        if (Math.abs(cantidadMovimientos) !== detalle.cantidad) {
-          throw new BadRequestException(
-            `Inconsistencia en los movimientos del producto ${detalle.producto_servicio.nombre}. ` +
-              `Factura: ${detalle.cantidad}, Movimientos: ${cantidadMovimientos}`,
-          );
-        }
-      }
-    }
+    validarTiempoCancelacion(factura.created_at);
   }
 
   private async devolverProductoALoteOriginal(
@@ -693,6 +617,7 @@ export class FacturaEncabezadoService {
       'Devolución por cancelación de factura',
     );
   }
+
   async obtenerHistorialMovimientosFactura(
     id: string,
   ): Promise<MovimientosLote[]> {
@@ -888,155 +813,6 @@ export class FacturaEncabezadoService {
     return { detalles: detallesProcesados, totales };
   }
 
-  private convertirNumeroALetras(numero: number): string {
-    const enteros = Math.floor(numero);
-    const decimales = Math.round((numero - enteros) * 100);
-
-    if (enteros === 0) {
-      return `cero con ${decimales.toString().padStart(2, '0')}/100`;
-    }
-
-    let resultado = this.convertirEnterosALetras(enteros);
-
-    if (decimales > 0) {
-      resultado += ` con ${decimales.toString().padStart(2, '0')}/100`;
-    } else {
-      resultado += ' con 00/100';
-    }
-
-    return resultado;
-  }
-
-  private convertirEnterosALetras(numero: number): string {
-    if (numero === 0) return 'cero';
-    if (numero < 0)
-      return 'menos ' + this.convertirEnterosALetras(Math.abs(numero));
-
-    const unidades = [
-      '',
-      'uno',
-      'dos',
-      'tres',
-      'cuatro',
-      'cinco',
-      'seis',
-      'siete',
-      'ocho',
-      'nueve',
-    ];
-    const decenas = [
-      '',
-      'diez',
-      'veinte',
-      'treinta',
-      'cuarenta',
-      'cincuenta',
-      'sesenta',
-      'setenta',
-      'ochenta',
-      'noventa',
-    ];
-    const especiales = [
-      'diez',
-      'once',
-      'doce',
-      'trece',
-      'catorce',
-      'quince',
-      'dieciséis',
-      'diecisiete',
-      'dieciocho',
-      'diecinueve',
-    ];
-    const centenas = [
-      '',
-      'ciento',
-      'doscientos',
-      'trescientos',
-      'cuatrocientos',
-      'quinientos',
-      'seiscientos',
-      'setecientos',
-      'ochocientos',
-      'novecientos',
-    ];
-
-    if (numero === 100) return 'cien';
-    if (numero === 1000) return 'mil';
-
-    let resultado = '';
-
-    if (numero < 10) {
-      return unidades[numero];
-    }
-
-    if (numero < 20) {
-      return especiales[numero - 10];
-    }
-
-    if (numero < 100) {
-      const decena = Math.floor(numero / 10);
-      const unidad = numero % 10;
-
-      if (unidad === 0) {
-        return decenas[decena];
-      }
-
-      if (decena === 2) {
-        switch (unidad) {
-          case 1:
-            return 'veintiuno';
-          case 2:
-            return 'veintidós';
-          case 3:
-            return 'veintitrés';
-          case 6:
-            return 'veintiséis';
-          default:
-            return `veinti${unidades[unidad]}`;
-        }
-      }
-
-      return `${decenas[decena]} y ${unidades[unidad]}`;
-    }
-
-    if (numero < 1000) {
-      const centena = Math.floor(numero / 100);
-      const resto = numero % 100;
-
-      if (centena === 1 && resto === 0) return 'cien';
-      if (resto === 0) return centenas[centena];
-
-      return `${centenas[centena]} ${this.convertirEnterosALetras(resto)}`;
-    }
-
-    if (numero < 1000000) {
-      const miles = Math.floor(numero / 1000);
-      const resto = numero % 1000;
-
-      const milesTexto =
-        miles === 1 ? 'mil' : `${this.convertirEnterosALetras(miles)} mil`;
-
-      if (resto === 0) return milesTexto;
-      return `${milesTexto} ${this.convertirEnterosALetras(resto)}`;
-    }
-
-    if (numero < 1000000000) {
-      const millones = Math.floor(numero / 1000000);
-      const resto = numero % 1000000;
-
-      const millonesTexto =
-        millones === 1
-          ? 'un millón'
-          : `${this.convertirEnterosALetras(millones)} millones`;
-
-      if (resto === 0) return millonesTexto;
-      return `${millonesTexto} ${this.convertirEnterosALetras(resto)}`;
-    }
-
-    return 'Número demasiado grande';
-  }
-
   async update(
     id: string,
     updateFacturaEncabezadoDto: UpdateFacturaEncabezadoDto,
@@ -1162,11 +938,10 @@ export class FacturaEncabezadoService {
           totalConDescuento + importeExento + importeExonerado + cargosExtra;
 
         factura.total = totalFinal;
-        factura.total_letras = this.convertirNumeroALetras(totalFinal);
+        factura.total_letras = convertirNumeroALetras(totalFinal);
 
-        const facturaActualizada = await transactionalEntityManager.save(
-          factura,
-        );
+        const facturaActualizada =
+          await transactionalEntityManager.save(factura);
 
         return await transactionalEntityManager.findOne(FacturaEncabezado, {
           where: { id: facturaActualizada.id },

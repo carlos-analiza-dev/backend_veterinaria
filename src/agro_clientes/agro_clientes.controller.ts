@@ -52,6 +52,11 @@ export class AgroClientesController {
     return this.agroClientesService.findAll(propietarioId, paginationDto);
   }
 
+  @Get('agroservicio/activos/:propietarioId')
+  findAllActivos(@Param('propietarioId') propietarioId: string) {
+    return this.agroClientesService.findAllActivos(propietarioId);
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.agroClientesService.findOne(+id);

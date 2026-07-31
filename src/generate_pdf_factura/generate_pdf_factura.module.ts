@@ -6,13 +6,22 @@ import { FacturaEncabezado } from 'src/factura_encabezado/entities/factura_encab
 import { DatosEmpresa } from 'src/datos-empresa/entities/datos-empresa.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { User } from 'src/auth/entities/auth.entity';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
+import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
+import { AgroFacturacion } from 'src/agro_facturacion/entities/agro_facturacion.entity';
 
 @Module({
   controllers: [FacturaPdfController],
   imports: [
-    TypeOrmModule.forFeature([FacturaEncabezado, DatosEmpresa, User]),
+    TypeOrmModule.forFeature([
+      FacturaEncabezado,
+      DatosEmpresa,
+      User,
+      DatosAgroservicio,
+      AgroFacturacion,
+    ]),
     AuthModule,
   ],
-  providers: [FacturaPdfService],
+  providers: [FacturaPdfService, AgroservicioValidationService],
 })
 export class GeneratePdfFacturaModule {}

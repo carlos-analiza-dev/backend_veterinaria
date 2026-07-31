@@ -36,9 +36,9 @@ export class DatosAgroservicio {
   @Column()
   propietarioId: string;
 
-  @OneToOne(() => Pai, { eager: false, onDelete: 'CASCADE' })
+  @OneToOne(() => Pai, { eager: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'paisId' })
-  pais: Cliente;
+  pais: Pai;
 
   @Column()
   paisId: string;

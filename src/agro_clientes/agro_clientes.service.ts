@@ -316,6 +316,27 @@ export class AgroClientesService {
     };
   }
 
+  async findAllActivos(propietarioId: string) {
+    const agroservicio =
+      await this.validationAgroservicio.obtenerAgroservicio(propietarioId);
+
+    const clientes = await this.clienteRepository
+      .createQueryBuilder('cliente')
+      .leftJoinAndSelect('cliente.pais', 'pais')
+      .leftJoinAndSelect('cliente.departamento', 'departamento')
+      .leftJoinAndSelect('cliente.municipio', 'municipio')
+      .where('cliente.agroservicioId = :agroservicioId', {
+        agroservicioId: agroservicio.id,
+      })
+      .andWhere('cliente.isActive = :isActive', {
+        isActive: true,
+      })
+      .orderBy('cliente.nombre', 'ASC')
+      .getMany();
+
+    return clientes;
+  }
+
   findOne(id: number) {
     return `This action returns a #${id} agroCliente`;
   }

@@ -5,9 +5,13 @@ import { MovimientosLoteController } from './movimientos_lote.controller';
 import { MovimientosLoteService } from './movimientos_lote.service';
 import { AuthModule } from 'src/auth/auth.module';
 import { User } from 'src/auth/entities/auth.entity';
+import { AgroMovimientosLote } from './entities/agro_movimientos_lotes.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MovimientosLote, User]), AuthModule],
+  imports: [
+    TypeOrmModule.forFeature([MovimientosLote, User, AgroMovimientosLote]),
+    AuthModule,
+  ],
   controllers: [MovimientosLoteController],
   providers: [MovimientosLoteService],
 })

@@ -539,6 +539,118 @@ export class AgroProductosService {
     };
   }
 
+  async findAllProductosDisponibles(
+    propietarioId: string,
+    paginationDto: PaginationDto,
+  ) {
+    const agroservicio =
+      await this.validationAgroService.obtenerAgroservicio(propietarioId);
+
+    const { categoria, subcategoria, tipo_producto, indicaciones, tipo_uso } =
+      paginationDto;
+
+    const queryBuilder = this.productoRepo
+      .createQueryBuilder('producto')
+      .leftJoinAndSelect('producto.marca', 'marca')
+      .leftJoinAndSelect('producto.proveedor', 'proveedor')
+      .leftJoinAndSelect('producto.categoria', 'categoria')
+      .leftJoinAndSelect('producto.subcategoria', 'subcategoria')
+      .leftJoinAndSelect('producto.tipo_producto', 'tipo_producto')
+      .leftJoinAndSelect('producto.tax', 'tax')
+      .leftJoinAndSelect('producto.images', 'images')
+      .where('producto.agroservicioId = :agroservicioId', {
+        agroservicioId: agroservicio.id,
+      })
+      .andWhere('producto.disponible = :disponible', {
+        disponible: true,
+      })
+      .andWhere('producto.isActive = :isActive', {
+        isActive: true,
+      });
+
+    if (categoria) {
+      queryBuilder.andWhere('categoria.id = :categoriaId', {
+        categoriaId: categoria,
+      });
+    }
+
+    if (subcategoria) {
+      queryBuilder.andWhere('subcategoria.id = :subcategoriaId', {
+        subcategoriaId: subcategoria,
+      });
+    }
+
+    if (tipo_producto) {
+      queryBuilder.andWhere('tipo_producto.id = :tipoProductoId', {
+        tipoProductoId: tipo_producto,
+      });
+    }
+
+    if (indicaciones) {
+      const indicacionesArray = Array.isArray(indicaciones)
+        ? indicaciones
+        : indicaciones.split(',');
+
+      const indicacionesLimpias = indicacionesArray
+        .map((i) => i.trim())
+        .filter(Boolean);
+
+      if (indicacionesLimpias.length > 0) {
+        const condiciones = indicacionesLimpias
+          .map(
+            (_, index) =>
+              `LOWER(producto.indicaciones::text) LIKE LOWER(:indicacion_${index})`,
+          )
+          .join(' OR ');
+
+        const parametros: Record<string, string> = {};
+
+        indicacionesLimpias.forEach((i, index) => {
+          parametros[`indicacion_${index}`] = `%${i}%`;
+        });
+
+        queryBuilder.andWhere(`(${condiciones})`, parametros);
+      }
+    }
+
+    if (tipo_uso) {
+      const tiposUsoArray = Array.isArray(tipo_uso)
+        ? tipo_uso
+        : tipo_uso.split(',');
+
+      const tiposUsoLimpios = tiposUsoArray
+        .map((t) => t.trim())
+        .filter(Boolean);
+
+      if (tiposUsoLimpios.length > 0) {
+        const condiciones = tiposUsoLimpios
+          .map(
+            (_, index) =>
+              `LOWER(producto.tipos_uso::text) LIKE LOWER(:tipo_uso_${index})`,
+          )
+          .join(' OR ');
+
+        const parametros: Record<string, string> = {};
+
+        tiposUsoLimpios.forEach((t, index) => {
+          parametros[`tipo_uso_${index}`] = `%${t}%`;
+        });
+
+        queryBuilder.andWhere(`(${condiciones})`, parametros);
+      }
+    }
+
+    const productos = await queryBuilder
+      .orderBy('producto.createdAt', 'DESC')
+      .getMany();
+
+    if (!productos.length) {
+      throw new NotFoundException('No se encontraron productos disponibles');
+    }
+
+    return productos;
+  }
+
   async findTodos(propietarioId: string): Promise<AgroProducto[]> {
     const agroservicio =
       await this.validationAgroService.obtenerAgroservicio(propietarioId);

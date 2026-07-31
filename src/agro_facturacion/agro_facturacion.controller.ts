@@ -1,20 +1,48 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+} from '@nestjs/common';
 import { AgroFacturacionService } from './agro_facturacion.service';
 import { CreateAgroFacturacionDto } from './dto/create-agro_facturacion.dto';
 import { UpdateAgroFacturacionDto } from './dto/update-agro_facturacion.dto';
+import { AuthEmpleado } from 'src/empleados-agro/decorators/auth-empleado.decorator';
+import { GetEmpleado } from 'src/empleados-agro/decorators/get-empleado.decorator';
+import { EmpleadosAgro } from 'src/empleados-agro/entities/empleados-agro.entity';
+import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
+import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Controller('agro-facturacion')
 export class AgroFacturacionController {
-  constructor(private readonly agroFacturacionService: AgroFacturacionService) {}
+  constructor(
+    private readonly agroFacturacionService: AgroFacturacionService,
+  ) {}
 
   @Post()
-  create(@Body() createAgroFacturacionDto: CreateAgroFacturacionDto) {
-    return this.agroFacturacionService.create(createAgroFacturacionDto);
+  @AuthEmpleado()
+  create(
+    @GetEmpleado() empleado: EmpleadosAgro,
+    @Body() createAgroFacturacionDto: CreateAgroFacturacionDto,
+  ) {
+    return this.agroFacturacionService.create(
+      empleado,
+      createAgroFacturacionDto,
+    );
   }
 
-  @Get()
-  findAll() {
-    return this.agroFacturacionService.findAll();
+  @Get('agroservicio/:propietarioid')
+  findAll(
+    @Param('propietarioid') propietarioid: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.agroFacturacionService.findAll(propietarioid, paginationDto);
   }
 
   @Get(':id')
@@ -23,12 +51,39 @@ export class AgroFacturacionController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAgroFacturacionDto: UpdateAgroFacturacionDto) {
-    return this.agroFacturacionService.update(+id, updateAgroFacturacionDto);
+  update(
+    @Param('id') id: string,
+    @Body() updateAgroFacturacionDto: UpdateAgroFacturacionDto,
+  ) {
+    return this.agroFacturacionService.update(id, updateAgroFacturacionDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.agroFacturacionService.remove(+id);
+  }
+
+  @Patch(':id/procesar')
+  procesarFactura(@Param('id') id: string) {
+    return this.agroFacturacionService.procesarFactura(id);
+  }
+
+  @Get(':id/verificar-existencia')
+  verificarExistencia(@Param('id') id: string) {
+    return this.agroFacturacionService.verificarExistenciaParaFactura(id);
+  }
+
+  @Patch(':id/autorizar-cancelacion')
+  @AuthCliente()
+  async autorizarCancelacion(
+    @Param('id') id: string,
+    @GetCliente() cliente: Cliente,
+  ) {
+    return this.agroFacturacionService.autorizarCancelacion(id, cliente);
+  }
+
+  @Patch(':id/cancelar')
+  cancelarFactura(@Param('id') id: string) {
+    return this.agroFacturacionService.cancelarFactura(id);
   }
 }
