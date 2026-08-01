@@ -142,19 +142,31 @@ export class AgroFacturacionService {
 
         const cargosExtra = createAgroFacturacionDto.cargos_extra || 0;
 
-        const totalProductosServicios =
-          totales.subTotal + totales.isv15 + totales.isv18;
-
-        let totalConDescuento = totalProductosServicios;
+        let subTotalConDescuento = totales.subTotal;
         let montoDescuento = 0;
 
         if (descuento) {
           montoDescuento =
-            totalProductosServicios * (descuento.porcentaje / 100);
-          totalConDescuento = totalProductosServicios - montoDescuento;
+            totales.subTotal * (Number(descuento.porcentaje) / 100);
+
+          subTotalConDescuento = totales.subTotal - montoDescuento;
         }
 
-        const totalFinal = totalConDescuento + cargosExtra;
+        const factorDescuento =
+          totales.subTotal > 0 ? subTotalConDescuento / totales.subTotal : 1;
+
+        const importeGravado15 = totales.importeGravado15 * factorDescuento;
+        const importeGravado18 = totales.importeGravado18 * factorDescuento;
+        const importeExento =
+          Number(totales.importeExento || 0) * factorDescuento;
+
+        const importeExonerado =
+          Number(totales.importeExonerado || 0) * factorDescuento;
+
+        const isv15 = importeGravado15 * 0.15;
+        const isv18 = importeGravado18 * 0.18;
+
+        const totalFinal = subTotalConDescuento + isv15 + isv18 + cargosExtra;
 
         const facturaData: any = {
           ...createAgroFacturacionDto,
@@ -167,13 +179,19 @@ export class AgroFacturacionService {
           rango_autorizado: rangoAutorizado,
           cai: rangoActivo.cai,
           rango_factura: rangoActivo,
-          sub_total: totales.subTotal,
-          importe_gravado_15: totales.importeGravado15,
-          importe_gravado_18: totales.importeGravado18,
-          isv_15: totales.isv15,
-          isv_18: totales.isv18,
+
+          sub_total: subTotalConDescuento,
+
+          importe_exento: importeExento ?? 0,
+          importe_exonerado: importeExonerado ?? 0,
+          importe_gravado_15: importeGravado15 ?? 0,
+          importe_gravado_18: importeGravado18 ?? 0,
+
+          isv_15: isv15 ?? 0,
+          isv_18: isv18 ?? 0,
 
           descuentos_rebajas: montoDescuento,
+          cargos_extra: cargosExtra,
           total: totalFinal,
           total_letras: convertirNumeroALetras(totalFinal),
         };
@@ -217,7 +235,7 @@ export class AgroFacturacionService {
           AuditoriaFacturacion,
           transactionalEntityManager.create(AuditoriaFacturacion, {
             factura: facturaGuardada,
-            productoId: facturaGuardada.id,
+            facturaId: facturaGuardada.id,
             accion: AccionFacturacion.CREAR,
             empleado,
             empleadoId: empleado.id,
@@ -309,6 +327,7 @@ export class AgroFacturacionService {
         .leftJoinAndSelect('factura.rango_factura', 'rango')
         .leftJoinAndSelect('factura.agroservicio', 'agroservicio')
         .leftJoinAndSelect('factura.detalles', 'detalles')
+        .leftJoinAndSelect('detalles.producto', 'producto')
         .leftJoinAndSelect('factura.descuento', 'descuento')
         .leftJoinAndSelect('factura.sucursal', 'sucursal')
         .where('agroservicio.id = :agroservicioId', { agroservicioId })
@@ -360,6 +379,7 @@ export class AgroFacturacionService {
 
   async update(
     id: string,
+    empleado: EmpleadosAgro,
     updateFacturaEncabezadoDto: UpdateAgroFacturacionDto,
   ) {
     return await this.dataSource.transaction(
@@ -376,13 +396,6 @@ export class AgroFacturacionService {
           throw new NotFoundException('Factura no encontrada');
         }
 
-        await transactionalEntityManager
-          .createQueryBuilder()
-          .delete()
-          .from(AgroFacturaDetalle)
-          .where('id_factura = :idFactura', { idFactura: factura.id })
-          .execute();
-
         if (updateFacturaEncabezadoDto.id_cliente) {
           const cliente = await transactionalEntityManager.findOne(
             AgroCliente,
@@ -393,6 +406,7 @@ export class AgroFacturacionService {
           if (!cliente) {
             throw new NotFoundException('Cliente no encontrado');
           }
+          factura.cliente = cliente;
           factura.id_cliente = updateFacturaEncabezadoDto.id_cliente;
         }
 
@@ -409,8 +423,11 @@ export class AgroFacturacionService {
               throw new NotFoundException('Descuento no encontrado');
             }
             factura.descuento = descuento;
+            factura.descuentos_rebajas =
+              updateFacturaEncabezadoDto.descuentos_rebajas || 0;
           } else {
             factura.descuento = null;
+            factura.descuentos_rebajas = 0;
           }
         }
 
@@ -426,12 +443,23 @@ export class AgroFacturacionService {
           factura.cargos_extra = updateFacturaEncabezadoDto.cargos_extra;
         }
 
-        const descuentoAnterior = factura.descuentos_rebajas || 0;
-        const nuevoDescuento =
-          updateFacturaEncabezadoDto.descuentos_rebajas || 0;
-        factura.descuentos_rebajas = nuevoDescuento;
+        if (updateFacturaEncabezadoDto.importe_exento !== undefined) {
+          factura.importe_exento = updateFacturaEncabezadoDto.importe_exento;
+        }
 
-        let subtotal = factura.sub_total;
+        if (updateFacturaEncabezadoDto.importe_exonerado !== undefined) {
+          factura.importe_exonerado =
+            updateFacturaEncabezadoDto.importe_exonerado;
+        }
+
+        await transactionalEntityManager
+          .createQueryBuilder()
+          .delete()
+          .from(AgroFacturaDetalle)
+          .where('id_factura = :idFactura', { idFactura: factura.id })
+          .execute();
+
+        let subtotal = factura.sub_total || 0;
         let importeExento = factura.importe_exento || 0;
         let importeExonerado = factura.importe_exonerado || 0;
 
@@ -479,22 +507,61 @@ export class AgroFacturacionService {
           );
         }
 
-        const totalBruto = subtotal + factura.isv_15 + factura.isv_18;
-        const totalConDescuento = totalBruto - nuevoDescuento;
+        const cargosExtra = factura.cargos_extra || 0;
 
-        const cargosExtra =
-          updateFacturaEncabezadoDto.cargos_extra !== undefined
-            ? updateFacturaEncabezadoDto.cargos_extra
-            : factura.cargos_extra;
+        let subTotalConDescuento = subtotal;
+        let montoDescuento = 0;
+
+        if (factura.descuento) {
+          montoDescuento =
+            subtotal * (Number(factura.descuento.porcentaje) / 100);
+
+          subTotalConDescuento = subtotal - montoDescuento;
+        }
+
+        const factorDescuento =
+          subtotal > 0 ? subTotalConDescuento / subtotal : 1;
+
+        const importeGravado15 =
+          Number(factura.importe_gravado_15 || 0) * factorDescuento;
+
+        const importeGravado18 =
+          Number(factura.importe_gravado_18 || 0) * factorDescuento;
+
+        const isv15 = importeGravado15 * 0.15;
+        const isv18 = importeGravado18 * 0.18;
+
+        factura.sub_total = subTotalConDescuento;
+        factura.importe_gravado_15 = importeGravado15;
+        factura.importe_gravado_18 = importeGravado18;
+        factura.isv_15 = isv15;
+        factura.isv_18 = isv18;
+        factura.descuentos_rebajas = montoDescuento;
 
         const totalFinal =
-          totalConDescuento + importeExento + importeExonerado + cargosExtra;
+          subTotalConDescuento +
+          isv15 +
+          isv18 +
+          importeExento +
+          importeExonerado +
+          cargosExtra;
 
         factura.total = totalFinal;
         factura.total_letras = convertirNumeroALetras(totalFinal);
 
         const facturaActualizada =
           await transactionalEntityManager.save(factura);
+
+        await transactionalEntityManager.save(
+          AuditoriaFacturacion,
+          transactionalEntityManager.create(AuditoriaFacturacion, {
+            factura: facturaActualizada,
+            facturaId: facturaActualizada.id,
+            accion: AccionFacturacion.ACTUALIZAR,
+            empleado,
+            empleadoId: empleado.id,
+          }),
+        );
 
         return await transactionalEntityManager.findOne(AgroFacturacion, {
           where: { id: facturaActualizada.id },
@@ -557,6 +624,7 @@ export class AgroFacturacionService {
 
   async verificarExistenciaParaFactura(
     id: string,
+    sucursalId: string,
   ): Promise<{ suficiente: boolean; detalles: any[] }> {
     const factura = await this.facturaEncabezadoRepository.findOne({
       where: { id },
@@ -573,6 +641,7 @@ export class AgroFacturacionService {
       if (detalle.producto) {
         const existencia = await this.obtenerExistenciaProducto(
           detalle.id_producto,
+          sucursalId,
         );
         const suficiente = existencia >= detalle.cantidad;
 
@@ -801,11 +870,15 @@ export class AgroFacturacionService {
     await transactionalEntityManager.save(AgroMovimientosLote, movimiento);
   }
 
-  private async obtenerExistenciaProducto(productoId: string): Promise<number> {
+  private async obtenerExistenciaProducto(
+    productoId: string,
+    sucursalId: string,
+  ): Promise<number> {
     const lotes = await this.lote_producto_Repository.find({
       where: {
         id_producto: productoId,
         cantidad: MoreThan(0),
+        sucursal: { id: sucursalId },
       },
     });
 

@@ -51,11 +51,17 @@ export class AgroFacturacionController {
   }
 
   @Patch(':id')
+  @AuthEmpleado()
   update(
     @Param('id') id: string,
+    @GetEmpleado() empleado: EmpleadosAgro,
     @Body() updateAgroFacturacionDto: UpdateAgroFacturacionDto,
   ) {
-    return this.agroFacturacionService.update(id, updateAgroFacturacionDto);
+    return this.agroFacturacionService.update(
+      id,
+      empleado,
+      updateAgroFacturacionDto,
+    );
   }
 
   @Delete(':id')
@@ -68,9 +74,15 @@ export class AgroFacturacionController {
     return this.agroFacturacionService.procesarFactura(id);
   }
 
-  @Get(':id/verificar-existencia')
-  verificarExistencia(@Param('id') id: string) {
-    return this.agroFacturacionService.verificarExistenciaParaFactura(id);
+  @Get(':id/:sucursalId/verificar-existencia')
+  verificarExistencia(
+    @Param('id') id: string,
+    @Param('sucursalId') sucursalId: string,
+  ) {
+    return this.agroFacturacionService.verificarExistenciaParaFactura(
+      id,
+      sucursalId,
+    );
   }
 
   @Patch(':id/autorizar-cancelacion')
