@@ -4,7 +4,6 @@ import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_
 import { EmpleadosAgro } from 'src/empleados-agro/entities/empleados-agro.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
-import { TipoSucursal } from 'src/sucursales/entities/sucursal.entity';
 import {
   Column,
   Entity,
@@ -13,6 +12,12 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+
+export enum TipoSucursal {
+  BODEGA = 'bodega',
+  CASA_MATRIZ = 'casa_matriz',
+  SUCURSAL = 'sucursal',
+}
 
 @Entity('agro-sucursales')
 export class AgroSucursale {

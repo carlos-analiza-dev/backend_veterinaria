@@ -10,6 +10,7 @@ import {
 import { User } from 'src/auth/entities/auth.entity';
 import { SubServicio } from 'src/sub_servicios/entities/sub_servicio.entity';
 import { Insumo } from 'src/insumos/entities/insumo.entity';
+import { AgroInsumos } from 'src/insumos/entities/agro_insumos.entity';
 
 @Entity('marcas')
 export class Marca {
@@ -39,6 +40,9 @@ export class Marca {
 
   @OneToMany(() => Insumo, (insumo) => insumo.marca)
   insumos: Insumo[];
+
+  @OneToMany(() => AgroInsumos, (insumo) => insumo.marca)
+  agro_insumos: AgroInsumos[];
 
   // Campos de auditoría
   @ManyToOne(() => User, { eager: true })

@@ -36,7 +36,6 @@ export class InsumosService {
       costo,
       nombre,
       unidad_venta,
-
       disponible,
       proveedorId,
       paisId,

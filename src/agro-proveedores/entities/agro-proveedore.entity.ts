@@ -1,5 +1,6 @@
 import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
+import { AgroInsumos } from 'src/insumos/entities/agro_insumos.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { Pai } from 'src/pais/entities/pai.entity';
 import {
@@ -8,6 +9,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -89,4 +91,7 @@ export class AgroProveedore {
 
   @ManyToOne(() => MunicipiosDepartamentosPai, { eager: false })
   municipio: MunicipiosDepartamentosPai;
+
+  @OneToMany(() => AgroInsumos, (proveedor) => proveedor.proveedor)
+  agro_insumos: AgroInsumos[];
 }
