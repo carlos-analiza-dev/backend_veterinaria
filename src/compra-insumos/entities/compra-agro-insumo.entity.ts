@@ -1,5 +1,6 @@
 import { AgroProveedore } from 'src/agro-proveedores/entities/agro-proveedore.entity';
 import { AgroSucursale } from 'src/agro-sucursales/entities/agro-sucursale.entity';
+import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
 import {
   Column,
   CreateDateColumn,
@@ -9,23 +10,16 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { LoteAgroProducto } from './lote-agro-compra.entity';
-import { CompraDetalleAgroProducto } from './compra-detalle-agro-producto.entity';
-import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
+import { DetalleCompraAgroInsumo } from './detalle-compra-agro-insumo.entity';
+import { InvLoteAgroInsumo } from './inv-lote-agro-insumo.entity';
 
 export enum TipoPago {
   CONTADO = 'CONTADO',
   CREDITO = 'CREDITO',
 }
 
-export enum TipoCompra {
-  PRODUCTO = 'PRODUCTO',
-  INSUMO = 'INSUMO',
-  SERVICIO = 'SERVICIO',
-}
-
-@Entity('agro-compras-productos')
-export class AgroComprasProducto {
+@Entity('compra_agro_insumos')
+export class CompraAgroInsumo {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -41,9 +35,6 @@ export class AgroComprasProducto {
   @Column({ type: 'uuid' })
   sucursalId: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: true })
-  numero_factura: string;
-
   @Column({
     type: 'enum',
     enum: TipoPago,
@@ -51,12 +42,8 @@ export class AgroComprasProducto {
   })
   tipo_pago: TipoPago;
 
-  @Column({
-    type: 'enum',
-    enum: TipoCompra,
-    default: TipoCompra.PRODUCTO,
-  })
-  tipo_compra: TipoCompra;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  numero_factura: string;
 
   @Column({ type: 'decimal', precision: 12, scale: 2, default: 0 })
   subtotal: number;
@@ -79,15 +66,15 @@ export class AgroComprasProducto {
   @UpdateDateColumn()
   updated_at: Date;
 
-  @OneToMany(() => CompraDetalleAgroProducto, (detalle) => detalle.compra)
-  detalles: CompraDetalleAgroProducto[];
+  @OneToMany(() => DetalleCompraAgroInsumo, (detalle) => detalle.compra)
+  detalles: DetalleCompraAgroInsumo[];
 
-  @OneToMany(() => LoteAgroProducto, (lote) => lote.compra)
-  lotes: LoteAgroProducto[];
+  @OneToMany(() => InvLoteAgroInsumo, (lote) => lote.compra)
+  lotes: InvLoteAgroInsumo[];
 
   @ManyToOne(() => DatosAgroservicio)
   agroservicio: DatosAgroservicio;
 
-  @Column({ type: 'uuid', nullable: true })
+  @Column({ type: 'uuid' })
   agroservicioId: string;
 }

@@ -230,7 +230,7 @@ export class AgroInsumosService {
         );
       }
 
-      return { insumos: instanceToPlain(insumos_disponibles) };
+      return instanceToPlain(insumos_disponibles);
     } catch (error) {
       throw error;
     }

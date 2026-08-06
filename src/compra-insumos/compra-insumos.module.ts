@@ -9,10 +9,27 @@ import { Sucursal } from '../sucursales/entities/sucursal.entity';
 import { Proveedor } from '../proveedores/entities/proveedor.entity';
 import { Insumo } from '../insumos/entities/insumo.entity';
 import { AuthModule } from '../auth/auth.module';
+import { DetalleCompraAgroInsumo } from './entities/detalle-compra-agro-insumo.entity';
+import { CompraAgroInsumo } from './entities/compra-agro-insumo.entity';
+import { InvLoteAgroInsumo } from './entities/inv-lote-agro-insumo.entity';
+import { CompraAgroInsumosService } from './compra-agro-insumo.service';
+import { CompraAgroInsumosController } from './compra-agro-insumo.controller';
+import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
+import { EmpleadosAgroModule } from 'src/empleados-agro/empleados-agro.module';
+import { AgroSucursale } from 'src/agro-sucursales/entities/agro-sucursale.entity';
+import { AgroProveedore } from 'src/agro-proveedores/entities/agro-proveedore.entity';
+import { AgroInsumos } from 'src/insumos/entities/agro_insumos.entity';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
+import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
+import { AuditoriaEmpleados } from 'src/empleados-agro/entities/auditoria_empleados.entity';
 
 @Module({
-  controllers: [CompraInsumosController],
-  providers: [CompraInsumosService],
+  controllers: [CompraInsumosController, CompraAgroInsumosController],
+  providers: [
+    CompraInsumosService,
+    CompraAgroInsumosService,
+    AgroservicioValidationService,
+  ],
   imports: [
     TypeOrmModule.forFeature([
       CompraInsumo,
@@ -21,8 +38,18 @@ import { AuthModule } from '../auth/auth.module';
       Sucursal,
       Proveedor,
       Insumo,
+      DetalleCompraAgroInsumo,
+      CompraAgroInsumo,
+      InvLoteAgroInsumo,
+      AgroSucursale,
+      AgroProveedore,
+      AgroInsumos,
+      DatosAgroservicio,
+      AuditoriaEmpleados,
     ]),
     AuthModule,
+    AuthClientesModule,
+    EmpleadosAgroModule,
   ],
   exports: [CompraInsumosService, TypeOrmModule],
 })

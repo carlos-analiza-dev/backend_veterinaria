@@ -8,15 +8,12 @@ import {
   Min,
 } from 'class-validator';
 
-export class CreateEscalasInsumoDto {
+export class CreateEscalasAgroInsumoDto {
   @IsUUID('4', { message: 'El insumo no es válido' })
   insumoId: string;
 
   @IsUUID('4', { message: 'El proveedor no es válido' })
   proveedorId: string;
-
-  @IsUUID('4', { message: 'El pais no es válido' })
-  paisId: string;
 
   @Type(() => Number)
   @IsInt()
