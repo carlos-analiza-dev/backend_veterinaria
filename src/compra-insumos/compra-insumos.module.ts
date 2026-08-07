@@ -22,12 +22,19 @@ import { AgroInsumos } from 'src/insumos/entities/agro_insumos.entity';
 import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
 import { AuditoriaEmpleados } from 'src/empleados-agro/entities/auditoria_empleados.entity';
+import { LotesAgroInsumosService } from './lotes-agro-insumos.service';
+import { LotesAgroInsumosController } from './lotes-agro-insumos.controller';
 
 @Module({
-  controllers: [CompraInsumosController, CompraAgroInsumosController],
+  controllers: [
+    CompraInsumosController,
+    CompraAgroInsumosController,
+    LotesAgroInsumosController,
+  ],
   providers: [
     CompraInsumosService,
     CompraAgroInsumosService,
+    LotesAgroInsumosService,
     AgroservicioValidationService,
   ],
   imports: [

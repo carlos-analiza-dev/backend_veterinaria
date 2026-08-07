@@ -4,6 +4,8 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
   JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { CompraAgroInsumo } from './compra-agro-insumo.entity';
 import { AgroSucursale } from 'src/agro-sucursales/entities/agro-sucursale.entity';
@@ -34,4 +36,10 @@ export class InvLoteAgroInsumo {
 
   @Column({ type: 'decimal', precision: 12, scale: 2 })
   costo_por_unidad: number;
+
+  @CreateDateColumn()
+  created_at: Date;
+
+  @UpdateDateColumn()
+  updated_at: Date;
 }

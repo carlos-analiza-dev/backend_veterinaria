@@ -27,6 +27,8 @@ import { JwtPayload } from 'src/interfaces/jwt-payload.interface';
 import { JwtService } from '@nestjs/jwt';
 import { TipoPaquete } from 'src/interfaces/paquetes/paquetes.enum';
 import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
+import { AuditoriaEmpleados } from './entities/auditoria_empleados.entity';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 
 @Injectable()
 export class EmpleadosAgroService {
@@ -47,7 +49,10 @@ export class EmpleadosAgroService {
     private readonly datosAgroRepo: Repository<DatosAgroservicio>,
     @InjectRepository(ClientePaquete)
     private readonly clientePaqueteRepo: Repository<ClientePaquete>,
+    @InjectRepository(AuditoriaEmpleados)
+    private readonly auditEmpleadosRepo: Repository<AuditoriaEmpleados>,
     private readonly validationService: ValidationService,
+    private readonly validationAgro: AgroservicioValidationService,
     private readonly jwtService: JwtService,
   ) {}
   async create(createDto: CreateEmpleadosAgroDto, cliente: Cliente) {
@@ -319,6 +324,42 @@ export class EmpleadosAgroService {
     return this.jwtService.sign(payload);
   }
 
+  async findAllAuditoria(cliente: Cliente, paginatioDto: PaginationDto) {
+    const agroservicio = await this.validationAgro.obtenerAgroservicio(
+      cliente.id,
+    );
+
+    const agroservicioId = agroservicio.id;
+
+    const { empleado, limit = 10, offset = 0 } = paginatioDto;
+
+    const query = this.auditEmpleadosRepo
+      .createQueryBuilder('auditoria')
+      .leftJoinAndSelect('auditoria.empleado', 'empleado')
+      .leftJoinAndSelect('empleado.sucursal', 'sucursal')
+      .leftJoinAndSelect('sucursal.agroservicio', 'agroservicio')
+      .where('agroservicio.id = :agroservicioId', {
+        agroservicioId,
+      });
+
+    if (empleado) {
+      query.andWhere('empleado.id = :empleadoId', {
+        empleadoId: empleado,
+      });
+    }
+
+    query.orderBy('empleado.nombre', 'ASC').skip(offset).take(limit);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      data,
+      total,
+      limit,
+      offset,
+    };
+  }
+
   async findAll(
     cliente: Cliente,
     paginationDto: PaginationDto,
@@ -327,16 +368,10 @@ export class EmpleadosAgroService {
     total: number;
   }> {
     const propietarioId = getPropietarioId(cliente);
+    const agroservicio =
+      await this.validationAgro.obtenerAgroservicio(propietarioId);
+    const agroservicioId = agroservicio.id;
     const { limit = 10, offset = 0, rol } = paginationDto;
-
-    const agroExiste = await this.datosAgroRepo.findOne({
-      where: { propietarioId },
-      select: ['id'],
-    });
-
-    if (!agroExiste) {
-      throw new NotFoundException('No tiene un agroservicio registrado.');
-    }
 
     const query = this.empleadoRepo
       .createQueryBuilder('empleado')
@@ -347,7 +382,7 @@ export class EmpleadosAgroService {
       .leftJoinAndSelect('empleado.sucursal', 'sucursal')
       .leftJoin('sucursal.agroservicio', 'agroservicio')
       .where('agroservicio.id = :agroservicioId', {
-        agroservicioId: agroExiste.id,
+        agroservicioId: agroservicioId,
       })
       .orderBy('empleado.nombre', 'ASC')
       .skip(offset)

@@ -19,6 +19,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { JwtEmpleadoStrategy } from './strategies/jwt.strategy';
 import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
 import { AuditoriaEmpleados } from './entities/auditoria_empleados.entity';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 
 @Module({
   controllers: [EmpleadosAgroController],
@@ -53,6 +54,11 @@ import { AuditoriaEmpleados } from './entities/auditoria_empleados.entity';
     }),
   ],
 
-  providers: [EmpleadosAgroService, ValidationService, JwtEmpleadoStrategy],
+  providers: [
+    EmpleadosAgroService,
+    ValidationService,
+    JwtEmpleadoStrategy,
+    AgroservicioValidationService,
+  ],
 })
 export class EmpleadosAgroModule {}

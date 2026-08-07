@@ -7,6 +7,7 @@ import {
   Param,
   Delete,
   Query,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 import { EmpleadosAgroService } from './empleados-agro.service';
 import { CreateEmpleadosAgroDto } from './dto/create-empleados-agro.dto';
@@ -42,6 +43,15 @@ export class EmpleadosAgroController {
   @AuthEmpleado()
   checkAuthStatus(@GetEmpleado() empleadoAgro: EmpleadosAgro) {
     return this.empleadosAgroService.checkAuthStatus(empleadoAgro);
+  }
+
+  @Get('auditoria')
+  @AuthCliente()
+  findAllAuditoria(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.empleadosAgroService.findAllAuditoria(cliente, paginationDto);
   }
 
   @Get()

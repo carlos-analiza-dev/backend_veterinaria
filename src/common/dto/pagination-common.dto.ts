@@ -24,6 +24,10 @@ export class PaginationDto {
 
   @IsOptional()
   @IsString()
+  empleado?: string;
+
+  @IsOptional()
+  @IsString()
   search?: string;
 
   @IsOptional()
