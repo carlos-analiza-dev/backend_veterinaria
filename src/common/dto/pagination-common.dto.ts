@@ -6,6 +6,7 @@ import {
   IsPositive,
   IsString,
 } from 'class-validator';
+import { TipoAgroservicio } from 'src/interfaces/paquetes/paquetes.enum';
 import { EstadoPedido } from 'src/pedidos/entities/pedido.entity';
 
 export class PaginationDto {
@@ -101,6 +102,10 @@ export class PaginationDto {
   @IsOptional()
   @IsString()
   tipoMantenimiento?: string;
+
+  @IsOptional()
+  @IsString()
+  tipo_agro?: TipoAgroservicio;
 
   @IsOptional()
   @IsString()
@@ -234,4 +239,13 @@ export class PaginationDto {
     return value;
   })
   mostrar?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  @Transform(({ value }) => {
+    if (value === 'true') return true;
+    if (value === 'false') return false;
+    return value;
+  })
+  mostrarLight?: boolean;
 }

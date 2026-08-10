@@ -12,4 +12,8 @@ export class CreateRolesAgroDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  mostrarLight?: boolean;
 }

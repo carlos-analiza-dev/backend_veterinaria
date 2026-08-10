@@ -23,8 +23,8 @@ export class RolesAgroController {
   }
 
   @Get()
-  findAll() {
-    return this.rolesAgroService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.rolesAgroService.findAll(paginationDto);
   }
 
   @Get('/filters')

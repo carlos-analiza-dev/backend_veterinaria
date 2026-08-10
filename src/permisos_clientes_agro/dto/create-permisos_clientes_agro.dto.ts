@@ -1,9 +1,21 @@
-import { IsBoolean, IsOptional, IsString, Length } from 'class-validator';
+import {
+  IsBoolean,
+  IsEnum,
+  IsOptional,
+  IsString,
+  Length,
+} from 'class-validator';
+import { TipoAgroservicio } from 'src/interfaces/paquetes/paquetes.enum';
 
 export class CreatePermisosClientesAgroDto {
   @IsString()
   @Length(1, 100)
   nombre: string;
+
+  @IsEnum(TipoAgroservicio, {
+    message: 'El tipo de agroservicio no es válido',
+  })
+  tipo: TipoAgroservicio;
 
   @IsString()
   @Length(1, 100)

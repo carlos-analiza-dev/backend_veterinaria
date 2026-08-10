@@ -1,3 +1,4 @@
+import { TipoAgroservicio } from 'src/interfaces/paquetes/paquetes.enum';
 import { RolesPermisosAgro } from 'src/roles-permisos-agro/entities/roles-permisos-agro.entity';
 import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
@@ -6,13 +7,20 @@ export class PermisosClientesAgro {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100 })
   nombre: string;
+
+  @Column({
+    type: 'enum',
+    enum: TipoAgroservicio,
+    default: TipoAgroservicio.AGRO_GESTION,
+  })
+  tipo: TipoAgroservicio;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   descripcion: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100 })
   url: string;
 
   @Column({ type: 'varchar', length: 50 })

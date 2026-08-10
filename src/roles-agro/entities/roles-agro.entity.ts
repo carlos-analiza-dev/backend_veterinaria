@@ -16,6 +16,9 @@ export class RolesAgro {
   @Column({ type: 'boolean', default: true })
   isActive: boolean;
 
+  @Column({ type: 'boolean', default: false })
+  mostrarLight: boolean;
+
   @OneToMany(() => EmpleadosAgro, (empleado) => empleado.role)
   empleado: EmpleadosAgro[];
 

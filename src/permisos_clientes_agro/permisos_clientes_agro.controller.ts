@@ -30,8 +30,8 @@ export class PermisosClientesAgroController {
   }
 
   @Get('activos')
-  findPermisosActivos() {
-    return this.permisosClientesAgroService.findPermisosActivos();
+  findPermisosActivos(@Query() paginationDto: PaginationDto) {
+    return this.permisosClientesAgroService.findPermisosActivos(paginationDto);
   }
 
   @Get(':id')

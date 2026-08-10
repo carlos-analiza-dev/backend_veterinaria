@@ -13,12 +13,13 @@ export class RolesAgroService {
     private readonly rolRepo: Repository<RolesAgro>,
   ) {}
   async create(createRoleDto: CreateRolesAgroDto) {
-    const { name, description, isActive } = createRoleDto;
+    const { name, description, isActive, mostrarLight } = createRoleDto;
     try {
       const new_rol = this.rolRepo.create({
         name,
         description,
         isActive,
+        mostrarLight,
       });
       await this.rolRepo.save(new_rol);
     } catch (error) {
@@ -26,9 +27,21 @@ export class RolesAgroService {
     }
   }
 
-  async findAll() {
+  async findAll(paginationDto: PaginationDto) {
+    const { mostrarLight } = paginationDto;
     try {
-      const roles = await this.rolRepo.find({ where: { isActive: true } });
+      const queryBuilder = this.rolRepo.createQueryBuilder('rol');
+
+      queryBuilder.where('rol.isActive = :isActive', { isActive: true });
+
+      if (mostrarLight === true) {
+        queryBuilder.andWhere('rol.mostrarLight = :mostrarLight', {
+          mostrarLight: true,
+        });
+      }
+
+      const roles = await queryBuilder.getMany();
+
       if (!roles || roles.length === 0) {
         throw new NotFoundException('No se encontraron roles en este momento');
       }
