@@ -1133,7 +1133,7 @@ export class FacturaPdfService {
           currentY,
           colWidths[1],
           cellHeight,
-          'Cargo Extra (delivery)',
+          'Cargo Extra',
           backgroundColor,
           '#000000',
           8,
@@ -1268,7 +1268,7 @@ export class FacturaPdfService {
         { label: 'ISV 18%', value: factura.isv_18, color: '#F8F9FA' },
 
         {
-          label: 'Cargos Extra (delivery)',
+          label: 'Cargos Extra',
           value: factura.cargos_extra,
           color: '#FFFFFF',
           bold: true,

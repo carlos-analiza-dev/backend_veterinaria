@@ -7,7 +7,7 @@ import { CreateClientePaqueteDto } from './dto/create-cliente_paquete.dto';
 import { UpdateClientePaqueteDto } from './dto/update-cliente_paquete.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { ClientePaquete } from './entities/cliente_paquete.entity';
-import { IsNull, Repository } from 'typeorm';
+import { IsNull, LessThanOrEqual, MoreThanOrEqual, Repository } from 'typeorm';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { Paquete } from 'src/paquetes/entities/paquete.entity';
 import { TipoPaquete } from 'src/interfaces/paquetes/paquetes.enum';
@@ -138,14 +138,27 @@ export class ClientePaquetesService {
 
   async findByCliente(cliente: Cliente) {
     const clienteId = cliente.id ?? '';
+    const fechaActual = new Date();
+
     try {
       const paqueteActivo = await this.clientePaqueteRepository.findOne({
-        where: { cliente: { id: clienteId }, activo: true },
+        where: {
+          cliente: { id: clienteId },
+          activo: true,
+          fechaInicio: LessThanOrEqual(fechaActual),
+          fechaFin: MoreThanOrEqual(fechaActual),
+        },
+        relations: {
+          paquete: true,
+        },
       });
-      if (!paqueteActivo)
+
+      if (!paqueteActivo) {
         throw new NotFoundException(
-          'No se encontro paquete activo actualmente',
+          'No se encontró un paquete activo y vigente actualmente',
         );
+      }
+
       return paqueteActivo;
     } catch (error) {
       throw error;

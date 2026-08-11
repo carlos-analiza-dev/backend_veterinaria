@@ -11,6 +11,10 @@ import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroser
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { EmpleadosAgroModule } from 'src/empleados-agro/empleados-agro.module';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
+import { ClientePaquetesService } from 'src/cliente_paquetes/cliente_paquetes.service';
+import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
+import { Paquete } from 'src/paquetes/entities/paquete.entity';
 
 @Module({
   controllers: [AgroSucursalesController],
@@ -24,10 +28,16 @@ import { EmpleadosAgroModule } from 'src/empleados-agro/empleados-agro.module';
       DatosAgroservicio,
       Cliente,
       EmpleadosAgro,
+      ClientePaquete,
+      Paquete,
     ]),
     AuthClientesModule,
     EmpleadosAgroModule,
   ],
-  providers: [AgroSucursalesService],
+  providers: [
+    AgroSucursalesService,
+    AgroservicioValidationService,
+    ClientePaquetesService,
+  ],
 })
 export class AgroSucursalesModule {}

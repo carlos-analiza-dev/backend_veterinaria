@@ -29,6 +29,7 @@ import { TipoPaquete } from 'src/interfaces/paquetes/paquetes.enum';
 import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
 import { AuditoriaEmpleados } from './entities/auditoria_empleados.entity';
 import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
+import { ClientePaquetesService } from 'src/cliente_paquetes/cliente_paquetes.service';
 
 @Injectable()
 export class EmpleadosAgroService {
@@ -53,6 +54,7 @@ export class EmpleadosAgroService {
     private readonly auditEmpleadosRepo: Repository<AuditoriaEmpleados>,
     private readonly validationService: ValidationService,
     private readonly validationAgro: AgroservicioValidationService,
+    private readonly paqueteCliente: ClientePaquetesService,
     private readonly jwtService: JwtService,
   ) {}
   async create(createDto: CreateEmpleadosAgroDto, cliente: Cliente) {
@@ -70,6 +72,12 @@ export class EmpleadosAgroService {
       municipioId,
       sucursalId,
     } = createDto;
+    const paqueteActivo = await this.paqueteCliente.findByCliente(cliente);
+
+    const tipoPaquete = paqueteActivo.paquete.tipo;
+    const agroservicio = await this.validationAgro.obtenerAgroservicio(
+      cliente.id,
+    );
 
     await Promise.all([
       this.validationService.validarEmail(email),
@@ -121,6 +129,22 @@ export class EmpleadosAgroService {
 
     if (!sucursal) {
       throw new BadRequestException('No se encontró la sucursal seleccionada.');
+    }
+
+    if (tipoPaquete === TipoPaquete.AGRO_LIGHT) {
+      const cantidadSucursales = await this.empleadoRepo.count({
+        where: {
+          sucursal: {
+            agroservicio: { id: agroservicio.id },
+          },
+        },
+      });
+
+      if (cantidadSucursales >= 2) {
+        throw new BadRequestException(
+          'El paquete Agro Light permite únicamente 2 empleados.',
+        );
+      }
     }
 
     try {

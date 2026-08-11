@@ -10,12 +10,15 @@ import { PermisosClientesAgro } from './entities/permisos_clientes_agro.entity';
 import { Repository } from 'typeorm';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
 import { TipoAgroservicio } from 'src/interfaces/paquetes/paquetes.enum';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 
 @Injectable()
 export class PermisosClientesAgroService {
   constructor(
     @InjectRepository(PermisosClientesAgro)
     private readonly permisosRepo: Repository<PermisosClientesAgro>,
+    private readonly validationAgro: AgroservicioValidationService,
   ) {}
 
   async create(dto: CreatePermisosClientesAgroDto) {
@@ -75,15 +78,47 @@ export class PermisosClientesAgroService {
     };
   }
 
-  async findPermisosActivos(paginationDto: PaginationDto) {
+  async findPermisosActivos(cliente: Cliente, paginationDto: PaginationDto) {
+    const propietarioId = cliente.id ?? '';
     const { tipo_agro } = paginationDto;
+
     try {
+      let tieneAgroservicio = false;
+      try {
+        const agroservicio =
+          await this.validationAgro.obtenerAgroservicio(propietarioId);
+        tieneAgroservicio = !!agroservicio;
+      } catch (error) {
+        tieneAgroservicio = false;
+      }
+
       const permisos = await this.permisosRepo.find({
         where: { isActive: true, tipo: tipo_agro },
       });
+
       if (!permisos || permisos.length === 0) {
         throw new NotFoundException('No se encontraron permisos disponibles');
       }
+
+      if (!tieneAgroservicio) {
+        const permisosCreacion = [
+          '/agro-propietario/agro-servicios',
+          '/agro-propietario/agro-perfil',
+        ];
+
+        const permisosFiltrados = permisos.filter((permiso) =>
+          permisosCreacion.includes(permiso.url),
+        );
+
+        if (permisosFiltrados.length === 0) {
+          throw new NotFoundException(
+            'No se encontraron permisos disponibles para la creación del agroservicio',
+          );
+        }
+
+        return permisosFiltrados;
+      }
+
       return permisos;
     } catch (error) {
       throw error;

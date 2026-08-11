@@ -13,6 +13,7 @@ import {
   CreateDateColumn,
   Entity,
   JoinColumn,
+  ManyToOne,
   OneToMany,
   OneToOne,
   PrimaryGeneratedColumn,
@@ -37,7 +38,10 @@ export class DatosAgroservicio {
   @Column()
   propietarioId: string;
 
-  @OneToOne(() => Pai, { eager: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => Pai, {
+    eager: true,
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'paisId' })
   pais: Pai;
 

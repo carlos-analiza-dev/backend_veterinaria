@@ -20,6 +20,8 @@ import { JwtEmpleadoStrategy } from './strategies/jwt.strategy';
 import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
 import { AuditoriaEmpleados } from './entities/auditoria_empleados.entity';
 import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
+import { Paquete } from 'src/paquetes/entities/paquete.entity';
+import { ClientePaquetesService } from 'src/cliente_paquetes/cliente_paquetes.service';
 
 @Module({
   controllers: [EmpleadosAgroController],
@@ -37,6 +39,7 @@ import { AgroservicioValidationService } from 'src/validations/validation-agrose
       DatosAgroservicio,
       ClientePaquete,
       AuditoriaEmpleados,
+      Paquete,
     ]),
     AuthClientesModule,
     PassportModule.register({ defaultStrategy: 'jwt-empleado' }),
@@ -59,6 +62,7 @@ import { AgroservicioValidationService } from 'src/validations/validation-agrose
     ValidationService,
     JwtEmpleadoStrategy,
     AgroservicioValidationService,
+    ClientePaquetesService,
   ],
 })
 export class EmpleadosAgroModule {}

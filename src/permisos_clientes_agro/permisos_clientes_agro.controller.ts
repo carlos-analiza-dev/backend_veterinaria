@@ -12,6 +12,9 @@ import { PermisosClientesAgroService } from './permisos_clientes_agro.service';
 import { CreatePermisosClientesAgroDto } from './dto/create-permisos_clientes_agro.dto';
 import { UpdatePermisosClientesAgroDto } from './dto/update-permisos_clientes_agro.dto';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
+import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
+import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 
 @Controller('permisos-clientes-agro')
 export class PermisosClientesAgroController {
@@ -30,8 +33,15 @@ export class PermisosClientesAgroController {
   }
 
   @Get('activos')
-  findPermisosActivos(@Query() paginationDto: PaginationDto) {
-    return this.permisosClientesAgroService.findPermisosActivos(paginationDto);
+  @AuthCliente()
+  findPermisosActivos(
+    @GetCliente() cliente: Cliente,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.permisosClientesAgroService.findPermisosActivos(
+      cliente,
+      paginationDto,
+    );
   }
 
   @Get(':id')

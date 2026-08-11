@@ -21,7 +21,7 @@ export enum TipoPagoProveedor {
 
 export enum TipoEscala {
   ESCALA = 'ESCALA',
-  DESCUENTO = 'DESUENTO',
+  DESCUENTO = 'DESCUENTO',
 }
 
 @Entity('agro-proveedores')

@@ -14,10 +14,13 @@ import { Pai } from 'src/pais/entities/pai.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
 import { MunicipiosDepartamentosPai } from 'src/municipios_departamentos_pais/entities/municipios_departamentos_pai.entity';
 import { EmpleadosAgro } from 'src/empleados-agro/entities/empleados-agro.entity';
-import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
+
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { getPropietarioId } from 'src/utils/get-propietario-id';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
+import { ClientePaquetesService } from 'src/cliente_paquetes/cliente_paquetes.service';
+import { TipoPaquete } from 'src/interfaces/paquetes/paquetes.enum';
 
 @Injectable()
 export class AgroSucursalesService {
@@ -36,20 +39,28 @@ export class AgroSucursalesService {
 
     @InjectRepository(EmpleadosAgro)
     private readonly empleadoRepo: Repository<EmpleadosAgro>,
-    @InjectRepository(DatosAgroservicio)
-    private readonly datosAgro: Repository<DatosAgroservicio>,
+    private readonly validationAgro: AgroservicioValidationService,
+    private readonly paqueteCliente: ClientePaquetesService,
   ) {}
 
   async create(cliente: Cliente, createDto: CreateAgroSucursaleDto) {
-    const propietarioId = getPropietarioId(cliente);
-    const { paisId, departamentoId, municipioId, gerenteId, ...rest } =
-      createDto;
+    const paqueteActivo = await this.paqueteCliente.findByCliente(cliente);
 
-    const datoAgro = await this.datosAgro.findOne({ where: { propietarioId } });
-    if (!datoAgro)
+    const tipoPaquete = paqueteActivo.paquete.tipo;
+
+    const propietarioId = getPropietarioId(cliente);
+
+    const datoAgro =
+      await this.validationAgro.obtenerAgroservicio(propietarioId);
+
+    if (!datoAgro) {
       throw new NotFoundException(
         'No cuentas con tu agroservicio creado actualmente',
       );
+    }
+
+    const { paisId, departamentoId, municipioId, gerenteId, ...rest } =
+      createDto;
 
     const pais = await this.paisRepo.findOne({
       where: { id: paisId },
@@ -101,6 +112,7 @@ export class AgroSucursalesService {
         );
       }
     }
+
     const existeNombre = await this.sucursalRepo.findOne({
       where: {
         nombre: rest.nombre,
@@ -109,6 +121,22 @@ export class AgroSucursalesService {
 
     if (existeNombre) {
       throw new BadRequestException('Ya existe una sucursal con ese nombre.');
+    }
+
+    if (tipoPaquete === TipoPaquete.AGRO_LIGHT) {
+      const cantidadSucursales = await this.sucursalRepo.count({
+        where: {
+          agroservicio: {
+            id: datoAgro.id,
+          },
+        },
+      });
+
+      if (cantidadSucursales >= 1) {
+        throw new BadRequestException(
+          'El paquete Agro Light permite únicamente 1 sucursal.',
+        );
+      }
     }
 
     const sucursal = this.sucursalRepo.create({
