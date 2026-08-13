@@ -1,7 +1,6 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 
 import { DashboardService } from './dashboards.service';
-import { DashboardData } from './interfaces/dashboard-data.interface';
 import { Auth } from '../auth/decorators/auth.decorator';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
 import { User } from 'src/auth/entities/auth.entity';
@@ -210,5 +209,41 @@ export class DashboardsController {
   @AuthCliente()
   costos(@GetCliente() cliente: Cliente) {
     return this.dashboardService.costosPorCultivo(cliente);
+  }
+
+  //AGRO FACTURACION
+  @Get('metricas-agro/resumen')
+  obtenerResumen(@Query() paginationDto: PaginationDto) {
+    return this.dashboardService.obtenerMetricaResumen(paginationDto);
+  }
+
+  @Get('metricas-agro/ventas')
+  obtenerVentas(@Query() paginationDto: PaginationDto) {
+    return this.dashboardService.obtenerMetricaVentas(paginationDto);
+  }
+
+  @Get('metricas-agro/productos')
+  obtenerProductos(@Query() paginationDto: PaginationDto) {
+    return this.dashboardService.obtenerMetricaProductos(paginationDto);
+  }
+
+  @Get('metricas-agro/clientes')
+  obtenerClientes(@Query() paginationDto: PaginationDto) {
+    return this.dashboardService.obtenerMetricaClientes(paginationDto);
+  }
+
+  @Get('metricas-agro/sucursales')
+  obtenerSucursales(@Query() paginationDto: PaginationDto) {
+    return this.dashboardService.obtenerMetricaSucursales(paginationDto);
+  }
+
+  @Get('metricas-agro/formas-pago')
+  obtenerFormasPago(@Query() paginationDto: PaginationDto) {
+    return this.dashboardService.obtenerMetricaFormasPago(paginationDto);
+  }
+
+  @Get('metricas-agro/estados')
+  obtenerEstados(@Query() paginationDto: PaginationDto) {
+    return this.dashboardService.obtenerMetricaEstados(paginationDto);
   }
 }

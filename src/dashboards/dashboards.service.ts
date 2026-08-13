@@ -13,10 +13,7 @@ import {
   FacturaEncabezado,
 } from 'src/factura_encabezado/entities/factura_encabezado.entity';
 import {
-  DashboardData,
-  DatosCategorias,
   DatosVentasMensuales,
-  MetricasDashboard,
   RendimientoMensualResponse,
 } from './interfaces/dashboard-data.interface';
 import { User } from 'src/auth/entities/auth.entity';
@@ -43,6 +40,8 @@ import { getPropietarioId } from 'src/utils/get-propietario-id';
 import { DetallePlanillaTrabajadore } from 'src/detalle_planilla_trabajadores/entities/detalle_planilla_trabajadore.entity';
 import { PlanillaTrabajadore } from 'src/planilla_trabajadores/entities/planilla_trabajadore.entity';
 import { Cultivo } from 'src/cultivos/entities/cultivo.entity';
+import { AgroFacturacion } from 'src/agro_facturacion/entities/agro_facturacion.entity';
+import { AgroFacturaDetalle } from 'src/agro_facturacion/entities/agro_factura_detalle.entity';
 
 @Injectable()
 export class DashboardService {
@@ -77,6 +76,10 @@ export class DashboardService {
     private readonly planillaRepository: Repository<PlanillaTrabajadore>,
     @InjectRepository(Cultivo)
     private readonly cultivoRepository: Repository<Cultivo>,
+    @InjectRepository(AgroFacturacion)
+    private readonly facturaRepo: Repository<AgroFacturacion>,
+    @InjectRepository(AgroFacturaDetalle)
+    private readonly detalleFacturaRepo: Repository<AgroFacturaDetalle>,
   ) {}
 
   async getIngresosTotales(user: User, paginationDto: PaginationDto) {
@@ -969,5 +972,298 @@ export class DashboardService {
         ganancia: Number(cultivo.ingreso_estimado || 0) - costoTotal,
       };
     });
+  }
+
+  async obtenerMetricaResumen(paginationDto: PaginationDto) {
+    const { fechaInicio, fechaFin, sucursal } = paginationDto;
+
+    const query = this.facturaRepo
+      .createQueryBuilder('factura')
+      .where('factura.estado = :estado', {
+        estado: EstadoFactura.PROCESADA,
+      })
+      .select('COUNT(factura.id)', 'cantidadFacturas')
+      .addSelect('COALESCE(SUM(factura.total), 0)', 'ventasTotales')
+      .addSelect('COALESCE(SUM(factura.sub_total), 0)', 'subtotal')
+      .addSelect('COALESCE(SUM(factura.descuentos_rebajas), 0)', 'descuentos')
+      .addSelect('COALESCE(SUM(factura.isv_15), 0)', 'isv15')
+      .addSelect('COALESCE(SUM(factura.isv_18), 0)', 'isv18')
+      .addSelect('COALESCE(SUM(factura.cargos_extra), 0)', 'cargosExtra');
+
+    if (fechaInicio && fechaInicio.trim() !== '') {
+      query.andWhere('factura.fecha_recepcion >= :fechaInicio', {
+        fechaInicio,
+      });
+    }
+
+    if (fechaFin && fechaFin.trim() !== '') {
+      query.andWhere('factura.fecha_recepcion <= :fechaFin', { fechaFin });
+    }
+
+    if (sucursal) {
+      query.andWhere('factura.sucursal_id = :sucursal', { sucursal });
+    }
+
+    const resultado = await query.getRawOne();
+
+    const cantidadFacturas = Number(resultado.cantidadFacturas ?? 0);
+
+    const ventasTotales = Number(resultado.ventasTotales ?? 0);
+
+    const isv15 = Number(resultado.isv15 ?? 0);
+
+    const isv18 = Number(resultado.isv18 ?? 0);
+
+    return {
+      cantidadFacturas,
+      ventasTotales,
+      subtotal: Number(resultado.subtotal ?? 0),
+      descuentos: Number(resultado.descuentos ?? 0),
+      isv15,
+      isv18,
+      impuestos: isv15 + isv18,
+      cargosExtra: Number(resultado.cargosExtra ?? 0),
+      ticketPromedio:
+        cantidadFacturas > 0 ? ventasTotales / cantidadFacturas : 0,
+    };
+  }
+
+  async obtenerMetricaVentas(paginationDto: PaginationDto) {
+    const { fechaInicio, fechaFin, sucursal } = paginationDto;
+
+    const query = this.facturaRepo
+      .createQueryBuilder('factura')
+      .where('factura.estado = :estado', {
+        estado: EstadoFactura.PROCESADA,
+      })
+      .select(`DATE_TRUNC('month', factura.fecha_recepcion)`, 'fecha')
+      .addSelect('COUNT(factura.id)', 'cantidadFacturas')
+      .addSelect('COALESCE(SUM(factura.total), 0)', 'total');
+
+    if (fechaInicio) {
+      query.andWhere('factura.fecha_recepcion >= :fechaInicio', {
+        fechaInicio,
+      });
+    }
+
+    if (fechaFin) {
+      query.andWhere('factura.fecha_recepcion <= :fechaFin', { fechaFin });
+    }
+
+    if (sucursal) {
+      query.andWhere('factura.sucursal_id = :sucursal', { sucursal });
+    }
+
+    const resultado = await query
+      .groupBy(`DATE_TRUNC('month', factura.fecha_recepcion)`)
+      .orderBy(`DATE_TRUNC('month', factura.fecha_recepcion)`, 'ASC')
+      .getRawMany();
+
+    return resultado.map((item) => ({
+      fecha: item.fecha,
+      cantidadFacturas: Number(item.cantidadFacturas),
+      total: Number(item.total),
+    }));
+  }
+
+  async obtenerMetricaProductos(paginationDto: PaginationDto) {
+    const { fechaInicio, fechaFin, sucursal } = paginationDto;
+
+    const query = this.detalleFacturaRepo
+      .createQueryBuilder('detalle')
+      .innerJoin('detalle.factura', 'factura')
+      .innerJoin('detalle.producto', 'producto')
+      .where('factura.estado = :estado', {
+        estado: EstadoFactura.PROCESADA,
+      })
+      .select('producto.id', 'productoId')
+      .addSelect('producto.nombre', 'producto')
+      .addSelect('COALESCE(SUM(detalle.cantidad), 0)', 'cantidadVendida');
+
+    if (fechaInicio) {
+      query.andWhere('factura.fecha_recepcion >= :fechaInicio', {
+        fechaInicio,
+      });
+    }
+
+    if (fechaFin) {
+      query.andWhere('factura.fecha_recepcion <= :fechaFin', { fechaFin });
+    }
+
+    if (sucursal) {
+      query.andWhere('factura.sucursal_id = :sucursal', { sucursal });
+    }
+
+    const resultado = await query
+      .groupBy('producto.id')
+      .addGroupBy('producto.nombre')
+      .orderBy('SUM(detalle.cantidad)', 'DESC')
+      .limit(10)
+      .getRawMany();
+
+    return resultado.map((item) => ({
+      productoId: item.productoId,
+      producto: item.producto,
+      cantidadVendida: Number(item.cantidadVendida),
+    }));
+  }
+
+  async obtenerMetricaClientes(paginationDto: PaginationDto) {
+    const { fechaInicio, fechaFin, sucursal } = paginationDto;
+
+    const query = this.facturaRepo
+      .createQueryBuilder('factura')
+      .innerJoin('factura.cliente', 'cliente')
+      .where('factura.estado = :estado', {
+        estado: EstadoFactura.PROCESADA,
+      })
+      .select('cliente.id', 'clienteId')
+      .addSelect('cliente.nombre', 'cliente')
+      .addSelect('COUNT(factura.id)', 'cantidadFacturas')
+      .addSelect('COALESCE(SUM(factura.total), 0)', 'totalComprado');
+
+    if (fechaInicio) {
+      query.andWhere('factura.fecha_recepcion >= :fechaInicio', {
+        fechaInicio,
+      });
+    }
+
+    if (fechaFin) {
+      query.andWhere('factura.fecha_recepcion <= :fechaFin', { fechaFin });
+    }
+
+    if (sucursal) {
+      query.andWhere('factura.sucursal_id = :sucursal', {
+        sucursal,
+      });
+    }
+
+    const resultado = await query
+      .groupBy('cliente.id')
+      .addGroupBy('cliente.nombre')
+      .orderBy('SUM(factura.total)', 'DESC')
+      .limit(10)
+      .getRawMany();
+
+    return resultado.map((item) => ({
+      clienteId: item.clienteId,
+      cliente: item.cliente,
+      cantidadFacturas: Number(item.cantidadFacturas),
+      totalComprado: Number(item.totalComprado),
+    }));
+  }
+
+  async obtenerMetricaSucursales(paginationDto: PaginationDto) {
+    const { fechaInicio, fechaFin, sucursal } = paginationDto;
+
+    const query = this.facturaRepo
+      .createQueryBuilder('factura')
+      .innerJoin('factura.sucursal', 'sucursal')
+      .where('factura.estado = :estado', {
+        estado: EstadoFactura.PROCESADA,
+      })
+      .select('sucursal.id', 'sucursalId')
+      .addSelect('sucursal.nombre', 'sucursal')
+      .addSelect('COUNT(factura.id)', 'cantidadFacturas')
+      .addSelect('COALESCE(SUM(factura.total), 0)', 'totalVentas');
+
+    if (fechaInicio) {
+      query.andWhere('factura.fecha_recepcion >= :fechaInicio', {
+        fechaInicio,
+      });
+    }
+
+    if (fechaFin) {
+      query.andWhere('factura.fecha_recepcion <= :fechaFin', { fechaFin });
+    }
+
+    if (sucursal) {
+      query.andWhere('factura.sucursal_id = :sucursal', { sucursal });
+    }
+
+    const resultado = await query
+      .groupBy('sucursal.id')
+      .addGroupBy('sucursal.nombre')
+      .orderBy('SUM(factura.total)', 'DESC')
+      .limit(10)
+      .getRawMany();
+
+    return resultado.map((item) => ({
+      sucursalId: item.sucursalId,
+      sucursal: item.sucursal,
+      cantidadFacturas: Number(item.cantidadFacturas),
+      totalVentas: Number(item.totalVentas),
+    }));
+  }
+
+  async obtenerMetricaFormasPago(paginationDto: PaginationDto) {
+    const { fechaInicio, fechaFin, sucursal } = paginationDto;
+
+    const query = this.facturaRepo
+      .createQueryBuilder('factura')
+      .where('factura.estado = :estado', {
+        estado: EstadoFactura.PROCESADA,
+      })
+      .select('factura.forma_pago', 'formaPago')
+      .addSelect('COUNT(factura.id)', 'cantidadFacturas')
+      .addSelect('COALESCE(SUM(factura.total), 0)', 'totalVentas');
+
+    if (fechaInicio) {
+      query.andWhere('factura.fecha_recepcion >= :fechaInicio', {
+        fechaInicio,
+      });
+    }
+
+    if (fechaFin) {
+      query.andWhere('factura.fecha_recepcion <= :fechaFin', { fechaFin });
+    }
+
+    if (sucursal) {
+      query.andWhere('factura.sucursal_id = :sucursal', { sucursal });
+    }
+
+    const resultado = await query
+      .groupBy('factura.forma_pago')
+      .orderBy('SUM(factura.total)', 'DESC')
+      .getRawMany();
+
+    return resultado.map((item) => ({
+      formaPago: item.formaPago,
+      cantidadFacturas: Number(item.cantidadFacturas),
+      totalVentas: Number(item.totalVentas),
+    }));
+  }
+
+  async obtenerMetricaEstados(paginationDto: PaginationDto) {
+    const { fechaInicio, fechaFin, sucursal } = paginationDto;
+
+    const query = this.facturaRepo
+      .createQueryBuilder('factura')
+      .select('factura.estado', 'estado')
+      .addSelect('COUNT(factura.id)', 'cantidad');
+
+    if (fechaInicio) {
+      query.andWhere('factura.fecha_recepcion >= :fechaInicio', {
+        fechaInicio,
+      });
+    }
+
+    if (fechaFin) {
+      query.andWhere('factura.fecha_recepcion <= :fechaFin', { fechaFin });
+    }
+
+    if (sucursal) {
+      query.andWhere('factura.sucursal_id = :sucursal', { sucursal });
+    }
+
+    const resultado = await query
+      .groupBy('factura.estado')
+      .orderBy('COUNT(factura.id)', 'DESC')
+      .getRawMany();
+
+    return resultado.map((item) => ({
+      estado: item.estado,
+      cantidad: Number(item.cantidad),
+    }));
   }
 }

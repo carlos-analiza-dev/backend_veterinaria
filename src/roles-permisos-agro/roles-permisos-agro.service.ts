@@ -10,6 +10,7 @@ import { RolesPermisosAgro } from './entities/roles-permisos-agro.entity';
 import { In, Not, Repository } from 'typeorm';
 import { RolesAgro } from 'src/roles-agro/entities/roles-agro.entity';
 import { PermisosClientesAgro } from 'src/permisos_clientes_agro/entities/permisos_clientes_agro.entity';
+import { TipoAgroservicio } from 'src/interfaces/paquetes/paquetes.enum';
 
 @Injectable()
 export class RolesPermisosAgroService {
@@ -74,7 +75,16 @@ export class RolesPermisosAgroService {
   }
 
   async findAll() {
-    return await this.rolesPermisosRepository.find();
+    return await this.rolesPermisosRepository.find({
+      where: {
+        permiso: {
+          tipo: TipoAgroservicio.AGRO_GESTION,
+        },
+        rol: {
+          isActive: true,
+        },
+      },
+    });
   }
 
   async findAllByRol(rolId: string) {
@@ -129,16 +139,22 @@ export class RolesPermisosAgroService {
     const permisosAsignadosIds = relaciones.map((r) => r.permiso.id);
 
     if (permisosAsignadosIds.length === 0) {
-      return await this.permisosRepository.find();
+      return await this.permisosRepository.find({
+        where: {
+          tipo: TipoAgroservicio.AGRO_GESTION,
+          isActive: true,
+        },
+      });
     }
 
     return await this.permisosRepository.find({
       where: {
         id: Not(In(permisosAsignadosIds)),
+        tipo: TipoAgroservicio.AGRO_GESTION,
+        isActive: true,
       },
     });
   }
-
   async findOne(id: string) {
     const registro = await this.rolesPermisosRepository.findOne({
       where: { id },
