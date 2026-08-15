@@ -113,6 +113,96 @@ export class ClientePaquetesService {
     }
   }
 
+  async createPaquete(
+    createClientePaqueteDto: CreateClientePaqueteDto,
+    clienteId: string,
+  ) {
+    try {
+      const { paqueteId, fechaInicio, fechaFin } = createClientePaqueteDto;
+
+      const cliente = await this.clienteRepository.findOne({
+        where: { id: clienteId },
+      });
+
+      if (!cliente) {
+        throw new NotFoundException(
+          `Cliente con ID "${clienteId}" no encontrado`,
+        );
+      }
+
+      const paquete = await this.paqueteRepository.findOne({
+        where: { id: paqueteId },
+      });
+
+      if (!paquete) {
+        throw new NotFoundException(
+          `Paquete con ID "${paqueteId}" no encontrado`,
+        );
+      }
+
+      if (paquete.tipo === TipoPaquete.FREE) {
+        const yaTuvoPaqueteFree = await this.clientePaqueteRepository.findOne({
+          where: {
+            cliente: { id: clienteId },
+            paquete: { id: paquete.id },
+          },
+        });
+
+        if (yaTuvoPaqueteFree) {
+          throw new BadRequestException(
+            'El paquete FREE solo puede adquirirse una vez',
+          );
+        }
+      }
+
+      const startDate = fechaInicio ? new Date(fechaInicio) : new Date();
+      const endDate = fechaFin ? new Date(fechaFin) : null;
+
+      if (endDate && endDate <= startDate) {
+        throw new BadRequestException(
+          'La fecha de fin debe ser posterior a la fecha de inicio',
+        );
+      }
+
+      const paqueteActivo = await this.findActiveByClienteAndPaquete(
+        clienteId,
+        paqueteId,
+      );
+      if (paqueteActivo) {
+        throw new BadRequestException(
+          `El cliente ya tiene el paquete "${paquete.nombre}" activo`,
+        );
+      }
+
+      const paqueteActivoCliente = await this.clientePaqueteRepository.findOne({
+        where: { cliente: { id: clienteId }, activo: true },
+      });
+
+      if (paqueteActivoCliente) {
+        paqueteActivoCliente.activo = false;
+
+        await this.clientePaqueteRepository.save(paqueteActivoCliente);
+      }
+
+      const clientePaquete = this.clientePaqueteRepository.create({
+        cliente,
+        paquete,
+        fechaInicio: startDate,
+        fechaFin: endDate,
+      });
+
+      return await this.clientePaqueteRepository.save(clientePaquete);
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new BadRequestException('Error al asignar el paquete al cliente');
+    }
+  }
+
   async findAll(): Promise<ClientePaquete[]> {
     return await this.clientePaqueteRepository.find({
       relations: ['cliente', 'paquete'],

@@ -1,10 +1,19 @@
-import { Controller, Get, Post, Body, Patch, Param } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  ParseUUIDPipe,
+} from '@nestjs/common';
 import { ClientePaquetesService } from './cliente_paquetes.service';
 import { CreateClientePaqueteDto } from './dto/create-cliente_paquete.dto';
 import { UpdateClientePaqueteDto } from './dto/update-cliente_paquete.dto';
 import { AuthCliente } from 'src/auth-clientes/decorators/auth-cliente.decorator';
 import { GetCliente } from 'src/auth-clientes/decorators/get-cliente.decorator';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { Auth } from 'src/auth/decorators/auth.decorator';
 
 @Controller('cliente-paquetes')
 export class ClientePaquetesController {
@@ -19,6 +28,18 @@ export class ClientePaquetesController {
     @GetCliente() cliente: Cliente,
   ) {
     return this.clientePaquetesService.create(createClientePaqueteDto, cliente);
+  }
+
+  @Post('cliente/:clienteId')
+  @Auth()
+  createPaquete(
+    @Body() createClientePaqueteDto: CreateClientePaqueteDto,
+    @Param('clienteId', ParseUUIDPipe) clienteId: string,
+  ) {
+    return this.clientePaquetesService.createPaquete(
+      createClientePaqueteDto,
+      clienteId,
+    );
   }
 
   @Get()
