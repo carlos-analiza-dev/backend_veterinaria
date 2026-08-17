@@ -40,21 +40,6 @@ export class NotaCreditoController {
     return this.notaCreditoService.findOne(id);
   }
 
-  /*  @Get('factura/:facturaId')
-  findByFactura(@Param('facturaId') facturaId: string) {
-    return this.notaCreditoService.findByFactura(facturaId);
-  }
-
-  @Get(':id/movimientos')
-  getMovimientos(@Param('id') id: string) {
-    return this.notaCreditoService.getMovimientosPorNotaCredito(id);
-  }
-
-  @Get('producto/:productoId/devoluciones')
-  getDevolucionesPorProducto(@Param('productoId') productoId: string) {
-    return this.notaCreditoService.getHistorialDevolucionesPorProducto(productoId);
-  } */
-
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.notaCreditoService.remove(id);

@@ -373,6 +373,45 @@ export class AgroFacturacionService {
     }
   }
 
+  async findAllProcesadas(propieparioId: string, paginationDto: PaginationDto) {
+    const { sucursal } = paginationDto;
+    const agroservicio =
+      await this.validationAgro.obtenerAgroservicio(propieparioId);
+    const agroservicioId = agroservicio.id ?? '';
+
+    try {
+      const queryBuilder = this.facturaEncabezadoRepository
+        .createQueryBuilder('factura')
+        .leftJoinAndSelect('factura.cliente', 'cliente')
+        .leftJoinAndSelect('factura.rango_factura', 'rango')
+        .leftJoinAndSelect('factura.agroservicio', 'agroservicio')
+        .leftJoinAndSelect('factura.detalles', 'detalles')
+        .leftJoinAndSelect('factura.descuento', 'descuento')
+        .leftJoinAndSelect('factura.sucursal', 'sucursal')
+        .where('agroservicio.id = :agroservicioId', { agroservicioId })
+        .andWhere('factura.estado = :estado', {
+          estado: EstadoFactura.PROCESADA,
+        })
+        .orderBy('factura.created_at', 'DESC');
+
+      if (sucursal) {
+        queryBuilder.andWhere('sucursal.id = :sucursalId', {
+          sucursalId: sucursal,
+        });
+      }
+
+      const [facturas] = await queryBuilder.getManyAndCount();
+
+      if (!facturas || facturas.length === 0) {
+        throw new NotFoundException('No se encontraron facturas disponibles');
+      }
+
+      return instanceToPlain(facturas);
+    } catch (error) {
+      throw error;
+    }
+  }
+
   findOne(id: number) {
     return `This action returns a #${id} agroFacturacion`;
   }

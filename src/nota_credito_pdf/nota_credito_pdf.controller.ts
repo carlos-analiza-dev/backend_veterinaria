@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Res } from '@nestjs/common';
+import { Controller, Get, Param, ParseUUIDPipe, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { NotaCreditoPdfService } from './nota_credito_pdf.service';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
@@ -24,6 +24,20 @@ export class NotaCreditoPdfController {
     );
   }
 
+  @Get('agroservicio/:propietarioId/:id')
+  async generarAgroNotaCreditoPDF(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('propietarioId', ParseUUIDPipe) propietarioId: string,
+    @Res() res: Response,
+  ) {
+    return this.notaCreditoPdfService.generarAgroNotaCreditoPDF(
+      id,
+      propietarioId,
+      res,
+      false,
+    );
+  }
+
   @Get(':id/preview')
   @Auth()
   async generarNotaCreditoPreview(
@@ -32,5 +46,18 @@ export class NotaCreditoPdfController {
     @GetUser() user: User,
   ) {
     return this.notaCreditoPdfService.generarNotaCreditoPreview(id, res, user);
+  }
+
+  @Get('agroservicio/:propietarioId/:id/preview')
+  async generarAgroNotaCreditoPreview(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('propietarioId', ParseUUIDPipe) propietarioId: string,
+    @Res() res: Response,
+  ) {
+    return this.notaCreditoPdfService.generarAgroNotaCreditoPreview(
+      id,
+      propietarioId,
+      res,
+    );
   }
 }

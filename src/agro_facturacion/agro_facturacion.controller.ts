@@ -45,6 +45,17 @@ export class AgroFacturacionController {
     return this.agroFacturacionService.findAll(propietarioid, paginationDto);
   }
 
+  @Get('/procesadas/:propietarioid')
+  findAllProcesadas(
+    @Param('propietarioid') propietarioid: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.agroFacturacionService.findAllProcesadas(
+      propietarioid,
+      paginationDto,
+    );
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.agroFacturacionService.findOne(+id);

@@ -13,6 +13,7 @@ export class AgroservicioValidationService {
   async obtenerAgroservicio(propietarioId: string): Promise<DatosAgroservicio> {
     const agroservicio = await this.agroRepo.findOne({
       where: { propietarioId },
+      relations: ['propietario'],
     });
 
     if (!agroservicio) {
