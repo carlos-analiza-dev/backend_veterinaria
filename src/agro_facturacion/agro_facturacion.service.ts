@@ -412,6 +412,115 @@ export class AgroFacturacionService {
     }
   }
 
+  async findProductosFrecuentes(
+    clienteId: string,
+    paginationDto: PaginationDto,
+  ) {
+    const { limit = 10, offset = 0 } = paginationDto;
+
+    try {
+      const clienteExiste = await this.facturaEncabezadoRepository
+        .createQueryBuilder('factura')
+        .where('factura.id_cliente = :clienteId', { clienteId })
+        .andWhere('factura.estado = :estado', {
+          estado: EstadoFactura.PROCESADA,
+        })
+        .getExists();
+
+      if (!clienteExiste) {
+        throw new NotFoundException(
+          `No se encontraron facturas procesadas para el cliente con ID: ${clienteId}`,
+        );
+      }
+
+      const totalQuery = this.facturaDetalleRepository
+        .createQueryBuilder('detalle')
+        .innerJoin('detalle.factura', 'factura')
+        .where('factura.id_cliente = :clienteId', { clienteId })
+        .andWhere('factura.estado = :estado', {
+          estado: EstadoFactura.PROCESADA,
+        })
+        .select('COUNT(DISTINCT detalle.id_producto)', 'total');
+
+      const totalResult = await totalQuery.getRawOne();
+      const total = parseInt(totalResult.total) || 0;
+
+      const resultados = await this.facturaDetalleRepository
+        .createQueryBuilder('detalle')
+        .innerJoin('detalle.factura', 'factura')
+        .innerJoinAndSelect('detalle.producto', 'producto')
+        .where('factura.id_cliente = :clienteId', { clienteId })
+        .andWhere('factura.estado = :estado', {
+          estado: EstadoFactura.PROCESADA,
+        })
+        .select([
+          'producto.id AS id',
+          'producto.nombre AS nombre',
+          'producto.codigo AS codigo',
+          'producto.precio AS precio_actual',
+          'producto.categoriaId AS categoria',
+          'SUM(detalle.cantidad) AS total_cantidad',
+          'COUNT(DISTINCT factura.id) AS total_facturas',
+          'SUM(detalle.total) AS total_monto',
+          'AVG(detalle.cantidad) AS promedio_por_factura',
+          'MAX(factura.fecha_recepcion) AS ultima_compra',
+          'MIN(factura.fecha_recepcion) AS primera_compra',
+        ])
+        .groupBy('producto.id')
+        .addGroupBy('producto.nombre')
+        .addGroupBy('producto.codigo')
+        .addGroupBy('producto.precio')
+        .addGroupBy('producto.categoriaId')
+        .orderBy('total_cantidad', 'DESC')
+        .addOrderBy('total_facturas', 'DESC')
+        .limit(limit)
+        .offset(offset)
+        .getRawMany();
+
+      const productos = resultados.map((item) => {
+        const totalCantidad = parseInt(item.total_cantidad) || 0;
+        const totalFacturas = parseInt(item.total_facturas) || 0;
+        const promedioPorFactura = parseFloat(item.promedio_por_factura) || 0;
+
+        const frecuencia =
+          totalFacturas > 0 ? totalCantidad / totalFacturas : 0;
+
+        return {
+          id: item.id,
+          nombre: item.nombre,
+          codigo: item.codigo || 'N/A',
+          precio_actual: parseFloat(item.precio_actual) || 0,
+          categoria: item.categoria || 'Sin categoría',
+          estadisticas: {
+            total_comprado: totalCantidad,
+            total_facturas: totalFacturas,
+            total_monto: parseFloat(item.total_monto) || 0,
+            promedio_por_factura: promedioPorFactura,
+            frecuencia_compra: parseFloat(frecuencia.toFixed(2)),
+            primera_compra: item.primera_compra,
+            ultima_compra: item.ultima_compra,
+          },
+        };
+      });
+
+      const estadisticasGenerales =
+        await this.calcularEstadisticasGenerales(clienteId);
+
+      return {
+        data: productos,
+        pagination: {
+          total,
+          limit,
+          offset,
+          hasMore: offset + productos.length < total,
+        },
+        estadisticas_generales: estadisticasGenerales,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   findOne(id: number) {
     return `This action returns a #${id} agroFacturacion`;
   }
@@ -972,5 +1081,41 @@ export class AgroFacturacionService {
     }
 
     validarTiempoCancelacion(factura.created_at);
+  }
+
+  private async calcularEstadisticasGenerales(clienteId: string) {
+    const estadisticas = await this.facturaEncabezadoRepository
+      .createQueryBuilder('factura')
+      .where('factura.id_cliente = :clienteId', { clienteId })
+      .andWhere('factura.estado = :estado', { estado: EstadoFactura.PROCESADA })
+      .select([
+        'COUNT(factura.id) AS total_facturas',
+        'SUM(factura.total) AS total_gastado',
+        'AVG(factura.total) AS promedio_factura',
+        'MIN(factura.fecha_recepcion) AS primera_compra',
+        'MAX(factura.fecha_recepcion) AS ultima_compra',
+        'SUM(factura.sub_total) AS total_subtotal',
+        'SUM(factura.isv_15 + factura.isv_18) AS total_isv',
+      ])
+      .getRawOne();
+
+    const totalProductosUnicos = await this.facturaDetalleRepository
+      .createQueryBuilder('detalle')
+      .innerJoin('detalle.factura', 'factura')
+      .where('factura.id_cliente = :clienteId', { clienteId })
+      .andWhere('factura.estado = :estado', { estado: EstadoFactura.PROCESADA })
+      .select('COUNT(DISTINCT detalle.id_producto)', 'total')
+      .getRawOne();
+
+    return {
+      total_facturas: parseInt(estadisticas.total_facturas) || 0,
+      total_gastado: parseFloat(estadisticas.total_gastado) || 0,
+      promedio_factura: parseFloat(estadisticas.promedio_factura) || 0,
+      total_productos_unicos: parseInt(totalProductosUnicos.total) || 0,
+      primera_compra: estadisticas.primera_compra,
+      ultima_compra: estadisticas.ultima_compra,
+      total_subtotal: parseFloat(estadisticas.total_subtotal) || 0,
+      total_isv: parseFloat(estadisticas.total_isv) || 0,
+    };
   }
 }

@@ -45,13 +45,24 @@ export class AgroFacturacionController {
     return this.agroFacturacionService.findAll(propietarioid, paginationDto);
   }
 
-  @Get('/procesadas/:propietarioid')
+  @Get('procesadas/:propietarioid')
   findAllProcesadas(
     @Param('propietarioid') propietarioid: string,
     @Query() paginationDto: PaginationDto,
   ) {
     return this.agroFacturacionService.findAllProcesadas(
       propietarioid,
+      paginationDto,
+    );
+  }
+
+  @Get('cliente/:clienteId')
+  findProductosFrecuentes(
+    @Param('clienteId') clienteId: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.agroFacturacionService.findProductosFrecuentes(
+      clienteId,
       paginationDto,
     );
   }
