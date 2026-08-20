@@ -1,6 +1,6 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Injectable, Res } from '@nestjs/common';
+import { BadRequestException, Injectable, Res } from '@nestjs/common';
 import { Response } from 'express';
 import * as path from 'path';
 import { FacturaEncabezado } from 'src/factura_encabezado/entities/factura_encabezado.entity';

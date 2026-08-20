@@ -84,12 +84,15 @@ export class PermisosClientesAgroService {
 
     try {
       let tieneAgroservicio = false;
+      let tieneLogo = false;
       try {
         const agroservicio =
           await this.validationAgro.obtenerAgroservicio(propietarioId);
         tieneAgroservicio = !!agroservicio;
+        tieneLogo = !!agroservicio?.logo;
       } catch (error) {
         tieneAgroservicio = false;
+        tieneLogo = false;
       }
 
       const permisos = await this.permisosRepo.find({
@@ -100,7 +103,7 @@ export class PermisosClientesAgroService {
         throw new NotFoundException('No se encontraron permisos disponibles');
       }
 
-      if (!tieneAgroservicio) {
+      if (!tieneAgroservicio || !tieneLogo) {
         const permisosCreacion = [
           '/agro-propietario/agro-servicios',
           '/agro-propietario/agro-perfil',
