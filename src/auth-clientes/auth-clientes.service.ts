@@ -455,6 +455,156 @@ export class AuthClientesService {
     }
   }
 
+  async loginUserFresh(cliente: Cliente) {
+    const { email } = cliente;
+
+    try {
+      const cliente = await this.clienteRepository
+        .createQueryBuilder('cliente')
+        .leftJoinAndSelect('cliente.pais', 'pais')
+        .leftJoinAndSelect('pais.departamentos', 'departamentos')
+        .leftJoinAndSelect('departamentos.municipios', 'municipios')
+        .leftJoinAndSelect('cliente.departamento', 'departamento')
+        .leftJoinAndSelect('departamento.municipios', 'dpt_municipios')
+        .leftJoinAndSelect('cliente.municipio', 'municipio')
+        .leftJoinAndSelect('cliente.profileImages', 'profileImages')
+        .leftJoinAndSelect('cliente.asignacionesTrabajador', 'asignaciones')
+        .leftJoinAndSelect('asignaciones.finca', 'finca')
+        .leftJoinAndSelect('finca.departamento', 'finca_departamento')
+        .leftJoinAndSelect('finca.municipio', 'finca_municipio')
+        .leftJoinAndSelect('asignaciones.asignadoPor', 'asignadoPor')
+        .leftJoinAndSelect('cliente.paquetes', 'clientePaquete')
+        .leftJoinAndSelect('clientePaquete.paquete', 'paquete')
+        .where('cliente.email = :email', { email })
+        .orderBy('profileImages.createdAt', 'DESC')
+        .getOne();
+
+      if (!cliente)
+        throw new UnauthorizedException('Credenciales incorrectas (email)');
+
+      if (!cliente.isActive)
+        throw new UnauthorizedException(
+          'Credenciales incorrectas, usuario desactivado.',
+        );
+
+      if (!cliente.verified)
+        throw new UnauthorizedException(
+          'El usuario no ha sido verificado, revisa tu correo electronico.',
+        );
+
+      const token = this.getJwtToken({ id: cliente.id });
+      delete cliente.password;
+
+      const propietarioId = getPropietarioId(cliente);
+
+      const ahora = new Date();
+
+      const paqueteActivo = await this.clientePaquete.findOne({
+        where: {
+          cliente: { id: propietarioId },
+          activo: true,
+        },
+      });
+
+      const paqueteVencido =
+        !paqueteActivo ||
+        (paqueteActivo.fechaFin && new Date(paqueteActivo.fechaFin) <= ahora);
+
+      if (cliente.rol !== TipoCliente.PROPIETARIO && paqueteVencido) {
+        throw new UnauthorizedException(
+          'No puedes acceder, el paquete del propietario ha vencido o no existe.',
+        );
+      }
+
+      let paqueteActivoData = null;
+      let paqueteActivoInfo = null;
+
+      if (cliente.rol === TipoCliente.PROPIETARIO) {
+        paqueteActivoData = cliente.paquetes?.find(
+          (cp: any) =>
+            cp.activo === true &&
+            (!cp.fechaFin || new Date(cp.fechaFin) > ahora),
+        );
+      } else {
+        paqueteActivoData = await this.clientePaquete.findOne({
+          where: {
+            cliente: { id: propietarioId },
+            activo: true,
+          },
+          relations: ['paquete'],
+        });
+      }
+
+      if (paqueteActivoData) {
+        const fechaFin = paqueteActivoData.fechaFin;
+        const fechaInicio = paqueteActivoData.fechaInicio;
+
+        const diasRestantes = fechaFin
+          ? Math.ceil(
+              (new Date(fechaFin).getTime() - ahora.getTime()) /
+                (1000 * 60 * 60 * 24),
+            )
+          : null;
+
+        const diasTotales =
+          fechaInicio && fechaFin
+            ? Math.ceil(
+                (new Date(fechaFin).getTime() -
+                  new Date(fechaInicio).getTime()) /
+                  (1000 * 60 * 60 * 24),
+              )
+            : 0;
+
+        paqueteActivoInfo = {
+          id: paqueteActivoData.id,
+          fechaInicio: fechaInicio,
+          fechaFin: fechaFin,
+          fechaInicioFormateada: formatearFechaEs(fechaInicio),
+          fechaFinFormateada: fechaFin ? formatearFechaEs(fechaFin) : null,
+          activo: paqueteActivoData.activo,
+          diasRestantes: diasRestantes && diasRestantes > 0 ? diasRestantes : 0,
+          diasTotales: diasTotales,
+          estaVencido: diasRestantes !== null && diasRestantes <= 0,
+          estaPorVencer:
+            diasRestantes !== null && diasRestantes <= 7 && diasRestantes > 0,
+          paquete: {
+            id: paqueteActivoData.paquete?.id,
+            nombre: paqueteActivoData.paquete?.nombre,
+            tipo: paqueteActivoData.paquete?.tipo,
+            maxFincas: paqueteActivoData.paquete?.maxFincas,
+            maxAnimales: paqueteActivoData.paquete?.maxAnimales,
+            maxTrabajadores: paqueteActivoData.paquete?.maxTrabajadores,
+            isActive: paqueteActivoData.paquete?.isActive,
+            ecommerce: paqueteActivoData.paquete?.ecommerce,
+          },
+        };
+      }
+
+      const clientePlano = instanceToPlain(cliente);
+      const { paquetes, ...clienteSinPaquetes } = clientePlano;
+
+      let propietarioInfo = null;
+      if (cliente.rol !== TipoCliente.PROPIETARIO && cliente.propietario) {
+        propietarioInfo = {
+          id: cliente.propietario.id,
+          nombre: cliente.propietario.nombre,
+          email: cliente.propietario.email,
+          telefono: cliente.propietario.telefono,
+        };
+      }
+
+      return {
+        ...clienteSinPaquetes,
+        paqueteActivo: paqueteActivoInfo,
+        tienePlanActivo: !!paqueteActivoData,
+        propietario: propietarioInfo,
+        token,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
   async checkAuthStatus(cliente: Cliente) {
     delete cliente.password;
     return {

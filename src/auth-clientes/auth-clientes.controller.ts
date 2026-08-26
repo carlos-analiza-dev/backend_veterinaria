@@ -50,6 +50,12 @@ export class AuthClientesController {
     return this.authClientesService.login(loginClienteDto);
   }
 
+  @Post('login-fresh')
+  @AuthCliente()
+  loginUserFresh(@GetCliente() cliente: Cliente) {
+    return this.authClientesService.loginUserFresh(cliente);
+  }
+
   @Post('change-password')
   actualizarContrasena(@Body() updatePassword: UpdatePasswordDto) {
     return this.authClientesService.actualizarContrasena(updatePassword);
