@@ -136,6 +136,7 @@ import { AgroFacturacionModule } from './agro_facturacion/agro_facturacion.modul
 import { AgroClientesModule } from './agro_clientes/agro_clientes.module';
 import { ConsumoAgroInsumosModule } from './consumo_agro_insumos/consumo_agro_insumos.module';
 import { CodigosPaquetesModule } from './codigos_paquetes/codigos_paquetes.module';
+import { PagosPlanesModule } from './pagos_planes/pagos_planes.module';
 
 @Module({
   imports: [
@@ -408,6 +409,8 @@ import { CodigosPaquetesModule } from './codigos_paquetes/codigos_paquetes.modul
     ConsumoAgroInsumosModule,
 
     CodigosPaquetesModule,
+
+    PagosPlanesModule,
   ],
   controllers: [],
   providers: [],

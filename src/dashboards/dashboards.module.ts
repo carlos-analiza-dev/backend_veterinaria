@@ -22,6 +22,8 @@ import { PlanillaTrabajadore } from 'src/planilla_trabajadores/entities/planilla
 import { Cultivo } from 'src/cultivos/entities/cultivo.entity';
 import { AgroFacturacion } from 'src/agro_facturacion/entities/agro_facturacion.entity';
 import { AgroFacturaDetalle } from 'src/agro_facturacion/entities/agro_factura_detalle.entity';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
+import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
 
 @Module({
   controllers: [DashboardsController],
@@ -45,10 +47,11 @@ import { AgroFacturaDetalle } from 'src/agro_facturacion/entities/agro_factura_d
       Cultivo,
       AgroFacturacion,
       AgroFacturaDetalle,
+      DatosAgroservicio,
     ]),
     AuthModule,
     AuthClientesModule,
   ],
-  providers: [DashboardService],
+  providers: [DashboardService, AgroservicioValidationService],
 })
 export class DashboardsModule {}

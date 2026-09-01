@@ -212,29 +212,59 @@ export class DashboardsController {
   }
 
   //AGRO FACTURACION
-  @Get('metricas-agro/resumen')
-  obtenerResumen(@Query() paginationDto: PaginationDto) {
-    return this.dashboardService.obtenerMetricaResumen(paginationDto);
+  @Get('metricas-agro/resumen/:propietarioId')
+  obtenerResumen(
+    @Param('propietarioId') propietarioId: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.dashboardService.obtenerMetricaResumen(
+      propietarioId,
+      paginationDto,
+    );
   }
 
-  @Get('metricas-agro/ventas')
-  obtenerVentas(@Query() paginationDto: PaginationDto) {
-    return this.dashboardService.obtenerMetricaVentas(paginationDto);
+  @Get('metricas-agro/ventas/:propietarioId')
+  obtenerVentas(
+    @Param('propietarioId') propietarioId: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.dashboardService.obtenerMetricaVentas(
+      propietarioId,
+      paginationDto,
+    );
   }
 
-  @Get('metricas-agro/productos')
-  obtenerProductos(@Query() paginationDto: PaginationDto) {
-    return this.dashboardService.obtenerMetricaProductos(paginationDto);
+  @Get('metricas-agro/productos/:propietarioId')
+  obtenerProductos(
+    @Param('propietarioId') propietarioId: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.dashboardService.obtenerMetricaProductos(
+      propietarioId,
+      paginationDto,
+    );
   }
 
-  @Get('metricas-agro/clientes')
-  obtenerClientes(@Query() paginationDto: PaginationDto) {
-    return this.dashboardService.obtenerMetricaClientes(paginationDto);
+  @Get('metricas-agro/clientes/:propietarioId')
+  obtenerClientes(
+    @Param('propietarioId') propietarioId: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.dashboardService.obtenerMetricaClientes(
+      propietarioId,
+      paginationDto,
+    );
   }
 
-  @Get('metricas-agro/sucursales')
-  obtenerSucursales(@Query() paginationDto: PaginationDto) {
-    return this.dashboardService.obtenerMetricaSucursales(paginationDto);
+  @Get('metricas-agro/sucursales/:propietarioId')
+  obtenerSucursales(
+    @Param('propietarioId') propietarioId: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.dashboardService.obtenerMetricaSucursales(
+      propietarioId,
+      paginationDto,
+    );
   }
 
   @Get('metricas-agro/formas-pago')
@@ -242,8 +272,14 @@ export class DashboardsController {
     return this.dashboardService.obtenerMetricaFormasPago(paginationDto);
   }
 
-  @Get('metricas-agro/estados')
-  obtenerEstados(@Query() paginationDto: PaginationDto) {
-    return this.dashboardService.obtenerMetricaEstados(paginationDto);
+  @Get('metricas-agro/estados/:propietarioId')
+  obtenerEstados(
+    @Param('propietarioId') propietarioId: string,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return this.dashboardService.obtenerMetricaEstados(
+      propietarioId,
+      paginationDto,
+    );
   }
 }

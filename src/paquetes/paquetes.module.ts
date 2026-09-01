@@ -9,6 +9,9 @@ import { AuthModule } from 'src/auth/auth.module';
 import { User } from 'src/auth/entities/auth.entity';
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { PaqueteNotificacionService } from './paquete-notificacion.service';
+import { ClientePaquete } from 'src/cliente_paquetes/entities/cliente_paquete.entity';
+import { MailService } from 'src/mail/mail.service';
 
 @Module({
   controllers: [PaquetesController],
@@ -19,10 +22,11 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
       PaquetePermiso,
       User,
       Cliente,
+      ClientePaquete,
     ]),
     AuthModule,
     AuthClientesModule,
   ],
-  providers: [PaquetesService],
+  providers: [PaquetesService, PaqueteNotificacionService, MailService],
 })
 export class PaquetesModule {}

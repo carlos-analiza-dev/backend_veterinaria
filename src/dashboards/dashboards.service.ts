@@ -42,6 +42,7 @@ import { PlanillaTrabajadore } from 'src/planilla_trabajadores/entities/planilla
 import { Cultivo } from 'src/cultivos/entities/cultivo.entity';
 import { AgroFacturacion } from 'src/agro_facturacion/entities/agro_facturacion.entity';
 import { AgroFacturaDetalle } from 'src/agro_facturacion/entities/agro_factura_detalle.entity';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 
 @Injectable()
 export class DashboardService {
@@ -80,6 +81,7 @@ export class DashboardService {
     private readonly facturaRepo: Repository<AgroFacturacion>,
     @InjectRepository(AgroFacturaDetalle)
     private readonly detalleFacturaRepo: Repository<AgroFacturaDetalle>,
+    private readonly agroservicioValid: AgroservicioValidationService,
   ) {}
 
   async getIngresosTotales(user: User, paginationDto: PaginationDto) {
@@ -974,13 +976,22 @@ export class DashboardService {
     });
   }
 
-  async obtenerMetricaResumen(paginationDto: PaginationDto) {
+  async obtenerMetricaResumen(
+    propietarioId: string,
+    paginationDto: PaginationDto,
+  ) {
+    const agroservicio =
+      await this.agroservicioValid.obtenerAgroservicio(propietarioId);
+    const agroservicioId = agroservicio.id;
     const { fechaInicio, fechaFin, sucursal } = paginationDto;
 
     const query = this.facturaRepo
       .createQueryBuilder('factura')
       .where('factura.estado = :estado', {
         estado: EstadoFactura.PROCESADA,
+      })
+      .andWhere('factura.agroservicioId = :agroservicioId', {
+        agroservicioId,
       })
       .select('COUNT(factura.id)', 'cantidadFacturas')
       .addSelect('COALESCE(SUM(factura.total), 0)', 'ventasTotales')
@@ -1028,13 +1039,22 @@ export class DashboardService {
     };
   }
 
-  async obtenerMetricaVentas(paginationDto: PaginationDto) {
+  async obtenerMetricaVentas(
+    propietarioId: string,
+    paginationDto: PaginationDto,
+  ) {
+    const agroservicio =
+      await this.agroservicioValid.obtenerAgroservicio(propietarioId);
+    const agroservicioId = agroservicio.id;
     const { fechaInicio, fechaFin, sucursal } = paginationDto;
 
     const query = this.facturaRepo
       .createQueryBuilder('factura')
       .where('factura.estado = :estado', {
         estado: EstadoFactura.PROCESADA,
+      })
+      .andWhere('factura.agroservicioId = :agroservicioId', {
+        agroservicioId,
       })
       .select(`DATE_TRUNC('month', factura.fecha_recepcion)`, 'fecha')
       .addSelect('COUNT(factura.id)', 'cantidadFacturas')
@@ -1066,7 +1086,13 @@ export class DashboardService {
     }));
   }
 
-  async obtenerMetricaProductos(paginationDto: PaginationDto) {
+  async obtenerMetricaProductos(
+    propietarioId: string,
+    paginationDto: PaginationDto,
+  ) {
+    const agroservicio =
+      await this.agroservicioValid.obtenerAgroservicio(propietarioId);
+    const agroservicioId = agroservicio.id;
     const { fechaInicio, fechaFin, sucursal } = paginationDto;
 
     const query = this.detalleFacturaRepo
@@ -1075,6 +1101,9 @@ export class DashboardService {
       .innerJoin('detalle.producto', 'producto')
       .where('factura.estado = :estado', {
         estado: EstadoFactura.PROCESADA,
+      })
+      .andWhere('factura.agroservicioId = :agroservicioId', {
+        agroservicioId,
       })
       .select('producto.id', 'productoId')
       .addSelect('producto.nombre', 'producto')
@@ -1108,7 +1137,13 @@ export class DashboardService {
     }));
   }
 
-  async obtenerMetricaClientes(paginationDto: PaginationDto) {
+  async obtenerMetricaClientes(
+    propietarioId: string,
+    paginationDto: PaginationDto,
+  ) {
+    const agroservicio =
+      await this.agroservicioValid.obtenerAgroservicio(propietarioId);
+    const agroservicioId = agroservicio.id;
     const { fechaInicio, fechaFin, sucursal } = paginationDto;
 
     const query = this.facturaRepo
@@ -1116,6 +1151,9 @@ export class DashboardService {
       .innerJoin('factura.cliente', 'cliente')
       .where('factura.estado = :estado', {
         estado: EstadoFactura.PROCESADA,
+      })
+      .andWhere('factura.agroservicioId = :agroservicioId', {
+        agroservicioId,
       })
       .select('cliente.id', 'clienteId')
       .addSelect('cliente.nombre', 'cliente')
@@ -1153,7 +1191,13 @@ export class DashboardService {
     }));
   }
 
-  async obtenerMetricaSucursales(paginationDto: PaginationDto) {
+  async obtenerMetricaSucursales(
+    propietarioId: string,
+    paginationDto: PaginationDto,
+  ) {
+    const agroservicio =
+      await this.agroservicioValid.obtenerAgroservicio(propietarioId);
+    const agroservicioId = agroservicio.id;
     const { fechaInicio, fechaFin, sucursal } = paginationDto;
 
     const query = this.facturaRepo
@@ -1161,6 +1205,9 @@ export class DashboardService {
       .innerJoin('factura.sucursal', 'sucursal')
       .where('factura.estado = :estado', {
         estado: EstadoFactura.PROCESADA,
+      })
+      .andWhere('factura.agroservicioId = :agroservicioId', {
+        agroservicioId,
       })
       .select('sucursal.id', 'sucursalId')
       .addSelect('sucursal.nombre', 'sucursal')
@@ -1234,11 +1281,20 @@ export class DashboardService {
     }));
   }
 
-  async obtenerMetricaEstados(paginationDto: PaginationDto) {
+  async obtenerMetricaEstados(
+    propietarioId: string,
+    paginationDto: PaginationDto,
+  ) {
+    const agroservicio =
+      await this.agroservicioValid.obtenerAgroservicio(propietarioId);
+    const agroservicioId = agroservicio.id;
     const { fechaInicio, fechaFin, sucursal } = paginationDto;
 
     const query = this.facturaRepo
       .createQueryBuilder('factura')
+      .where('factura.agroservicioId = :agroservicioId', {
+        agroservicioId,
+      })
       .select('factura.estado', 'estado')
       .addSelect('COUNT(factura.id)', 'cantidad');
 

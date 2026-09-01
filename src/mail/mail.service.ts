@@ -540,4 +540,50 @@ export class MailService {
       throw new Error('Error enviando correo de mantenimiento por finalizar');
     }
   }
+
+  async sendPaquetePorVencer(
+    email: string,
+    nombre_cliente: string,
+    nombre_paquete: string,
+    dias_restantes: number,
+    fecha_vencimiento: string,
+    simbolo_moneda: string,
+    max_fincas: number,
+    max_animales: number,
+    max_trabajadores: number,
+    ecommerce: string,
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      const es_urgente = dias_restantes <= 1;
+      const es_aviso_importante = dias_restantes <= 3;
+
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `⚠️ Tu paquete ${nombre_paquete} está por vencer - El Sembrador`,
+        template: './paquete-por-vencer',
+        context: {
+          nombre_cliente,
+          nombre_paquete,
+          dias_restantes,
+          fecha_vencimiento,
+          simbolo_moneda,
+          max_fincas,
+          max_animales,
+          max_trabajadores,
+          ecommerce,
+          es_urgente,
+          es_aviso_importante,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de notificación de paquete enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de notificación de paquete`);
+    }
+  }
 }

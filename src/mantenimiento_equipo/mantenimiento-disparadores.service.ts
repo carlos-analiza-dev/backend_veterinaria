@@ -16,7 +16,7 @@ export class MantenimientoDisparadoresService {
     private readonly mailService: MailService,
   ) {}
 
-  @Cron(CronExpression.EVERY_30_MINUTES)
+  @Cron(CronExpression.EVERY_6_HOURS)
   async notificarMantenimientoPorFinalizar() {
     this.logger.log('Verificando mantenimientos por finalizar...');
 
