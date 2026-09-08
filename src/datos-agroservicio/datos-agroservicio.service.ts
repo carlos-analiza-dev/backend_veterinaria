@@ -9,8 +9,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DatosAgroservicio } from './entities/datos-agroservicio.entity';
 import { Repository } from 'typeorm';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
-import { getPropietarioId } from 'src/utils/get-propietario-id';
 import { User } from 'src/auth/entities/auth.entity';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 
 @Injectable()
 export class DatosAgroservicioService {
@@ -21,16 +21,23 @@ export class DatosAgroservicioService {
     private readonly clienteRepo: Repository<Cliente>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    private readonly validaAgro: AgroservicioValidationService,
   ) {}
 
   async create(cliente: Cliente, createDto: CreateDatosAgroservicioDto) {
-    const propietarioId = getPropietarioId(cliente);
-    const existe = await this.datosRepository.findOne({
-      where: [
-        { rtn: createDto.rtn },
-        { nombre_agroservicio: createDto.nombre_agroservicio },
-      ],
-    });
+    const propietarioId = cliente.id ?? '';
+    const paisId = cliente.pais.id ?? '';
+    const existe = await this.datosRepository
+      .createQueryBuilder('datos')
+      .where('datos.paisId = :paisId', { paisId })
+      .andWhere(
+        '(datos.rtn = :rtn OR datos.nombre_agroservicio = :nombreAgroservicio)',
+        {
+          rtn: createDto.rtn,
+          nombreAgroservicio: createDto.nombre_agroservicio,
+        },
+      )
+      .getOne();
 
     if (existe) throw new ConflictException('El RTN o nombre ya existen');
 
@@ -46,6 +53,12 @@ export class DatosAgroservicioService {
         'Ya tienes el agroservicio registrado en este pais',
       );
 
+    const telefono_existe_agro = await this.datosRepository.findOne({
+      where: {
+        telefono: createDto.telefono,
+      },
+    });
+
     const telefono_exist_cliente = await this.clienteRepo.findOne({
       where: { telefono: createDto.telefono },
     });
@@ -53,7 +66,7 @@ export class DatosAgroservicioService {
       where: { telefono: createDto.telefono },
     });
 
-    if (telefono_exist_cliente || telefono_exist_user)
+    if (telefono_exist_cliente || telefono_exist_user || telefono_existe_agro)
       throw new ConflictException(
         'El numero de telefono que ingresaste ya esta siendo usado',
       );
@@ -80,10 +93,13 @@ export class DatosAgroservicioService {
   }
 
   async findAll(cliente: Cliente) {
-    const propietarioId = getPropietarioId(cliente);
+    const propietarioId = cliente.id;
+    const agroservicio =
+      await this.validaAgro.obtenerAgroservicio(propietarioId);
+    const agroservicioId = agroservicio.id;
 
     return await this.datosRepository.findOne({
-      where: { propietarioId },
+      where: { id: agroservicioId },
       relations: ['propietario'],
     });
   }
@@ -108,11 +124,84 @@ export class DatosAgroservicioService {
       throw new NotFoundException('No se encontraron datos del agroservicio');
     }
 
-    if (updateDto.rtn) {
-      updateDto.rtn = updateDto.rtn.replace(/-/g, '');
+    const rtn = updateDto.rtn
+      ? updateDto.rtn.replace(/-/g, '')
+      : datosEmpresa.rtn;
+
+    const nombreAgroservicio =
+      updateDto.nombre_agroservicio ?? datosEmpresa.nombre_agroservicio;
+
+    const telefono = updateDto.telefono ?? datosEmpresa.telefono;
+
+    const correo = updateDto.correo ?? datosEmpresa.correo;
+
+    const existeRtnONombre = await this.datosRepository
+      .createQueryBuilder('datos')
+      .where('datos.id != :id', { id })
+      .andWhere('datos.paisId = :paisId', {
+        paisId: datosEmpresa.paisId,
+      })
+      .andWhere(
+        '(datos.rtn = :rtn OR datos.nombre_agroservicio = :nombreAgroservicio)',
+        {
+          rtn,
+          nombreAgroservicio,
+        },
+      )
+      .getOne();
+
+    if (existeRtnONombre) {
+      throw new ConflictException(
+        'El RTN o nombre del agroservicio ya existen',
+      );
     }
 
-    Object.assign(datosEmpresa, updateDto);
+    const telefonoExistCliente = await this.clienteRepo.findOne({
+      where: {
+        telefono,
+      },
+    });
+
+    const telefonoExisteAgro = await this.datosRepository
+      .createQueryBuilder('datos')
+      .where('datos.telefono = :telefono', { telefono })
+      .andWhere('datos.id != :id', { id })
+      .getOne();
+
+    const telefonoExistUser = await this.userRepo.findOne({
+      where: {
+        telefono,
+      },
+    });
+
+    if (telefonoExistCliente || telefonoExistUser || telefonoExisteAgro) {
+      throw new ConflictException(
+        'El número de teléfono que ingresaste ya está siendo usado',
+      );
+    }
+
+    const correoExistCliente = await this.clienteRepo.findOne({
+      where: {
+        email: correo,
+      },
+    });
+
+    const correoExistUser = await this.userRepo.findOne({
+      where: {
+        email: correo,
+      },
+    });
+
+    if (correoExistCliente || correoExistUser) {
+      throw new ConflictException(
+        'El correo que ingresaste ya está siendo usado',
+      );
+    }
+
+    Object.assign(datosEmpresa, {
+      ...updateDto,
+      rtn,
+    });
 
     return await this.datosRepository.save(datosEmpresa);
   }

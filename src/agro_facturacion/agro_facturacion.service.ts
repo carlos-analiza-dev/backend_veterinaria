@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   NotFoundException,
+  Res,
   UnauthorizedException,
 } from '@nestjs/common';
 import { CreateAgroFacturacionDto } from './dto/create-agro_facturacion.dto';
@@ -20,7 +21,7 @@ import { AgroSucursale } from 'src/agro-sucursales/entities/agro-sucursale.entit
 import { convertirNumeroALetras } from 'src/helpers/convertir_numeros_letras';
 import { DescuentosAgroCliente } from 'src/descuentos_clientes/entities/descuentos_clientes_agro.entity';
 import { CreateAgroFacturaDetalleDto } from './dto/create-agro_factura_detalle.dto';
-import { ProductoAgro } from 'src/interfaces/agro-producto/response-productos-agro.interface';
+import { ProductoAgro } from 'src/interfaces/agro-producto/Response-productos-agro.interface';
 import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 import { instanceToPlain } from 'class-transformer';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
@@ -36,6 +37,11 @@ import {
   validarTiempoCancelacion,
   validarVigenciaAutorizacion,
 } from 'src/helpers/funciones_facturacion';
+import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroservicio.entity';
+import * as path from 'path';
+import { Response } from 'express';
+import { MailService } from 'src/mail/mail.service';
+const PDFDocument = require('pdfkit');
 
 @Injectable()
 export class AgroFacturacionService {
@@ -57,6 +63,9 @@ export class AgroFacturacionService {
     @InjectRepository(AuditoriaFacturacion)
     private readonly auditFacturacionRepo: Repository<AuditoriaFacturacion>,
     private readonly validationAgro: AgroservicioValidationService,
+    @InjectRepository(DatosAgroservicio)
+    private readonly datosAgroRepository: Repository<DatosAgroservicio>,
+    private readonly mailService: MailService,
     private dataSource: DataSource,
   ) {}
   async create(
@@ -736,7 +745,7 @@ export class AgroFacturacionService {
           AgroFacturacion,
           {
             where: { id },
-            relations: ['detalles', 'detalles.producto'],
+            relations: ['detalles', 'detalles.producto', 'cliente'],
           },
         );
 
@@ -764,6 +773,14 @@ export class AgroFacturacionService {
         factura.estado = EstadoFactura.PROCESADA;
         const facturaActualizada =
           await transactionalEntityManager.save(factura);
+
+        const agroservicioId = factura.agroservicioId;
+
+        this.enviarFacturaPorCorreo(facturaActualizada, agroservicioId).catch(
+          (error) => {
+            console.error('Error en envío de factura por correo:', error);
+          },
+        );
 
         return facturaActualizada;
       },
@@ -1117,5 +1134,574 @@ export class AgroFacturacionService {
       total_subtotal: parseFloat(estadisticas.total_subtotal) || 0,
       total_isv: parseFloat(estadisticas.total_isv) || 0,
     };
+  }
+
+  private async generarPDFBuffer(
+    facturaId: string,
+    agroservicioId: string,
+  ): Promise<Buffer> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const factura = await this.facturaEncabezadoRepository.findOne({
+          where: { id: facturaId },
+          relations: [
+            'cliente',
+            'detalles',
+            'detalles.producto',
+            'rango_factura',
+          ],
+        });
+
+        if (!factura) {
+          reject(new Error('Factura no encontrada'));
+          return;
+        }
+
+        const agroservicio = await this.datosAgroRepository.findOne({
+          where: { id: agroservicioId },
+          relations: ['pais'],
+        });
+
+        if (!agroservicio) {
+          reject(new Error('Datos de la empresa no encontrados'));
+          return;
+        }
+
+        const simbolo = agroservicio.pais?.simbolo_moneda ?? '$';
+        const buffers: Buffer[] = [];
+
+        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+
+        doc.on('data', (chunk) => buffers.push(chunk));
+        doc.on('end', () => resolve(Buffer.concat(buffers)));
+        doc.on('error', (err) => reject(err));
+
+        const formatDate = (date: any): string => {
+          if (!date) return 'N/A';
+          const options: Intl.DateTimeFormatOptions = {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          };
+          if (typeof date === 'string') {
+            const [year, month, day] = date.split('-').map(Number);
+            const dateObj = new Date(year, month - 1, day);
+            return dateObj.toLocaleDateString('es-ES', options);
+          }
+          if (date instanceof Date) {
+            return date.toLocaleDateString('es-ES', options);
+          }
+          return 'N/A';
+        };
+
+        const formatNumber = (num: number): string => {
+          return new Intl.NumberFormat('es-HN').format(num);
+        };
+
+        const drawCell = (
+          x: number,
+          y: number,
+          width: number,
+          height: number,
+          text: string,
+          backgroundColor: string = '#FFFFFF',
+          textColor: string = '#000000',
+          fontSize: number = 8,
+          bold: boolean = false,
+        ) => {
+          doc.rect(x, y, width, height).fillColor(backgroundColor).fill();
+          doc.rect(x, y, width, height).strokeColor('#CCCCCC').stroke();
+          doc.font(bold ? 'Helvetica-Bold' : 'Helvetica');
+          doc
+            .fontSize(fontSize)
+            .fillColor(textColor)
+            .text(text, x + 5, y + (height - fontSize) / 2, {
+              width: width - 10,
+              align: 'left',
+            });
+        };
+
+        const drawCellRight = (
+          x: number,
+          y: number,
+          width: number,
+          height: number,
+          text: string,
+          backgroundColor: string = '#FFFFFF',
+          textColor: string = '#000000',
+          fontSize: number = 8,
+          bold: boolean = false,
+        ) => {
+          doc.rect(x, y, width, height).fillColor(backgroundColor).fill();
+          doc.rect(x, y, width, height).strokeColor('#CCCCCC').stroke();
+          doc.font(bold ? 'Helvetica-Bold' : 'Helvetica');
+          doc
+            .fontSize(fontSize)
+            .fillColor(textColor)
+            .text(text, x, y + (height - fontSize) / 2, {
+              width: width - 10,
+              align: 'right',
+            });
+        };
+
+        try {
+          if (agroservicio.logo?.url) {
+            const url = new URL(agroservicio.logo.url);
+            const logoPath = path.join(
+              process.cwd(),
+              url.pathname.replace(/^\//, ''),
+            );
+            doc.image(logoPath, 400, 0, { width: 100 });
+          }
+        } catch (error) {
+          console.warn('No se pudo cargar el logo');
+        }
+
+        doc
+          .fontSize(16)
+          .font('Helvetica-Bold')
+          .fillColor('#000000')
+          .text('Factura', 50, 60, { align: 'left' });
+
+        doc.fontSize(10).font('Helvetica');
+        doc.text(`No. de Factura ${factura.numero_factura}`, 50, 80);
+        doc.text(`Fecha de Factura: ${formatDate(factura.created_at)}`, 50, 92);
+        doc.text(
+          `Fecha Limite de Emisión: ${formatDate(factura.fecha_limite_emision)}`,
+          50,
+          104,
+        );
+        doc.text(
+          `Fecha de Recepción: ${formatDate(factura.fecha_recepcion)}`,
+          50,
+          116,
+        );
+        doc.text(
+          `Rango Autorizado: ${factura.rango_factura.prefijo}-${factura.rango_factura.rango_inicial} hasta ${factura.rango_factura.prefijo}-${factura.rango_factura.rango_final}`,
+          50,
+          128,
+        );
+
+        const infoEmpresaY = 160;
+        doc.fontSize(10);
+        doc
+          .font('Helvetica-Bold')
+          .text(`Propietaria: ${agroservicio.propietario}`, 50, infoEmpresaY);
+        doc
+          .font('Helvetica')
+          .text(agroservicio.direccion, 50, infoEmpresaY + 12);
+        doc.text(`${agroservicio.correo}`, 50, infoEmpresaY + 24);
+        doc.text(`RTN: ${agroservicio.rtn}`, 50, infoEmpresaY + 36);
+        doc
+          .font('Helvetica-Bold')
+          .text(
+            `Forma de Pago: ${factura.forma_pago === 'Credito' ? 'Crédito' : 'Contado'}`,
+            50,
+            infoEmpresaY + 48,
+          );
+
+        const tableTop = 220;
+        const cellHeight = 20;
+        const colWidths = [80, 220, 100, 100];
+
+        drawCell(
+          50,
+          tableTop,
+          500,
+          cellHeight,
+          'DATOS DEL CLIENTE',
+          '#2E86AB',
+          '#FFFFFF',
+          10,
+          true,
+        );
+        drawCell(
+          50,
+          tableTop + cellHeight,
+          250,
+          cellHeight,
+          `Nombre: ${factura.cliente.nombre || 'Cliente'}`,
+          '#F8F9FA',
+        );
+        drawCell(
+          300,
+          tableTop + cellHeight,
+          250,
+          cellHeight,
+          `RTN: ${(factura.cliente as any).rtn || 'N/A'}`,
+          '#F8F9FA',
+        );
+        drawCell(
+          50,
+          tableTop + cellHeight * 2,
+          500,
+          cellHeight,
+          `Dirección: ${(factura.cliente as any).direccion || 'N/A'}`,
+          '#FFFFFF',
+        );
+        drawCell(
+          50,
+          tableTop + cellHeight * 3,
+          500,
+          cellHeight,
+          `Ciudad: ${(factura.cliente as any).ciudad || 'N/A'}`,
+          '#F8F9FA',
+        );
+
+        const detallesTop = tableTop + cellHeight * 4 + 20;
+        let currentY = detallesTop;
+
+        drawCell(
+          50,
+          detallesTop,
+          colWidths[0],
+          cellHeight,
+          'CANTIDAD',
+          '#2E86AB',
+          '#FFFFFF',
+          9,
+          true,
+        );
+        drawCell(
+          130,
+          detallesTop,
+          colWidths[1],
+          cellHeight,
+          'DESCRIPCIÓN',
+          '#2E86AB',
+          '#FFFFFF',
+          9,
+          true,
+        );
+        drawCell(
+          350,
+          detallesTop,
+          colWidths[2],
+          cellHeight,
+          'PRECIO UNITARIO',
+          '#2E86AB',
+          '#FFFFFF',
+          9,
+          true,
+        );
+        drawCell(
+          450,
+          detallesTop,
+          colWidths[3],
+          cellHeight,
+          'TOTAL',
+          '#2E86AB',
+          '#FFFFFF',
+          9,
+          true,
+        );
+
+        currentY += cellHeight;
+
+        factura.detalles.forEach((detalle, index) => {
+          const backgroundColor = index % 2 === 0 ? '#FFFFFF' : '#F8F9FA';
+          drawCell(
+            50,
+            currentY,
+            colWidths[0],
+            cellHeight,
+            detalle.cantidad.toString(),
+            backgroundColor,
+          );
+          drawCell(
+            130,
+            currentY,
+            colWidths[1],
+            cellHeight,
+            detalle.producto?.nombre || 'Producto',
+            backgroundColor,
+          );
+          drawCellRight(
+            350,
+            currentY,
+            colWidths[2],
+            cellHeight,
+            `${simbolo} ${formatNumber(Number(detalle.precio))}`,
+            backgroundColor,
+          );
+          drawCellRight(
+            450,
+            currentY,
+            colWidths[3],
+            cellHeight,
+            `${simbolo} ${formatNumber(Number(detalle.total))}`,
+            backgroundColor,
+          );
+          currentY += cellHeight;
+        });
+
+        if (factura.cargos_extra && factura.cargos_extra > 0) {
+          currentY += 10;
+          drawCell(
+            50,
+            currentY,
+            500,
+            cellHeight,
+            'CARGOS ADICIONALES',
+            '#E9ECEF',
+            '#000000',
+            9,
+            true,
+          );
+          currentY += cellHeight;
+          drawCell(50, currentY, colWidths[0], cellHeight, '1', '#F8F9FA');
+          drawCell(
+            130,
+            currentY,
+            colWidths[1],
+            cellHeight,
+            'Cargo Extra',
+            '#F8F9FA',
+            '#000000',
+            8,
+            true,
+          );
+          drawCellRight(
+            350,
+            currentY,
+            colWidths[2],
+            cellHeight,
+            `${simbolo} ${formatNumber(Number(factura.cargos_extra))}`,
+            '#F8F9FA',
+          );
+          drawCellRight(
+            450,
+            currentY,
+            colWidths[3],
+            cellHeight,
+            `${simbolo} ${formatNumber(Number(factura.cargos_extra))}`,
+            '#F8F9FA',
+          );
+          currentY += cellHeight;
+        }
+
+        const resumenTop = currentY + 20;
+        const resumenLeft = 350;
+        const resumenCellHeight = 15;
+
+        drawCell(
+          50,
+          resumenTop,
+          280,
+          30,
+          'Firma Autorizada',
+          '#E9ECEF',
+          '#000000',
+          9,
+          true,
+        );
+        drawCell(
+          50,
+          resumenTop + 35,
+          280,
+          25,
+          factura.total_letras || '(CANTIDAD EN LETRAS)',
+          '#FFFFFF',
+          '#000000',
+          8,
+        );
+
+        drawCell(
+          50,
+          resumenTop + 65,
+          280,
+          resumenCellHeight,
+          'No. Correlativo de Orden de Compra:',
+          '#F8F9FA',
+        );
+        drawCell(
+          50,
+          resumenTop + 80,
+          280,
+          resumenCellHeight,
+          'No. Correlativo de Constancia de Registro Exonerado:',
+          '#FFFFFF',
+        );
+        drawCell(
+          50,
+          resumenTop + 95,
+          280,
+          resumenCellHeight,
+          'No. Identificación del Registro de la SAG:',
+          '#F8F9FA',
+        );
+
+        drawCell(
+          50,
+          resumenTop + 115,
+          135,
+          resumenCellHeight,
+          'ORIGINAL: CLIENTE',
+          '#2E86AB',
+          '#FFFFFF',
+          6,
+          true,
+        );
+        drawCell(
+          185,
+          resumenTop + 115,
+          145,
+          resumenCellHeight,
+          'COPIA: OBLIGADO TRIBUTARIO EMISOR',
+          '#2E86AB',
+          '#FFFFFF',
+          6,
+          true,
+        );
+
+        const totales = [
+          { label: 'Subtotal', value: factura.sub_total },
+          { label: 'Descuentos y Rebajas', value: factura.descuentos_rebajas },
+          { label: 'Importe Exento', value: factura.importe_exento },
+          { label: 'Importe Exonerado', value: factura.importe_exonerado },
+          {
+            label: 'Importe Gravado al 15%',
+            value: factura.importe_gravado_15,
+          },
+          {
+            label: 'Importe Gravado al 18%',
+            value: factura.importe_gravado_18,
+          },
+          { label: 'ISV 15%', value: factura.isv_15 },
+          { label: 'ISV 18%', value: factura.isv_18 },
+          { label: 'Cargos Extra', value: factura.cargos_extra, bold: true },
+        ];
+
+        totales.forEach((item, index) => {
+          const yPos = resumenTop + index * resumenCellHeight;
+          drawCell(
+            resumenLeft,
+            yPos,
+            80,
+            resumenCellHeight,
+            item.label,
+            index % 2 === 0 ? '#FFFFFF' : '#F8F9FA',
+            '#000000',
+            6,
+            (item as any).bold || false,
+          );
+          drawCellRight(
+            430,
+            yPos,
+            120,
+            resumenCellHeight,
+            `${simbolo} ${formatNumber(Number(item.value))}`,
+            index % 2 === 0 ? '#FFFFFF' : '#F8F9FA',
+            '#000000',
+            8,
+            (item as any).bold || false,
+          );
+        });
+
+        const totalY = resumenTop + totales.length * resumenCellHeight;
+        drawCell(
+          resumenLeft,
+          totalY,
+          80,
+          resumenCellHeight + 5,
+          'Total a Pagar',
+          '#2E86AB',
+          '#FFFFFF',
+          9,
+          true,
+        );
+        drawCellRight(
+          430,
+          totalY,
+          120,
+          resumenCellHeight + 5,
+          `${simbolo} ${formatNumber(Number(factura.total))}`,
+          '#2E86AB',
+          '#FFFFFF',
+          9,
+          true,
+        );
+
+        const footerY = Math.max(totalY + resumenCellHeight + 30, 700);
+        drawCell(
+          50,
+          footerY,
+          500,
+          25,
+          'MUCHAS GRACIAS POR TU COMPRA!',
+          '#2E86AB',
+          '#FFFFFF',
+          10,
+          true,
+        );
+
+        doc.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  }
+
+  private async enviarFacturaPorCorreo(
+    factura: AgroFacturacion,
+    agroservicioId: string,
+  ): Promise<void> {
+    try {
+      if (!factura.cliente?.email) {
+        console.warn(`Cliente sin email para factura ${factura.id}`);
+        return;
+      }
+
+      const pdfBuffer = await this.generarPDFBuffer(factura.id, agroservicioId);
+
+      await this.mailService.sendInvoiceEmail(
+        factura.cliente.email,
+        factura.cliente.nombre || 'Cliente',
+        factura.numero_factura,
+        pdfBuffer,
+      );
+    } catch (error) {
+      console.error(`Error enviando factura ${factura.id} por correo:`, error);
+    }
+  }
+
+  async generarAgroFacturaPDF(
+    id: string,
+    @Res() res: Response,
+    isPreview = false,
+    propietarioId: string,
+  ) {
+    try {
+      const factura = await this.facturaEncabezadoRepository.findOne({
+        where: { id },
+        relations: [
+          'cliente',
+          'detalles',
+          'detalles.producto',
+          'rango_factura',
+        ],
+      });
+
+      if (!factura) {
+        return res.status(404).json({ message: 'Factura no encontrada' });
+      }
+
+      const pdfBuffer = await this.generarPDFBuffer(id, propietarioId);
+
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader(
+        'Content-Disposition',
+        `${isPreview ? 'inline' : 'attachment'}; filename=factura_${factura.numero_factura}.pdf`,
+      );
+
+      res.send(pdfBuffer);
+    } catch (error) {
+      if (!res.headersSent) {
+        res.status(500).json({
+          message: 'Error al generar el PDF',
+          error: error instanceof Error ? error.message : 'Error desconocido',
+        });
+      }
+    }
   }
 }

@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eventos sanitarios próximos</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: #f6f9fc;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    .header {
+      background-color: {{#if es_urgente}}#dc3545{{else if es_aviso_importante}}#ffc107{{else}}#17a2b8{{/if}};
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .header h1 {
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .header p {
+      font-size: 16px;
+      opacity: 0.9;
+    }
+    .content {
+      padding: 30px 25px;
+    }
+    .content h2 {
+      color: #333;
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+    .content p {
+      color: #555;
+      line-height: 1.6;
+      margin-bottom: 15px;
+    }
+    .alert-box {
+      background-color: {{#if es_urgente}}#f8d7da{{else if es_aviso_importante}}#fff3cd{{else}}#d1ecf1{{/if}};
+      border-left: 4px solid {{#if es_urgente}}#dc3545{{else if es_aviso_importante}}#ffc107{{else}}#17a2b8{{/if}};
+      padding: 15px 20px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    .alert-box strong {
+      {{#if es_urgente}}color: #721c24{{else if es_aviso_importante}}color: #856404{{else}}color: #0c5460{{/if}};
+    }
+    .evento-card {
+      background-color: #f8f9fa;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 15px 0;
+      border-left: 3px solid #17a2b8;
+    }
+    .evento-card h4 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 16px;
+    }
+    .evento-card table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    .evento-card td {
+      padding: 5px 0;
+      border-bottom: 1px solid #e9ecef;
+    }
+    .evento-card td:last-child {
+      text-align: right;
+      font-weight: 600;
+    }
+    .evento-card .label {
+      color: #6c757d;
+      font-weight: normal;
+    }
+    .tipo-servicio {
+      background-color: #17a2b8;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+    .btn {
+      display: inline-block;
+      background-color: #17a2b8;
+      color: white;
+      padding: 12px 30px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      margin-top: 20px;
+    }
+    .btn:hover {
+      background-color: #138496;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      {{#if es_urgente}}
+        background-color: #dc3545;
+        color: white;
+      {{else if es_aviso_importante}}
+        background-color: #ffc107;
+        color: #856404;
+      {{else}}
+        background-color: #17a2b8;
+        color: white;
+      {{/if}}
+    }
+    .footer {
+      background-color: #f8f9fa;
+      padding: 20px;
+      text-align: center;
+      color: #6c757d;
+      font-size: 14px;
+      border-top: 1px solid #e9ecef;
+    }
+    .footer a {
+      color: #17a2b8;
+      text-decoration: none;
+    }
+    .evento-list {
+      margin: 10px 0;
+      padding-left: 20px;
+    }
+    .evento-list li {
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📋 Recordatorio de Eventos Sanitarios</h1>
+      <p>Mantén al día la sanidad de tus animales</p>
+    </div>
+
+    <div class="content">
+      <h2>Hola, {{nombre_cliente}} 👋</h2>
+
+      <div class="alert-box">
+        <p style="margin-bottom: 0;">
+          <strong>¡Recordatorio importante!</strong> Tienes <strong>{{total_eventos}} evento(s)</strong> sanitario(s) programado(s) para los próximos <strong>{{dias_restantes}} día(s)</strong>.
+          <br>
+          <span style="display: inline-block; margin-top: 5px;">
+            <span class="badge">
+              {{#if es_urgente}}⚠️ URGENTE - ¡Hoy es el día!{{else if es_aviso_importante}}⚡ IMPORTANTE - Próximo vencimiento{{else}}ℹ️ AVISO - Planifica con anticipación{{/if}}
+            </span>
+          </span>
+        </p>
+      </div>
+
+      <p style="font-size: 14px; color: #6c757d; margin-top: -10px;">
+        <strong>Fecha de referencia:</strong> {{fecha_referencia}}
+      </p>
+
+      {{#each eventos_por_tipo}}
+  <div style="margin-top: 25px;">
+
+    <h3 style="color: #333; font-size: 18px; margin-bottom: 12px; border-bottom: 2px solid #17a2b8; padding-bottom: 8px;">
+      📌 {{tipo}} ({{eventos.length}})
+    </h3>
+
+    {{#each eventos}}
+      <div class="evento-card">
+
+        <span class="tipo-servicio">
+          {{../tipo}}
+        </span>
+
+        <h4>🐄 {{animal}}</h4>
+
+        <table>
+          <tr>
+            <td class="label">📅 Fecha programada</td>
+            <td>
+              <strong>{{fecha}}</strong>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="label">👤 Responsable</td>
+            <td>
+              <strong>{{responsable}}</strong>
+            </td>
+          </tr>
+
+          {{#if tratamiento}}
+            <tr>
+              <td class="label">💉 Tratamiento</td>
+              <td>
+                <strong>{{tratamiento}}</strong>
+              </td>
+            </tr>
+          {{/if}}
+
+          {{#if observaciones}}
+            <tr>
+              <td class="label">📝 Observaciones</td>
+              <td>
+                <strong>{{observaciones}}</strong>
+              </td>
+            </tr>
+          {{/if}}
+        </table>
+
+      </div>
+    {{/each}}
+
+  </div>
+{{/each}}
+
+      <p style="font-size: 14px; color: #6c757d; margin-top: 20px; background-color: #f8f9fa; padding: 15px; border-radius: 6px;">
+        💡 <strong>Recomendación:</strong> Programa tus actividades sanitarias con anticipación para mantener la salud y productividad de tus animales.
+      </p>
+    </div>
+
+    <div class="footer">
+      <p>© {{year}} El Sembrador - Todos los derechos reservados</p>
+      <p>
+        <a href="{{app_url}}/contacto">Contactar soporte</a> | 
+        <a href="{{app_url}}/sanidad-animal">Ir a Sanidad</a>
+      </p>
+      <p style="font-size: 12px; margin-top: 10px;">
+        Este correo fue enviado automáticamente. Por favor no respondas a este mensaje.
+      </p>
+    </div>
+  </div>
+</body>
+</html>

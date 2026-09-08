@@ -18,6 +18,7 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { NotificacionesAdminsService } from 'src/notificaciones_admins/notificaciones_admins.service';
 import { NotificationType } from 'src/interfaces/nptificaciones.type';
 import { TipoCliente } from 'src/interfaces/clientes.enums';
+import { getPropietarioId } from 'src/utils/get-propietario-id';
 
 @Injectable()
 export class FincasGanaderoService {
@@ -182,6 +183,35 @@ export class FincasGanaderoService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async obtenerEspeciesManeja(cliente: Cliente) {
+    const propietarioId = getPropietarioId(cliente);
+    const fincas = await this.fincasRepo.find({
+      where: {
+        propietario: {
+          id: propietarioId,
+        },
+        isActive: true,
+      },
+      select: ['id', 'especies_maneja'],
+    });
+
+    const especies = new Set<string>();
+
+    for (const finca of fincas) {
+      if (!finca.especies_maneja) continue;
+
+      for (const item of finca.especies_maneja) {
+        if (item.especie?.trim()) {
+          especies.add(item.especie.trim());
+        }
+      }
+    }
+
+    return Array.from(especies).map((especie) => ({
+      nombre: especie,
+    }));
   }
 
   async findAll(

@@ -41,8 +41,8 @@ export class SanidadAnimal {
   @Column({ type: 'date' })
   fecha_evento: Date;
 
-  @Column({ type: 'date' })
-  proxima_fecha_evento: Date;
+  @Column({ type: 'date', nullable: true })
+  proxima_fecha_evento: Date | null;
 
   @Column({ type: 'varchar', nullable: true, default: 'N/D' })
   observaciones: string;

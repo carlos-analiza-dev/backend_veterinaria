@@ -8,6 +8,8 @@ import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { HistorialFechasSanidad } from './entities/historial-fechas-sanidad.entity';
 import { HistorialFechasService } from './historial-fechas.service';
+import { MailService } from 'src/mail/mail.service';
+import { SanidadAlertasService } from './sanidad_alertas.service';
 
 @Module({
   controllers: [SanidadAnimalController],
@@ -20,6 +22,11 @@ import { HistorialFechasService } from './historial-fechas.service';
     ]),
     AuthClientesModule,
   ],
-  providers: [SanidadAnimalService, HistorialFechasService],
+  providers: [
+    SanidadAnimalService,
+    HistorialFechasService,
+    MailService,
+    SanidadAlertasService,
+  ],
 })
 export class SanidadAnimalModule {}

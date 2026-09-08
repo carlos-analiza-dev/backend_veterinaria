@@ -1,6 +1,6 @@
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { BadRequestException, Injectable, Res } from '@nestjs/common';
+import { Injectable, Res } from '@nestjs/common';
 import { Response } from 'express';
 import * as path from 'path';
 import { FacturaEncabezado } from 'src/factura_encabezado/entities/factura_encabezado.entity';
@@ -1350,9 +1350,13 @@ export class FacturaPdfService {
     }
   }
 
-  async generarFacturaPreview(id: string, @Res() res: Response, user: User) {
+  async generarAgroFacturaPreview(
+    id: string,
+    @Res() res: Response,
+    propietarioId: string,
+  ) {
     try {
-      return this.generarFacturaPDF(id, res, true, user);
+      return this.generarAgroFacturaPDF(id, res, true, propietarioId);
     } catch (error) {
       if (!res.headersSent) {
         res.status(500).json({
@@ -1363,13 +1367,9 @@ export class FacturaPdfService {
     }
   }
 
-  async generarAgroFacturaPreview(
-    id: string,
-    @Res() res: Response,
-    propietarioId: string,
-  ) {
+  async generarFacturaPreview(id: string, @Res() res: Response, user: User) {
     try {
-      return this.generarAgroFacturaPDF(id, res, true, propietarioId);
+      return this.generarFacturaPDF(id, res, true, user);
     } catch (error) {
       if (!res.headersSent) {
         res.status(500).json({

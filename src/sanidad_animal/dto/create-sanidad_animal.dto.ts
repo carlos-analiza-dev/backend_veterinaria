@@ -14,7 +14,6 @@ import {
 } from 'class-validator';
 
 export class CreateSanidadAnimalDto {
-  // Relación con Animal
   @IsUUID('4', { message: 'El ID del animal debe ser un UUID válido' })
   @IsNotEmpty({ message: 'El ID del animal es obligatorio' })
   animalId: string;

@@ -44,6 +44,7 @@ export class DatosAgroservicioController {
   }
 
   @Patch(':id')
+  @AuthCliente()
   update(
     @Param('id') id: string,
     @Body() updateDatosAgroservicioDto: UpdateDatosAgroservicioDto,

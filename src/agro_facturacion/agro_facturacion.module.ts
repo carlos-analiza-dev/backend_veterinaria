@@ -17,6 +17,7 @@ import { AgroCliente } from 'src/agro_clientes/entities/agro_cliente.entity';
 import { LoteAgroProducto } from 'src/agro-compras-productos/entities/lote-agro-compra.entity';
 import { AgroMovimientosLote } from 'src/movimientos_lotes/entities/agro_movimientos_lotes.entity';
 import { AuditoriaFacturacion } from './entities/audit_facturacion.entity';
+import { MailService } from 'src/mail/mail.service';
 
 @Module({
   controllers: [AgroFacturacionController, AgroRangoFacturaController],
@@ -40,6 +41,7 @@ import { AuditoriaFacturacion } from './entities/audit_facturacion.entity';
     AgroFacturacionService,
     AgroRangoFacturaService,
     AgroservicioValidationService,
+    MailService,
   ],
 })
 export class AgroFacturacionModule {}

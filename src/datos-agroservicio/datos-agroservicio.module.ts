@@ -7,6 +7,7 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { User } from 'src/auth/entities/auth.entity';
 import { DescuentosAgroCliente } from 'src/descuentos_clientes/entities/descuentos_clientes_agro.entity';
+import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 
 @Module({
   controllers: [DatosAgroservicioController],
@@ -19,6 +20,6 @@ import { DescuentosAgroCliente } from 'src/descuentos_clientes/entities/descuent
     ]),
     AuthClientesModule,
   ],
-  providers: [DatosAgroservicioService],
+  providers: [DatosAgroservicioService, AgroservicioValidationService],
 })
 export class DatosAgroservicioModule {}

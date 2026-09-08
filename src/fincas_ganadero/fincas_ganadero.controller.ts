@@ -38,6 +38,12 @@ export class FincasGanaderoController {
     return this.fincasGanaderoService.findAllPais(user, paginationDto);
   }
 
+  @Get('especies-maneja')
+  @AuthCliente()
+  async obtenerEspeciesManeja(@GetCliente() cliente: Cliente) {
+    return await this.fincasGanaderoService.obtenerEspeciesManeja(cliente);
+  }
+
   @Get('/fincas/:propietadrioId')
   @AuthCliente()
   findAll(

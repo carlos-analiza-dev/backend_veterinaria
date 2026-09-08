@@ -1,5 +1,9 @@
 import { MailerService } from '@nestjs-modules/mailer';
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { EstadoPedido, Pedido } from 'src/pedidos/entities/pedido.entity';
 
@@ -584,6 +588,166 @@ export class MailService {
       return { message: 'Correo de notificación de paquete enviado' };
     } catch (error) {
       throw new Error(`Fallo al enviar correo de notificación de paquete`);
+    }
+  }
+
+  async sendEventosSanitariosProximos(
+    email: string,
+    nombre_cliente: string,
+    total_eventos: number,
+    dias_restantes: number,
+    eventos_por_tipo: any,
+    es_urgente: boolean,
+    es_aviso_importante: boolean,
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `📋 ${total_eventos} evento(s) sanitario(s) programado(s) - El Sembrador`,
+        template: './eventos-sanitarios-proximos',
+        context: {
+          nombre_cliente,
+          total_eventos,
+          dias_restantes,
+          eventos_por_tipo,
+          es_urgente,
+          es_aviso_importante,
+          fecha_referencia: new Date().toLocaleDateString('es-HN', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          }),
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de eventos sanitarios próximos enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de eventos sanitarios próximos`);
+    }
+  }
+
+  async sendEventosSanitariosAtrasados(
+    email: string,
+    nombre_cliente: string,
+    total_eventos: number,
+    eventos_por_tipo: any,
+    dias_atraso: number,
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `🚨 ${total_eventos} evento(s) sanitario(s) atrasado(s) - El Sembrador`,
+        template: './eventos-sanitarios-atrasados',
+        context: {
+          nombre_cliente,
+          total_eventos,
+          eventos_por_tipo,
+          dias_atraso,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de eventos sanitarios atrasados enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de eventos sanitarios atrasados`);
+    }
+  }
+
+  async sendEventosSinSeguimiento(
+    email: string,
+    nombre_cliente: string,
+    total_eventos: number,
+    eventos_sin_seguimiento: any[],
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `📌 ${total_eventos} evento(s) sanitario(s) sin seguimiento - El Sembrador`,
+        template: './eventos-sin-seguimiento',
+        context: {
+          nombre_cliente,
+          total_eventos,
+          eventos_sin_seguimiento,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de eventos sin seguimiento enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de eventos sin seguimiento`);
+    }
+  }
+
+  async sendInvoiceEmail(
+    email: string,
+    nombre_cliente: string,
+    numero_factura: string,
+    pdfBuffer: Buffer,
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+    if (!pdfBuffer) throw new BadRequestException('No se proporcionó el PDF');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `🧾 Factura #${numero_factura} procesada - El Sembrador`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="background: #2E86AB; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
+              <h1>✅ Factura Procesada</h1>
+            </div>
+            
+            <div style="background: #ffffff; padding: 30px; border: 1px solid #e0e0e0; border-top: none; border-radius: 0 0 5px 5px;">
+              <p>Hola <strong>${nombre_cliente}</strong>,</p>
+              
+              <p>¡Tu factura <strong>#${numero_factura}</strong> ha sido procesada exitosamente!</p>
+              
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; text-align: center;">
+                <p style="margin: 0; font-size: 14px;">Adjunto encontrarás el PDF de tu factura.</p>
+              </div>
+              
+              <p style="margin-top: 30px;">
+                Si tienes alguna pregunta sobre tu factura, no dudes en contactarnos.
+              </p>
+              
+              <p>Saludos cordiales,<br>
+              <strong>El Sembrador</strong></p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e0e0e0; color: #666666; font-size: 12px;">
+              <p>© ${new Date().getFullYear()} El Sembrador. Todos los derechos reservados.</p>
+              <p style="font-size: 11px;">Este es un correo automático, por favor no responder a este mensaje.</p>
+            </div>
+          </div>
+        `,
+        attachments: [
+          {
+            filename: `factura_${numero_factura}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf',
+          },
+        ],
+      });
+
+      return { message: 'Factura enviada por correo exitosamente' };
+    } catch (error) {
+      console.error('Error enviando factura por correo:', error);
+      throw new InternalServerErrorException(
+        `Fallo al enviar factura por correo`,
+      );
     }
   }
 }
