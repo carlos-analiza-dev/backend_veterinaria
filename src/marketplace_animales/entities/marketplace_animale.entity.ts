@@ -1,4 +1,3 @@
-import { IsNotEmpty, IsString } from 'class-validator';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { Categoria } from 'src/categorias/entities/categoria.entity';

@@ -17,7 +17,7 @@ export class Marca {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 100, unique: true })
+  @Column({ type: 'varchar', length: 100 })
   nombre: string;
 
   @Column({ type: 'varchar', length: 100 })

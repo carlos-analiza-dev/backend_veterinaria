@@ -27,25 +27,28 @@ export class MarcasService {
     const { nombre, pais_origen, is_market } = createMarcaDto;
 
     try {
-      // Verificar que el usuario existe
       const user = await this.userRepo.findOneBy({ id: userId });
       if (!user) {
         throw new NotFoundException('Usuario no encontrado');
       }
 
-      // Verificar que el nombre no esté duplicado
+      const nombreMarca = nombre.trim().toUpperCase();
+
       const existeMarca = await this.marcaRepo.findOneBy({
-        nombre: nombre.toUpperCase(),
+        nombre: nombreMarca,
+        is_market,
       });
+
       if (existeMarca) {
         throw new ConflictException(
-          `Ya existe una marca con el nombre ${nombre}`,
+          `Ya existe una marca con el nombre ${nombreMarca} para ${
+            is_market ? 'Marketplace' : 'Agroservicio'
+          }`,
         );
       }
 
-      // Crear la marca
       const nuevaMarca = this.marcaRepo.create({
-        nombre: nombre.toUpperCase(), // Guardar en mayúsculas para consistencia
+        nombre: nombreMarca,
         pais_origen,
         is_market,
         created_by: user,

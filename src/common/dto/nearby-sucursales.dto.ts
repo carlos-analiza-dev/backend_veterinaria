@@ -25,6 +25,10 @@ export class NearbySucursalesDto {
 
   @IsString()
   @IsOptional()
+  raza?: string;
+
+  @IsString()
+  @IsOptional()
   nombre?: string;
 
   @IsString()
@@ -43,6 +47,16 @@ export class NearbySucursalesDto {
   @IsOptional()
   @Type(() => Number)
   offset?: number;
+
+  @IsOptional()
+  @IsPositive()
+  @Type(() => Number)
+  priceMax?: number;
+
+  @IsOptional()
+  @IsPositive()
+  @Type(() => Number)
+  priceMin?: number;
 
   @IsOptional()
   @Type(() => Number)

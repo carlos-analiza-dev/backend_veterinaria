@@ -294,6 +294,9 @@ export class MarketplaceAnimalesService {
       tipo_publicacion,
       limit = 12,
       offset = 0,
+      priceMax,
+      priceMin,
+      raza,
     } = nearbyDto;
 
     const query = this.marketAnimalRepo
@@ -304,6 +307,7 @@ export class MarketplaceAnimalesService {
         'animal.animal_muerte = false OR animal.id IS NULL',
       )
       .leftJoinAndSelect('animal.especie', 'especie')
+      .leftJoinAndSelect('animal.razas', 'raza')
       .leftJoinAndSelect('marketplace.categoria', 'categoria')
       .leftJoinAndSelect('marketplace.subcategoria', 'subcategoria')
       .leftJoinAndSelect('marketplace.marca', 'marca')
@@ -335,6 +339,28 @@ export class MarketplaceAnimalesService {
     if (especie && especie.trim() !== '') {
       query.andWhere('especie.nombre ILIKE :especie', {
         especie: especie,
+      });
+    }
+
+    if (raza) {
+      const razas = Array.isArray(raza) ? raza : [raza];
+
+      if (razas.length > 0) {
+        query.andWhere('raza.id IN (:...razas)', {
+          razas,
+        });
+      }
+    }
+
+    if (priceMin !== undefined && priceMin !== null) {
+      query.andWhere('marketplace.precio >= :priceMin', {
+        priceMin,
+      });
+    }
+
+    if (priceMax !== undefined && priceMax !== null) {
+      query.andWhere('marketplace.precio <= :priceMax', {
+        priceMax,
       });
     }
 
