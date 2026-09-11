@@ -54,6 +54,11 @@ export class MarketplaceAnimalesController {
     return this.marketplaceAnimalesService.findAll(cliente, nearbyDto);
   }
 
+  @Get('/publics')
+  findAllPublics(@Query() nearbyDto: NearbySucursalesDto) {
+    return this.marketplaceAnimalesService.findAllPublics(nearbyDto);
+  }
+
   @Get('sugerencias')
   @AuthCliente()
   findAllFilters(
@@ -88,6 +93,11 @@ export class MarketplaceAnimalesController {
   @AuthCliente()
   findOne(@Param('id') id: string, @GetCliente() cliente: Cliente) {
     return this.marketplaceAnimalesService.findOne(id, cliente);
+  }
+
+  @Get('public/:id')
+  findOnePublic(@Param('id') id: string) {
+    return this.marketplaceAnimalesService.findOnePublic(id);
   }
 
   @Patch(':id')

@@ -21,7 +21,6 @@ import { AgroSucursale } from 'src/agro-sucursales/entities/agro-sucursale.entit
 import { convertirNumeroALetras } from 'src/helpers/convertir_numeros_letras';
 import { DescuentosAgroCliente } from 'src/descuentos_clientes/entities/descuentos_clientes_agro.entity';
 import { CreateAgroFacturaDetalleDto } from './dto/create-agro_factura_detalle.dto';
-import { ProductoAgro } from 'src/interfaces/agro-producto/Response-productos-agro.interface';
 import { AgroservicioValidationService } from 'src/validations/validation-agroservicio.service';
 import { instanceToPlain } from 'class-transformer';
 import { PaginationDto } from 'src/common/dto/pagination-common.dto';
@@ -41,6 +40,7 @@ import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroser
 import * as path from 'path';
 import { Response } from 'express';
 import { MailService } from 'src/mail/mail.service';
+import { ProductoAgro } from 'src/interfaces/agro-producto/response-productos-agro.interface';
 const PDFDocument = require('pdfkit');
 
 @Injectable()

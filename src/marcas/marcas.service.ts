@@ -161,7 +161,6 @@ export class MarcasService {
     const { nombre, pais_origen, is_active } = updateMarcaDto;
 
     try {
-      // Verificar que la marca existe
       const marca = await this.marcaRepo.findOne({
         where: { id },
       });
@@ -170,30 +169,53 @@ export class MarcasService {
         throw new NotFoundException(`Marca con ID ${id} no encontrada`);
       }
 
-      // Verificar que el usuario existe
       const user = await this.userRepo.findOneBy({ id: userId });
+
       if (!user) {
         throw new NotFoundException('Usuario no encontrado');
       }
 
-      // Si se está actualizando el nombre, verificar que no esté duplicado
-      if (nombre && nombre.toUpperCase() !== marca.nombre) {
-        const existeMarca = await this.marcaRepo.findOneBy({
-          nombre: nombre.toUpperCase(),
-        });
-        if (existeMarca) {
-          throw new ConflictException(
-            `Ya existe otra marca con el nombre ${nombre}`,
+      if (nombre !== undefined) {
+        const nombreNormalizado = nombre.trim().toUpperCase();
+
+        if (!nombreNormalizado) {
+          throw new BadRequestException(
+            'El nombre de la marca no puede estar vacío',
           );
         }
+
+        const existeMarca = await this.marcaRepo
+          .createQueryBuilder('marca')
+          .where('marca.nombre = :nombre', {
+            nombre: nombreNormalizado,
+          })
+          .andWhere('marca.is_market = :is_market', {
+            is_market: marca.is_market,
+          })
+          .andWhere('marca.id != :id', {
+            id,
+          })
+          .getOne();
+
+        if (existeMarca) {
+          throw new ConflictException(
+            `Ya existe otra marca con el nombre ${nombreNormalizado} para ${
+              marca.is_market ? 'Marketplace' : 'Agroservicio'
+            }`,
+          );
+        }
+
+        marca.nombre = nombreNormalizado;
       }
 
-      // Actualizar campos
-      if (nombre !== undefined) marca.nombre = nombre.toUpperCase();
-      if (pais_origen !== undefined) marca.pais_origen = pais_origen;
-      if (is_active !== undefined) marca.is_active = is_active;
+      if (pais_origen !== undefined) {
+        marca.pais_origen = pais_origen;
+      }
 
-      // Actualizar el usuario que modifica
+      if (is_active !== undefined) {
+        marca.is_active = is_active;
+      }
+
       marca.updated_by = user;
 
       await this.marcaRepo.save(marca);

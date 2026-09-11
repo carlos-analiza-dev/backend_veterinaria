@@ -471,6 +471,194 @@ export class MarketplaceAnimalesService {
     };
   }
 
+  async findAllPublics(nearbyDto: NearbySucursalesDto) {
+    const {
+      latitud,
+      longitud,
+      radio,
+      usarGoogleMaps = false,
+      especie,
+      nombre,
+      categoria,
+      tipo_publicacion,
+      limit = 12,
+      offset = 0,
+      priceMax,
+      priceMin,
+      raza,
+    } = nearbyDto;
+
+    const query = this.marketAnimalRepo
+      .createQueryBuilder('marketplace')
+      .leftJoinAndSelect(
+        'marketplace.animal',
+        'animal',
+        'animal.animal_muerte = false OR animal.id IS NULL',
+      )
+      .leftJoinAndSelect('animal.especie', 'especie')
+      .leftJoinAndSelect('animal.razas', 'raza')
+      .leftJoinAndSelect('marketplace.categoria', 'categoria')
+      .leftJoinAndSelect('marketplace.subcategoria', 'subcategoria')
+      .leftJoinAndSelect('marketplace.marca', 'marca')
+      .leftJoinAndSelect('marketplace.tipo_producto', 'tipo_producto')
+      .leftJoinAndSelect('marketplace.vendedor', 'vendedor')
+      .leftJoinAndSelect('marketplace.pais', 'pais')
+      .leftJoinAndSelect('marketplace.departamento', 'departamento')
+      .leftJoinAndSelect('marketplace.marketAnimalImages', 'imagenes')
+      .where('marketplace.disponible = :disponible', { disponible: true })
+      .andWhere('marketplace.eliminada = :eliminada', { eliminada: false })
+      .andWhere('marketplace.latitud IS NOT NULL')
+      .andWhere('marketplace.longitud IS NOT NULL')
+      .andWhere(
+        `
+    (6371 * acos(
+      cos(radians(:latitud)) *
+      cos(radians(marketplace.latitud)) *
+      cos(radians(marketplace.longitud) - radians(:longitud)) +
+      sin(radians(:latitud)) *
+      sin(radians(marketplace.latitud))
+    )) <= :radio
+  `,
+        { latitud, longitud, radio },
+      )
+      .take(limit)
+      .skip(offset);
+
+    if (especie && especie.trim() !== '') {
+      query.andWhere('especie.nombre ILIKE :especie', {
+        especie: especie,
+      });
+    }
+
+    if (raza) {
+      const razas = Array.isArray(raza) ? raza : [raza];
+
+      if (razas.length > 0) {
+        query.andWhere('raza.id IN (:...razas)', {
+          razas,
+        });
+      }
+    }
+
+    if (priceMin !== undefined && priceMin !== null) {
+      query.andWhere('marketplace.precio >= :priceMin', {
+        priceMin,
+      });
+    }
+
+    if (priceMax !== undefined && priceMax !== null) {
+      query.andWhere('marketplace.precio <= :priceMax', {
+        priceMax,
+      });
+    }
+
+    if (nombre && nombre.trim() !== '') {
+      query.andWhere('marketplace.nombre ILIKE :nombre', {
+        nombre: `%${nombre}%`,
+      });
+    }
+
+    if (categoria) {
+      query.andWhere('categoria.id = :categoriaId', {
+        categoriaId: categoria,
+      });
+    }
+
+    if (tipo_publicacion) {
+      query.andWhere('marketplace.tipo_publicacion = :tipo_publicacion', {
+        tipo_publicacion,
+      });
+    }
+
+    query.take(limit).skip(offset);
+
+    const [data, total] = await query.getManyAndCount();
+
+    const productosConDistancia = [];
+
+    for (const producto of data) {
+      let distancia = 0;
+      let tiempoEstimado = null;
+
+      if (usarGoogleMaps) {
+        try {
+          const result = await this.distanceService.calculateDistance(
+            latitud,
+            longitud,
+            producto.latitud,
+            producto.longitud,
+          );
+
+          distancia = result.distance;
+          tiempoEstimado = result.duration;
+        } catch {
+          distancia = this.distanceService.calculateHaversineDistance(
+            latitud,
+            longitud,
+            producto.latitud,
+            producto.longitud,
+          );
+        }
+      } else {
+        distancia = this.distanceService.calculateHaversineDistance(
+          latitud,
+          longitud,
+          producto.latitud,
+          producto.longitud,
+        );
+      }
+
+      const distanciaLineaRecta =
+        this.distanceService.calculateHaversineDistance(
+          latitud,
+          longitud,
+          producto.latitud,
+          producto.longitud,
+        );
+
+      if (distancia <= radio) {
+        productosConDistancia.push({
+          ...this.mappingMarketAnimales(producto),
+          distancia_km: Number(distancia.toFixed(2)),
+          tiempo_estimado_minutos: tiempoEstimado
+            ? Math.round(tiempoEstimado)
+            : undefined,
+          distancia_linea_recta_km: Number(distanciaLineaRecta.toFixed(2)),
+          ubicacion_producto: {
+            latitud: producto.latitud,
+            longitud: producto.longitud,
+            direccion: producto.direccion_completa,
+          },
+        });
+      }
+    }
+
+    productosConDistancia.sort((a, b) => a.distancia_km - b.distancia_km);
+
+    const totalFiltered = productosConDistancia.length;
+
+    const productosPaginados = productosConDistancia.slice(
+      offset,
+      offset + limit,
+    );
+
+    return {
+      total: totalFiltered,
+      limit,
+      offset,
+      radio_km: radio,
+      usando_google_maps: usarGoogleMaps,
+      filtros_aplicados: {
+        especie: especie || null,
+      },
+      ubicacion_usuario: {
+        latitud,
+        longitud,
+      },
+      productos: productosPaginados,
+    };
+  }
+
   async findAllFilters(
     cliente: Cliente,
     filterDto: FilterMarketplaceAnimalesDto,
@@ -635,6 +823,40 @@ export class MarketplaceAnimalesService {
       .andWhere(
         '(marketplace.disponible = true OR marketplace.vendedor.id = :vendedorId)',
         { vendedorId: cliente.id },
+      );
+    const producto = await query.getOne();
+
+    if (!producto) {
+      throw new NotFoundException(`Producto con ID ${id} no encontrado`);
+    }
+
+    return this.mappingMarketAnimales(producto);
+  }
+
+  async findOnePublic(id: string) {
+    const query = this.marketAnimalRepo
+      .createQueryBuilder('marketplace')
+      .leftJoinAndSelect('marketplace.animal', 'animal')
+      .leftJoinAndSelect('animal.especie', 'especie')
+      .leftJoinAndSelect('animal.razas', 'razas')
+      .leftJoinAndSelect('marketplace.categoria', 'categoria')
+      .leftJoinAndSelect('marketplace.subcategoria', 'subcategoria')
+      .leftJoinAndSelect('marketplace.marca', 'marca')
+      .leftJoinAndSelect('marketplace.tipo_producto', 'tipo_producto')
+      .leftJoinAndSelect('marketplace.vendedor', 'vendedor')
+      .leftJoinAndSelect('marketplace.pais', 'pais')
+      .leftJoinAndSelect('marketplace.departamento', 'departamento')
+      .leftJoinAndSelect('marketplace.marketAnimalImages', 'imagenes')
+      .leftJoinAndSelect('vendedor.paquetes', 'paquetes')
+      .leftJoinAndSelect('paquetes.paquete', 'paquete')
+      .where('marketplace.id = :id', { id })
+      .andWhere('marketplace.eliminada = :eliminada', {
+        eliminada: false,
+      })
+      .andWhere(
+        new Brackets((qb) => {
+          qb.where('animal.id IS NULL').orWhere('animal.animal_muerte = false');
+        }),
       );
     const producto = await query.getOne();
 
