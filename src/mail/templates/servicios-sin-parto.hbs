@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Servicios reproductivos sin parto</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f6f9fc;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .header {
+      background: #6f42c1;
+      color: white;
+      padding: 30px 20px;
+      text-align: center;
+    }
+    .content { padding: 30px 25px; }
+    .alert-box {
+      background: #e2d9f3;
+      border-left: 4px solid #6f42c1;
+      padding: 15px 20px;
+      border-radius: 4px;
+      margin: 20px 0;
+    }
+    .evento-card {
+      background: #f8f9fa;
+      border-radius: 6px;
+      padding: 15px;
+      margin: 15px 0;
+      border-left: 3px solid #6f42c1;
+    }
+    .evento-card table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .evento-card td { padding: 5px 0; border-bottom: 1px solid #e9ecef; }
+    .evento-card td:last-child { text-align: right; font-weight: 600; }
+    .evento-card .label { color: #6c757d; font-weight: normal; }
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #6f42c1;
+      color: white;
+    }
+    .btn {
+      display: inline-block;
+      background: #6f42c1;
+      color: white;
+      padding: 12px 30px;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: 600;
+      margin-top: 20px;
+    }
+    .dias-atraso {
+      font-size: 22px;
+      font-weight: bold;
+      color: #6f42c1;
+      text-align: center;
+      padding: 10px;
+      background: #e2d9f3;
+      border-radius: 6px;
+      margin: 15px 0;
+    }
+    .footer {
+      background: #f8f9fa;
+      padding: 20px;
+      text-align: center;
+      color: #6c757d;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🐄 Servicios Reproductivos Sin Parto Registrado</h1>
+      <p>Revisa el estado de tus gestaciones</p>
+    </div>
+
+    <div class="content">
+      <h2>Hola, {{nombre_cliente}} 👋</h2>
+
+      <div class="alert-box">
+        <p style="margin-bottom: 0;">
+          <strong>¡Atención!</strong> Tienes <strong>{{total_servicios}} servicio(s)</strong> reproductivo(s) marcados como exitosos que <strong>ya deberían haber resultado en parto</strong> y no tienen un parto registrado.
+          <br>
+          <span style="display: inline-block; margin-top: 8px;">
+            <span class="badge">⚠️ REQUIERE VERIFICACIÓN</span>
+          </span>
+        </p>
+      </div>
+
+      {{#each servicios_sin_parto}}
+        <div class="evento-card">
+          <span class="badge">{{tipo_servicio}}</span>
+          <h4>🐄 {{hembra}} <small style="color:#6c757d;">({{especie}})</small></h4>
+          <table>
+            <tr>
+              <td class="label">📅 Fecha del servicio</td>
+              <td><strong>{{fecha_servicio}}</strong></td>
+            </tr>
+            <tr>
+              <td class="label">🐂 Macho</td>
+              <td><strong>{{macho}}</strong></td>
+            </tr>
+            <tr>
+              <td class="label">👤 Técnico responsable</td>
+              <td><strong>{{tecnico_responsable}}</strong></td>
+            </tr>
+            <tr>
+              <td class="label">⏱️ Días transcurridos</td>
+              <td><strong>{{dias_transcurridos}} días</strong></td>
+            </tr>
+            <tr>
+              <td class="label">📆 Gestación esperada</td>
+              <td><strong>{{dias_gestacion_esperados}} días</strong></td>
+            </tr>
+          </table>
+
+          <div class="dias-atraso">
+            ⏰ {{dias_atraso_parto}} día(s) después del parto esperado
+          </div>
+
+          {{#if observaciones}}
+            <p style="font-size: 13px; color:#6c757d; margin-top: 10px;">
+              📝 <strong>Observaciones:</strong> {{observaciones}}
+            </p>
+          {{/if}}
+        </div>
+      {{/each}}
+
+      <div style="text-align: center; margin-top: 30px;">
+        <a href="{{app_url}}/servicios-reproductivos" class="btn">📋 Ver servicios reproductivos</a>
+      </div>
+
+      <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 4px; margin-top: 20px;">
+        <p style="margin-bottom: 0; color: #856404; font-size: 14px;">
+          💡 <strong>Recomendación:</strong> Verifica si el parto ocurrió y no fue registrado, o si hubo una pérdida gestacional. Registra el evento correspondiente para mantener la trazabilidad reproductiva.
+        </p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>© {{year}} El Sembrador - Todos los derechos reservados</p>
+      <p>
+        <a href="{{app_url}}/contacto">Contactar soporte</a> |
+        <a href="{{app_url}}/servicios-reproductivos">Ir a Servicios Reproductivos</a>
+      </p>
+      <p style="font-size: 12px; margin-top: 10px;">
+        Este correo fue enviado automáticamente. Por favor no respondas a este mensaje.
+      </p>
+    </div>
+  </div>
+</body>
+</html>

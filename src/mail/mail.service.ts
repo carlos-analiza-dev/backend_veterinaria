@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { ServicioSinPartoDTO } from 'src/interfaces/alertas/servicio-sin-parto.dto';
 import { EstadoPedido, Pedido } from 'src/pedidos/entities/pedido.entity';
 
 @Injectable()
@@ -195,8 +196,7 @@ export class MailService {
         estado_pedido: nuevoEstado.toUpperCase(),
         mensaje_estado: estadoInfo.mensaje,
         moneda,
-        app_url:
-          process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+        app_url: process.env.FRONTEND_URL_CLIENT || 'https://elsembrador.app',
         year: new Date().getFullYear(),
 
         estado_pedido_lowercase: estadoLowercase,
@@ -441,7 +441,7 @@ export class MailService {
             fecha_programada || new Date().toISOString().split('T')[0],
           frecuencia: frecuencia || 'Única',
           descripcion: descripcion || '',
-          app_url: process.env.APP_URL || 'https://app.elsembrador.com',
+          app_url: process.env.APP_URL || 'https://elsembrador.app',
           year: new Date().getFullYear(),
         },
       });
@@ -474,7 +474,7 @@ export class MailService {
           fecha_actividad,
           comentario: comentario || '',
           year: new Date().getFullYear(),
-          app_url: process.env.APP_URL || 'https://app.elsembrador.com',
+          app_url: process.env.APP_URL || 'https://elsembrador.app',
         },
       });
 
@@ -579,8 +579,7 @@ export class MailService {
           ecommerce,
           es_urgente,
           es_aviso_importante,
-          app_url:
-            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          app_url: process.env.FRONTEND_URL_CLIENT || 'https://elsembrador.app',
           year: new Date().getFullYear(),
         },
       });
@@ -619,8 +618,7 @@ export class MailService {
             month: 'long',
             day: 'numeric',
           }),
-          app_url:
-            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          app_url: process.env.FRONTEND_URL_CLIENT || 'https://elsembrador.app',
           year: new Date().getFullYear(),
         },
       });
@@ -628,37 +626,6 @@ export class MailService {
       return { message: 'Correo de eventos sanitarios próximos enviado' };
     } catch (error) {
       throw new Error(`Fallo al enviar correo de eventos sanitarios próximos`);
-    }
-  }
-
-  async sendEventosSanitariosAtrasados(
-    email: string,
-    nombre_cliente: string,
-    total_eventos: number,
-    eventos_por_tipo: any,
-    dias_atraso: number,
-  ) {
-    if (!email) throw new BadRequestException('No se proporcionó un correo');
-
-    try {
-      await this.mailerService.sendMail({
-        to: email,
-        subject: `🚨 ${total_eventos} evento(s) sanitario(s) atrasado(s) - El Sembrador`,
-        template: './eventos-sanitarios-atrasados',
-        context: {
-          nombre_cliente,
-          total_eventos,
-          eventos_por_tipo,
-          dias_atraso,
-          app_url:
-            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
-          year: new Date().getFullYear(),
-        },
-      });
-
-      return { message: 'Correo de eventos sanitarios atrasados enviado' };
-    } catch (error) {
-      throw new Error(`Fallo al enviar correo de eventos sanitarios atrasados`);
     }
   }
 
@@ -679,8 +646,7 @@ export class MailService {
           nombre_cliente,
           total_eventos,
           eventos_sin_seguimiento,
-          app_url:
-            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          app_url: process.env.FRONTEND_URL_CLIENT || 'https://elsembrador.app',
           year: new Date().getFullYear(),
         },
       });
@@ -748,6 +714,35 @@ export class MailService {
       throw new InternalServerErrorException(
         `Fallo al enviar factura por correo`,
       );
+    }
+  }
+
+  async sendServiciosSinParto(
+    email: string,
+    nombre_cliente: string,
+    total_servicios: number,
+    servicios_sin_parto: ServicioSinPartoDTO[],
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `🐄 ${total_servicios} servicio(s) reproductivo(s) sin parto registrado - El Sembrador`,
+        template: './servicios-sin-parto',
+        context: {
+          nombre_cliente,
+          total_servicios,
+          servicios_sin_parto,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de servicios sin parto enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de servicios sin parto`);
     }
   }
 }

@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { SanidadAnimal } from './entities/sanidad_animal.entity';
 import { MailService } from 'src/mail/mail.service';
-import { formatDateTimeLocal } from 'src/helpers/dateTimeLocal';
+import { formatDateLocal } from 'src/helpers/dateTimeLocal';
 
 @Injectable()
 export class SanidadAlertasService {
@@ -170,9 +170,11 @@ export class SanidadAlertasService {
 
   /**
    * ALERTA 2: Eventos Sin Seguimiento
-   * Se ejecuta semanalmente los lunes a las 7:00 AM
+   * Se ejecuta semanalmente los lunes a las 8:00 AM
    */
-  /* @Cron(CronExpression.EVERY_30_SECONDS)
+  @Cron('0 8 * * 1', {
+    timeZone: 'America/Tegucigalpa',
+  })
   async alertarEventosSinSeguimiento() {
     this.logger.log('Iniciando verificación de eventos sin seguimiento...');
 
@@ -193,10 +195,6 @@ export class SanidadAlertasService {
         this.logger.log('No hay eventos sin seguimiento');
         return;
       }
-
-      this.logger.log(
-        `Se encontraron ${eventos.length} eventos sin seguimiento programado`,
-      );
 
       const eventosPorPropietario = this.agruparEventosPorPropietario(eventos);
 
@@ -233,7 +231,9 @@ export class SanidadAlertasService {
             evento.animal?.nombre_animal ||
             'N/D',
           tipo_servicio: evento.tipo_servicio || 'N/D',
-          fecha_evento: formatDateTimeLocal(evento.fecha_evento),
+          fecha_evento: evento.fecha_evento
+            ? formatDateLocal(evento.fecha_evento)
+            : 'N/D',
           responsable: evento.responsable || 'N/D',
           observaciones: evento.observaciones || 'N/D',
           dias_sin_seguimiento: diffDays,
@@ -253,97 +253,5 @@ export class SanidadAlertasService {
     } catch (error) {
       this.logger.error(`Error enviando alerta de sin seguimiento`);
     }
-  } */
-
-  /**
-   * ALERTA 3: Eventos Atrasados
-   * Se ejecuta diariamente a las 8:00 AM
-   */
-  @Cron(CronExpression.EVERY_DAY_AT_8AM)
-  async alertarEventosAtrasados() {
-    this.logger.log(
-      'Iniciando verificación de eventos sanitarios atrasados...',
-    );
-
-    try {
-      const hoy = new Date();
-      const fechaLimite = new Date(hoy);
-      fechaLimite.setDate(fechaLimite.getDate() - 1);
-
-      const eventosAtrasados = await this.sanidadAnimalRepository
-        .createQueryBuilder('sanidad')
-        .leftJoinAndSelect('sanidad.animal', 'animal')
-        .leftJoinAndSelect('sanidad.propietario', 'propietario')
-        .where('sanidad.eliminado = :eliminado', { eliminado: false })
-        .andWhere('sanidad.proxima_fecha_evento < :hoy', { hoy })
-        .andWhere('sanidad.proxima_fecha_evento IS NOT NULL')
-        .getMany();
-
-      if (eventosAtrasados.length === 0) {
-        this.logger.log('No hay eventos sanitarios atrasados');
-        return;
-      }
-
-      this.logger.log(
-        `Se encontraron ${eventosAtrasados.length} eventos sanitarios atrasados`,
-      );
-
-      const eventosPorPropietario =
-        this.agruparEventosPorPropietario(eventosAtrasados);
-
-      for (const [propietarioId, eventos] of eventosPorPropietario) {
-        await this.enviarAlertaEventosAtrasados(eventos);
-      }
-
-      this.logger.log('Verificación de eventos atrasados completada');
-    } catch (error) {
-      this.logger.error(`Error en alerta de eventos atrasados`);
-    }
-  }
-
-  private async enviarAlertaEventosAtrasados(eventos: SanidadAnimal[]) {
-    try {
-      const propietario = eventos[0].propietario;
-
-      if (!propietario?.email) {
-        this.logger.warn(`Propietario ${propietario?.id} no tiene email`);
-        return;
-      }
-
-      const diasAtraso = this.calcularDiasAtraso(eventos);
-
-      const eventosPorTipo = this.organizarEventosPorTipo(eventos);
-
-      await this.mailService.sendEventosSanitariosAtrasados(
-        propietario.email,
-        propietario.nombre || 'Cliente',
-        eventos.length,
-        eventosPorTipo,
-        diasAtraso,
-      );
-
-      this.logger.log(
-        `Alerta de eventos atrasados enviada a ${propietario.email}`,
-      );
-    } catch (error) {
-      this.logger.error(`Error enviando alerta de atrasados`);
-    }
-  }
-
-  private calcularDiasAtraso(eventos: SanidadAnimal[]): number {
-    const hoy = new Date();
-    let maxDias = 0;
-
-    for (const evento of eventos) {
-      if (evento.proxima_fecha_evento) {
-        const diffTime = Math.abs(
-          hoy.getTime() - evento.proxima_fecha_evento.getTime(),
-        );
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        maxDias = Math.max(maxDias, diffDays);
-      }
-    }
-
-    return maxDias;
   }
 }

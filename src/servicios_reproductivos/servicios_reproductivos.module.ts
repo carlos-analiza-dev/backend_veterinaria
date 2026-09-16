@@ -10,6 +10,8 @@ import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { PartoAnimal } from 'src/parto_animal/entities/parto_animal.entity';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { ServiciosReproductivosAlertasService } from './servicio_alerta_reproductivos.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Module({
   controllers: [ServiciosReproductivosController],
@@ -25,6 +27,10 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
     ]),
     AuthClientesModule,
   ],
-  providers: [ServiciosReproductivosService],
+  providers: [
+    ServiciosReproductivosService,
+    ServiciosReproductivosAlertasService,
+    MailService,
+  ],
 })
 export class ServiciosReproductivosModule {}
