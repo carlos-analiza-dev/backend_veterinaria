@@ -9,6 +9,7 @@ import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.ent
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { MailService } from 'src/mail/mail.service';
 import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cliente_finca_trabajador.entity';
+import { ActividadesAlertasService } from './alertas_actividades.service';
 
 @Module({
   controllers: [ActividadesDiariasController],
@@ -22,6 +23,10 @@ import { ClienteFincaTrabajador } from 'src/cliente_finca_trabajador/entities/cl
     ]),
     AuthClientesModule,
   ],
-  providers: [ActividadesDiariasService, MailService],
+  providers: [
+    ActividadesDiariasService,
+    MailService,
+    ActividadesAlertasService,
+  ],
 })
 export class ActividadesDiariasModule {}

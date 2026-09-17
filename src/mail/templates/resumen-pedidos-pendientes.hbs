@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resumen diario de pedidos</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f6f9fc; padding: 20px; }
+    .container { max-width: 640px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header { background: #0d6efd; color: white; padding: 30px 20px; text-align: center; }
+    .content { padding: 30px 25px; }
+    .alert-box { background: #cfe2ff; border-left: 4px solid #0d6efd; padding: 15px 20px; border-radius: 4px; margin: 20px 0; }
+    .sucursal-card { background: #f8f9fa; border-radius: 6px; padding: 15px; margin: 15px 0; border-left: 3px solid #0d6efd; }
+    .sucursal-card h3 { margin: 0 0 5px 0; color: #084298; }
+    .sucursal-card .meta { font-size: 13px; color: #6c757d; margin-bottom: 10px; }
+    .sucursal-card table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .sucursal-card th { text-align: left; padding: 6px 4px; border-bottom: 2px solid #dee2e6; color: #6c757d; font-size: 12px; }
+    .sucursal-card td { padding: 6px 4px; border-bottom: 1px solid #e9ecef; }
+    .sucursal-card td.right { text-align: right; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #0d6efd; color: white; }
+    .btn { display: inline-block; background: #0d6efd; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 20px; }
+    .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #6c757d; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📊 Resumen Diario de Pedidos</h1>
+      <p>{{nombre_sucursal}}</p>
+    </div>
+
+    <div class="content">
+      <h2>Hola, {{nombre_gerente}} 👋</h2>
+
+      <div class="alert-box">
+        <p style="margin-bottom: 0;">
+          Este es el resumen de <strong>{{total_pedidos}} pedido(s)</strong> pendientes en <strong>{{nombre_sucursal}}</strong> al día de hoy.
+          Monto total: <strong>L. {{monto_total}}</strong>.
+          <br>
+          <span style="display: inline-block; margin-top: 8px;">
+            <span class="badge">📊 RESUMEN DIARIO</span>
+          </span>
+        </p>
+      </div>
+
+      {{#each resumen}}
+        <div class="sucursal-card">
+          <h3>🏢 {{sucursal}}</h3>
+          <div class="meta">
+            <strong>{{total_pedidos}}</strong> pedidos — Total: <strong>L. {{monto_total}}</strong>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th class="right">Total</th>
+                <th class="right">Entrega</th>
+                <th class="right">Horas</th>
+              </tr>
+            </thead>
+            <tbody>
+              {{#each pedidos}}
+                <tr>
+                  <td>{{cliente}}</td>
+                  <td class="right">L. {{total}}</td>
+                  <td class="right">{{tipo_entrega}}</td>
+                  <td class="right">{{horas_transcurridas}}h</td>
+                </tr>
+              {{/each}}
+            </tbody>
+          </table>
+        </div>
+      {{/each}}
+
+      <div style="text-align: center; margin-top: 30px;">
+        <a href="{{app_url}}/pedidos" class="btn">📋 Ver pedidos</a>
+      </div>
+
+      <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 4px; margin-top: 20px;">
+        <p style="margin-bottom: 0; color: #856404; font-size: 14px;">
+          💡 <strong>Recomendación:</strong> Revisa los pedidos con más horas pendientes y prioriza su procesamiento. Los que superen 24h generarán alertas automáticas.
+        </p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>© {{year}} El Sembrador - Todos los derechos reservados</p>
+      <p>
+        <a href="{{app_url}}/contacto">Contactar soporte</a> |
+        <a href="{{app_url}}/pedidos">Ir a Pedidos</a>
+      </p>
+      <p style="font-size: 12px; margin-top: 10px;">
+        Este correo fue enviado automáticamente. Por favor no respondas a este mensaje.
+      </p>
+    </div>
+  </div>
+</body>
+</html>

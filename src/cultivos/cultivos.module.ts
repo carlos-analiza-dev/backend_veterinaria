@@ -6,6 +6,8 @@ import { Cultivo } from './entities/cultivo.entity';
 import { FincasGanadero } from 'src/fincas_ganadero/entities/fincas_ganadero.entity';
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
+import { AlertasCultivosService } from './alertas_cultivos.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Module({
   controllers: [CultivosController],
@@ -13,6 +15,6 @@ import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
     TypeOrmModule.forFeature([Cultivo, FincasGanadero, Cliente]),
     AuthClientesModule,
   ],
-  providers: [CultivosService],
+  providers: [CultivosService, AlertasCultivosService, MailService],
 })
 export class CultivosModule {}

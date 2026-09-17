@@ -1,16 +1,21 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Cron } from '@nestjs/schedule';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { ServicioReproductivo } from './entities/servicios_reproductivo.entity';
 import { MailService } from 'src/mail/mail.service';
 import { EstadoServicio } from 'src/interfaces/servicios-reproductivos.enum';
 import { PartoAnimal } from 'src/parto_animal/entities/parto_animal.entity';
 import { ESPECIE_CONFIG } from 'src/interfaces/especies-config';
-import { ServicioSinPartoDTO } from 'src/interfaces/alertas/servicio-sin-parto.dto';
+import {
+  PartoProximoDTO,
+  ServicioSinPartoDTO,
+} from 'src/interfaces/alertas/servicio-sin-parto.dto';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
 import { getPropietarioId } from 'src/utils/get-propietario-id';
 import { formatDateLocal } from '../helpers/dateTimeLocal';
+
+const MARGEN_DIAS_ALERTA = 7;
 
 @Injectable()
 export class ServiciosReproductivosAlertasService {
@@ -110,6 +115,94 @@ export class ServiciosReproductivosAlertasService {
     }
   }
 
+  @Cron('0 8 * * *', {
+    timeZone: 'America/Tegucigalpa',
+  })
+  async alertarPartosProximos() {
+    this.logger.log('Iniciando verificación de partos próximos...');
+
+    try {
+      // 1. Servicios exitosos realizados
+      const servicios = await this.servicioReproductivoRepository
+        .createQueryBuilder('servicio')
+        .leftJoinAndSelect('servicio.hembra', 'hembra')
+        .leftJoinAndSelect('hembra.especie', 'especie')
+        .leftJoinAndSelect('servicio.macho', 'macho')
+        .leftJoinAndSelect('servicio.creado_por', 'propietario')
+        .where('servicio.exitoso = :exitoso', { exitoso: true })
+        .andWhere('servicio.estado = :estado', {
+          estado: EstadoServicio.REALIZADO,
+        })
+        .getMany();
+
+      if (servicios.length === 0) {
+        this.logger.log('No hay servicios exitosos registrados');
+        return;
+      }
+
+      // 2. Servicios que ya tienen parto (para excluirlos)
+      const partosExistentes = await this.partoAnimalRepository
+        .createQueryBuilder('parto')
+        .select('parto.servicio_id', 'servicio_id')
+        .where('parto.servicio_id IS NOT NULL')
+        .getRawMany();
+
+      const serviciosConParto = new Set(
+        partosExistentes.map((p) => String(p.servicio_id)),
+      );
+
+      // 3. Filtrar los que están próximos a parir
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+
+      const proximos: ServicioReproductivo[] = [];
+
+      for (const s of servicios) {
+        if (serviciosConParto.has(String(s.id))) continue;
+
+        const fechaServicio = new Date(s.fecha_servicio);
+        const especieNombre = this.obtenerNombreEspecie(s.hembra?.especie);
+        const config = this.obtenerConfigEspecie(especieNombre);
+
+        const diasGestacion = config.periodoGestacionDias;
+        const fechaProbableParto = new Date(fechaServicio);
+        fechaProbableParto.setDate(
+          fechaProbableParto.getDate() + diasGestacion,
+        );
+        fechaProbableParto.setHours(0, 0, 0, 0);
+
+        const diasRestantes = Math.floor(
+          (fechaProbableParto.getTime() - hoy.getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
+
+        // Alerta si faltan <= MARGEN_DIAS_ALERTA días y aún no ha pasado demasiado
+        // (también avisa si ya venció pero sigue sin parto, con margen de 30 días)
+        if (diasRestantes <= MARGEN_DIAS_ALERTA && diasRestantes >= -30) {
+          proximos.push(s);
+        }
+      }
+
+      if (proximos.length === 0) {
+        this.logger.log('No hay partos próximos para alertar');
+        return;
+      }
+
+      this.logger.log(`Se encontraron ${proximos.length} partos próximos`);
+
+      // 4. Agrupar por propietario
+      const porPropietario = this.agruparPorPropietario(proximos);
+
+      for (const [, serviciosCliente] of porPropietario) {
+        await this.enviarAlertaPartosProximos(serviciosCliente);
+      }
+
+      this.logger.log('Verificación de partos próximos completada');
+    } catch (error) {
+      this.logger.error(`Error en alerta de partos próximos`);
+    }
+  }
+
   private obtenerConfigEspecie(nombreEspecie: string) {
     const normalizado = nombreEspecie?.trim().toLowerCase() || 'bovino';
 
@@ -118,6 +211,25 @@ export class ServiciosReproductivosAlertasService {
     );
 
     return ESPECIE_CONFIG[key] || ESPECIE_CONFIG['Bovino'];
+  }
+
+  private obtenerNombreEspecie(especie: any): string {
+    if (!especie) return 'Bovino';
+    if (typeof especie === 'string') return especie;
+    return especie.nombre || 'Bovino';
+  }
+
+  private agruparPorPropietario(
+    servicios: ServicioReproductivo[],
+  ): Map<string, ServicioReproductivo[]> {
+    const mapa = new Map<string, ServicioReproductivo[]>();
+    for (const servicio of servicios) {
+      const key = servicio.creadoPorId;
+      if (!key) continue;
+      if (!mapa.has(key)) mapa.set(key, []);
+      mapa.get(key)!.push(servicio);
+    }
+    return mapa;
   }
 
   private agruparServiciosPorPropietario(
@@ -206,9 +318,78 @@ export class ServiciosReproductivosAlertasService {
     }
   }
 
-  private obtenerNombreEspecie(especie: any): string {
-    if (!especie) return 'Bovino';
-    if (typeof especie === 'string') return especie;
-    return especie.nombre || 'Bovino';
+  private async enviarAlertaPartosProximos(servicios: ServicioReproductivo[]) {
+    try {
+      const creador = servicios[0].creado_por;
+      const propietarioId = getPropietarioId(creador);
+
+      const propietario = await this.clienteRepo.findOne({
+        where: { id: propietarioId },
+      });
+
+      if (!propietario?.email) {
+        this.logger.warn(`Propietario ${propietario?.id} no tiene email`);
+        return;
+      }
+
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+
+      const partosFormateados: PartoProximoDTO[] = servicios.map((servicio) => {
+        const fechaServicio = new Date(servicio.fecha_servicio);
+        const especieNombre = this.obtenerNombreEspecie(
+          servicio.hembra?.especie,
+        );
+        const config = this.obtenerConfigEspecie(especieNombre);
+
+        const diasGestacion = config.periodoGestacionDias;
+        const fechaProbableParto = new Date(fechaServicio);
+        fechaProbableParto.setDate(
+          fechaProbableParto.getDate() + diasGestacion,
+        );
+
+        const diasRestantes = Math.floor(
+          (fechaProbableParto.getTime() - hoy.getTime()) /
+            (1000 * 60 * 60 * 24),
+        );
+
+        return {
+          hembra:
+            servicio.hembra?.identificador ||
+            servicio.hembra?.nombre_animal ||
+            'N/D',
+          especie: especieNombre,
+          tipo_servicio: servicio.tipo_servicio || 'N/D',
+          fecha_servicio: formatDateLocal(fechaServicio),
+          fecha_probable_parto: formatDateLocal(fechaProbableParto),
+          macho:
+            servicio.macho?.identificador ||
+            servicio.macho?.nombre_animal ||
+            servicio.macho_externo_nombre ||
+            'N/D',
+          tecnico_responsable: servicio.tecnico_responsable || 'N/D',
+          dias_gestacion_esperados: diasGestacion,
+          dias_restantes: diasRestantes,
+          rango_gestacion: `${config.periodoGestacionMin}-${config.periodoGestacionMax} días`,
+          observaciones: servicio.observaciones || null,
+          es_vencido: diasRestantes < 0,
+          es_hoy: diasRestantes === 0,
+          es_proximo: diasRestantes > 0,
+        };
+      });
+
+      await this.mailService.sendPartosProximos(
+        propietario.email,
+        propietario.nombre || 'Cliente',
+        partosFormateados.length,
+        partosFormateados,
+      );
+
+      this.logger.log(
+        `Alerta de partos próximos enviada a ${propietario.email} (${partosFormateados.length} casos)`,
+      );
+    } catch (error) {
+      this.logger.error(`Error enviando alerta de partos próximos`);
+    }
   }
 }

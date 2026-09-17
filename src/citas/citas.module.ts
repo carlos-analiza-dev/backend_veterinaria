@@ -15,6 +15,7 @@ import { Inventario } from 'src/inventario/entities/inventario.entity';
 import { CitaProducto } from 'src/cita_productos/entities/cita_producto.entity';
 import { Cliente } from '../auth-clientes/entities/auth-cliente.entity';
 import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
+import { AlertasCitasService } from './alertas_citas.service';
 
 @Module({
   controllers: [CitasController],
@@ -34,6 +35,6 @@ import { AuthClientesModule } from 'src/auth-clientes/auth-clientes.module';
     ]),
     AuthClientesModule,
   ],
-  providers: [CitasService, MailService],
+  providers: [CitasService, MailService, AlertasCitasService],
 })
 export class CitasModule {}

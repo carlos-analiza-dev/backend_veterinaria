@@ -5,7 +5,26 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { Cliente } from 'src/auth-clientes/entities/auth-cliente.entity';
-import { ServicioSinPartoDTO } from 'src/interfaces/alertas/servicio-sin-parto.dto';
+import {
+  ActividadProximaDTO,
+  ActividadVencidaDTO,
+} from 'src/interfaces/alertas/actividad-alerta.dto';
+import {
+  CitaRecordatorioDTO,
+  CitaVencidaDTO,
+} from 'src/interfaces/alertas/cita-alerta.dto';
+import {
+  CultivoCosechaProximaDTO,
+  CultivoCosechaVencidaDTO,
+} from 'src/interfaces/alertas/cultivo-cosecha-proxima.dto';
+import {
+  PedidoEstancadoDTO,
+  ResumenPedidosPendientesDTO,
+} from 'src/interfaces/alertas/pedido-alerta.dto';
+import {
+  PartoProximoDTO,
+  ServicioSinPartoDTO,
+} from 'src/interfaces/alertas/servicio-sin-parto.dto';
 import { EstadoPedido, Pedido } from 'src/pedidos/entities/pedido.entity';
 
 @Injectable()
@@ -717,6 +736,7 @@ export class MailService {
     }
   }
 
+  //PARTOS PROXIMOS Y VEMCIDOS
   async sendServiciosSinParto(
     email: string,
     nombre_cliente: string,
@@ -743,6 +763,295 @@ export class MailService {
       return { message: 'Correo de servicios sin parto enviado' };
     } catch (error) {
       throw new Error(`Fallo al enviar correo de servicios sin parto`);
+    }
+  }
+
+  async sendPartosProximos(
+    email: string,
+    nombre_cliente: string,
+    total_partos: number,
+    partos_proximos: PartoProximoDTO[],
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `🐄 ${total_partos} parto(s) próximo(s) en tu hato - El Sembrador`,
+        template: './partos-proximos',
+        context: {
+          nombre_cliente,
+          total_partos,
+          partos_proximos,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de partos próximos enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de partos próximos`);
+    }
+  }
+
+  //ACYIVIDADES DIARIAS
+  async sendActividadesProximas(
+    email: string,
+    nombre_cliente: string,
+    total_actividades: number,
+    actividades_proximas: ActividadProximaDTO[],
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `📅 ${total_actividades} actividad(es) próxima(s) a vencer - El Sembrador`,
+        template: './actividades-proximas',
+        context: {
+          nombre_cliente,
+          total_actividades,
+          actividades_proximas,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de actividades próximas enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de actividades próximas`);
+    }
+  }
+
+  async sendActividadesVencidas(
+    email: string,
+    nombre_cliente: string,
+    total_actividades: number,
+    actividades_vencidas: ActividadVencidaDTO[],
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `⚠️ ${total_actividades} actividad(es) vencida(s) sin completar - El Sembrador`,
+        template: './actividades-vencidas',
+        context: {
+          nombre_cliente,
+          total_actividades,
+          actividades_vencidas,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de actividades vencidas enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de actividades vencidas`);
+    }
+  }
+
+  //CULTIVOS
+  async sendCosechasProximas(
+    email: string,
+    nombre_cliente: string,
+    total_cultivos: number,
+    cultivos_proximos: CultivoCosechaProximaDTO[],
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `🌾 ${total_cultivos} cosecha(s) próxima(s) en tu finca - El Sembrador`,
+        template: './cosechas-proximas',
+        context: {
+          nombre_cliente,
+          total_cultivos,
+          cultivos_proximos,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de cosechas próximas enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de cosechas próximas`);
+    }
+  }
+
+  async sendCosechasVencidas(
+    email: string,
+    nombre_cliente: string,
+    total_cultivos: number,
+    cultivos_vencidos: CultivoCosechaVencidaDTO[],
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+    const maxDias = Math.max(...cultivos_vencidos.map((c) => c.dias_vencida));
+
+    const subject =
+      maxDias >= 15
+        ? `🚨 ${total_cultivos} cosecha(s) con 15+ días de retraso - El Sembrador`
+        : `⚠️ ${total_cultivos} cosecha(s) vencida(s) sin registrar - El Sembrador`;
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject,
+        template: './cosechas-vencidas',
+        context: {
+          nombre_cliente,
+          total_cultivos,
+          cultivos_vencidos,
+          max_dias: maxDias,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de cosechas vencidas enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de cosechas vencidas`);
+    }
+  }
+
+  //CITAS ALERTAS
+  async sendRecordatorioCitas(
+    email: string,
+    nombre_cliente: string,
+    total_citas: number,
+    citas: CitaRecordatorioDTO[],
+    tipo: 'hoy' | 'manana',
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    const subject =
+      tipo === 'hoy'
+        ? `📅 Tienes ${total_citas} cita(s) HOY - El Sembrador`
+        : `⏰ Recordatorio: ${total_citas} cita(s) MAÑANA - El Sembrador`;
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject,
+        template: './citas-recordatorio',
+        context: {
+          nombre_cliente,
+          total_citas,
+          citas,
+          es_hoy: tipo === 'hoy',
+          es_manana: tipo === 'manana',
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de recordatorio de citas enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de recordatorio de citas`);
+    }
+  }
+
+  async sendCitasVencidas(
+    email: string,
+    nombre_cliente: string,
+    total_citas: number,
+    citas_vencidas: CitaVencidaDTO[],
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `⚠️ ${total_citas} cita(s) vencida(s) sin completar - El Sembrador`,
+        template: './citas-vencidas',
+        context: {
+          nombre_cliente,
+          total_citas,
+          citas_vencidas,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de citas vencidas enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de citas vencidas`);
+    }
+  }
+
+  //ALERTAS PEDIDOS
+  async sendPedidosEstancados(
+    email: string,
+    nombre_sucursal: string,
+    total_pedidos: number,
+    pedidos: PedidoEstancadoDTO[],
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    const hayCriticos = pedidos.some((p) => p.es_critico);
+    const subject = hayCriticos
+      ? `🚨 ${total_pedidos} pedido(s) CRÍTICO(S) sin procesar - El Sembrador`
+      : `🔴 ${total_pedidos} pedido(s) estancado(s) sin procesar - El Sembrador`;
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject,
+        template: './pedidos-estancados',
+        context: {
+          nombre_sucursal,
+          total_pedidos,
+          pedidos,
+          hay_criticos: hayCriticos,
+          app_url: process.env.FRONTEND_URL || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Correo de pedidos estancados enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar correo de pedidos estancados`);
+    }
+  }
+
+  async sendResumenPedidosPendientes(
+    email: string,
+    nombre_gerente: string,
+    nombre_sucursal: string,
+    resumen: ResumenPedidosPendientesDTO[],
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    const totalPedidos = resumen.reduce((s, r) => s + r.total_pedidos, 0);
+    const montoTotal = resumen.reduce((s, r) => s + r.monto_total, 0);
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `📊 Resumen diario: ${totalPedidos} pedido(s) pendiente(s) en ${nombre_sucursal} - El Sembrador`,
+        template: './resumen-pedidos-pendientes',
+        context: {
+          nombre_gerente,
+          nombre_sucursal,
+          resumen,
+          total_pedidos: totalPedidos,
+          monto_total: montoTotal,
+          app_url: process.env.FRONTEND_URL || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Resumen diario enviado' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar resumen diario`);
     }
   }
 }

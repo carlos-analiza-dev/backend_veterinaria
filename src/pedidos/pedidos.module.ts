@@ -11,6 +11,8 @@ import { AuthModule } from 'src/auth/auth.module';
 import { Lote } from 'src/lotes/entities/lote.entity';
 import { NotificacionesAdminsModule } from 'src/notificaciones_admins/notificaciones_admins.module';
 import { MailModule } from 'src/mail/mail.module';
+import { AlertasPedidosService } from './alertas_pedidos.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Module({
   controllers: [PedidosController],
@@ -28,6 +30,6 @@ import { MailModule } from 'src/mail/mail.module';
     NotificacionesAdminsModule,
     MailModule,
   ],
-  providers: [PedidosService],
+  providers: [PedidosService, AlertasPedidosService, MailService],
 })
 export class PedidosModule {}

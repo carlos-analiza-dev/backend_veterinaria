@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cosechas próximas</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f6f9fc; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header { background: #fd7e14; color: white; padding: 30px 20px; text-align: center; }
+    .content { padding: 30px 25px; }
+    .alert-box { background: #ffe5d0; border-left: 4px solid #fd7e14; padding: 15px 20px; border-radius: 4px; margin: 20px 0; }
+    .evento-card { background: #f8f9fa; border-radius: 6px; padding: 15px; margin: 15px 0; border-left: 3px solid #fd7e14; }
+    .evento-card table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .evento-card td { padding: 5px 0; border-bottom: 1px solid #e9ecef; }
+    .evento-card td:last-child { text-align: right; font-weight: 600; }
+    .evento-card .label { color: #6c757d; font-weight: normal; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #fd7e14; color: white; }
+    .btn { display: inline-block; background: #fd7e14; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 20px; }
+    .dias-restantes { font-size: 22px; font-weight: bold; color: #8a4b00; text-align: center; padding: 10px; background: #ffe5d0; border-radius: 6px; margin: 15px 0; }
+    .dias-restantes.urgente { color: #721c24; background: #f8d7da; }
+    .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #6c757d; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🌾 Cosechas Próximas</h1>
+      <p>Prepara la recolección</p>
+    </div>
+
+    <div class="content">
+      <h2>Hola, {{nombre_cliente}} 👋</h2>
+
+      <div class="alert-box">
+        <p style="margin-bottom: 0;">
+          <strong>¡Atención!</strong> Tienes <strong>{{total_cultivos}} cultivo(s)</strong> cuya fecha estimada de cosecha está próxima.
+          <br>
+          <span style="display: inline-block; margin-top: 8px;">
+            <span class="badge">🌾 COSECHA PRÓXIMA</span>
+          </span>
+        </p>
+      </div>
+
+      {{#each cultivos_proximos}}
+        <div class="evento-card">
+          <span class="badge">{{tipo_cultivo}}</span>
+          <h4>🌱 {{nombre_cultivo}}{{#if variedad}} <small style="color:#6c757d;">({{variedad}})</small>{{/if}}</h4>
+          <table>
+            <tr>
+              <td class="label">🏡 Finca</td>
+              <td><strong>{{finca}}</strong></td>
+            </tr>
+            <tr>
+              <td class="label">📐 Área sembrada</td>
+              <td><strong>{{area_sembrada}} {{unidad_medida}}</strong></td>
+            </tr>
+            {{#if fecha_siembra}}
+            <tr>
+              <td class="label">📅 Fecha de siembra</td>
+              <td><strong>{{fecha_siembra}}</strong></td>
+            </tr>
+            {{/if}}
+            <tr>
+              <td class="label">🌾 Fecha estimada de cosecha</td>
+              <td><strong>{{fecha_cosecha_estimada}}</strong></td>
+            </tr>
+            {{#if produccion_estimada}}
+            <tr>
+              <td class="label">📦 Producción estimada</td>
+              <td><strong>{{produccion_estimada}} {{unidad_produccion}}</strong></td>
+            </tr>
+            {{/if}}
+            {{#if temporada}}
+            <tr>
+              <td class="label">🗓️ Temporada</td>
+              <td><strong>{{temporada}}</strong></td>
+            </tr>
+            {{/if}}
+          </table>
+
+          {{#if es_hoy}}
+            <div class="dias-restantes urgente">
+              🚨 ¡HOY es la fecha estimada de cosecha!
+            </div>
+          {{else if es_esta_semana}}
+            <div class="dias-restantes urgente">
+              ⏰ Faltan {{dias_restantes}} día(s) para la cosecha
+            </div>
+          {{else}}
+            <div class="dias-restantes">
+              ⏰ Faltan {{dias_restantes}} día(s) para la cosecha
+            </div>
+          {{/if}}
+        </div>
+      {{/each}}
+
+      <div style="text-align: center; margin-top: 30px;">
+        <a href="{{app_url}}/cultivos" class="btn">🌱 Ver cultivos</a>
+      </div>
+
+      <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 4px; margin-top: 20px;">
+        <p style="margin-bottom: 0; color: #856404; font-size: 14px;">
+          💡 <strong>Recomendación:</strong> Verifica el estado del cultivo, prepara la logística de recolección (mano de obra, transporte, almacenamiento) y confirma la fecha estimada con tu equipo técnico.
+        </p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>© {{year}} El Sembrador - Todos los derechos reservados</p>
+      <p>
+        <a href="{{app_url}}/contacto">Contactar soporte</a> |
+        <a href="{{app_url}}/cultivos">Ir a Cultivos</a>
+      </p>
+      <p style="font-size: 12px; margin-top: 10px;">
+        Este correo fue enviado automáticamente. Por favor no respondas a este mensaje.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
