@@ -89,24 +89,14 @@ export class LotesAgroProductosService {
             id_sucursal: sucursalDestinoId,
             id_compra: loteOrigen.id_compra,
             cantidad: cantidadARestar,
-            costo:
-              (Number(loteOrigen.costo) * cantidadARestar) /
-              Number(loteOrigen.cantidad + cantidadARestar),
+            costo: loteOrigen.costo,
             costo_por_unidad: loteOrigen.costo_por_unidad,
           });
         } else {
-          const costoTotalActual = Number(loteDestino.costo);
           const cantidadActual = Number(loteDestino.cantidad);
-          const costoTotalNuevo =
-            cantidadARestar *
-            (loteOrigen.costo_por_unidad ||
-              Number(loteOrigen.costo) /
-                Number(loteOrigen.cantidad + cantidadARestar));
-
           loteDestino.cantidad = cantidadActual + cantidadARestar;
-          loteDestino.costo = costoTotalActual + costoTotalNuevo;
-          loteDestino.costo_por_unidad =
-            loteDestino.costo / loteDestino.cantidad;
+          ((loteDestino.costo = loteOrigen.costo),
+            (loteDestino.costo_por_unidad = loteOrigen.costo_por_unidad));
         }
 
         await queryRunner.manager.save(loteDestino);
@@ -203,24 +193,14 @@ export class LotesAgroProductosService {
             id_sucursal: sucursalDestinoId,
             id_compra: loteOrigen.id_compra,
             cantidad: cantidadARestar,
-            costo:
-              (Number(loteOrigen.costo) * cantidadARestar) /
-              Number(loteOrigen.cantidad + cantidadARestar),
+            costo: loteOrigen.costo,
             costo_por_unidad: loteOrigen.costo_por_unidad,
           });
         } else {
-          const costoTotalActual = Number(loteDestino.costo);
           const cantidadActual = Number(loteDestino.cantidad);
-          const costoTotalNuevo =
-            cantidadARestar *
-            (loteOrigen.costo_por_unidad ||
-              Number(loteOrigen.costo) /
-                Number(loteOrigen.cantidad + cantidadARestar));
-
           loteDestino.cantidad = cantidadActual + cantidadARestar;
-          loteDestino.costo = costoTotalActual + costoTotalNuevo;
-          loteDestino.costo_por_unidad =
-            loteDestino.costo / loteDestino.cantidad;
+          ((loteDestino.costo = loteOrigen.costo),
+            (loteDestino.costo_por_unidad = loteOrigen.costo_por_unidad));
         }
 
         await queryRunner.manager.save(loteDestino);

@@ -17,6 +17,9 @@ import {
   CultivoCosechaProximaDTO,
   CultivoCosechaVencidaDTO,
 } from 'src/interfaces/alertas/cultivo-cosecha-proxima.dto';
+import { ResumenFacturasPendientesSucursalDTO } from 'src/interfaces/alertas/factura-pendiente.dto';
+import { ResumenStockInsumoSucursalDTO } from 'src/interfaces/alertas/insumo-stock.dto';
+import { ResumenStockSucursalDTO } from 'src/interfaces/alertas/lote-stock.dto';
 import {
   PedidoEstancadoDTO,
   ResumenPedidosPendientesDTO,
@@ -1052,6 +1055,128 @@ export class MailService {
       return { message: 'Resumen diario enviado' };
     } catch (error) {
       throw new Error(`Fallo al enviar resumen diario`);
+    }
+  }
+
+  //AGROSERVICIOS - LOTES PRODUCTOS
+  async sendAlertaStockLotes(
+    email: string,
+    nombre_gerente: string,
+    resumen: ResumenStockSucursalDTO,
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    const hayBajos = resumen.total_bajos > 0;
+    const moneda = resumen.moneda ?? '$';
+
+    const subject = hayBajos
+      ? `🔴 ${resumen.total_bajos} producto(s) con STOCK BAJO en ${resumen.sucursal} - El Sembrador`
+      : `🟠 ${resumen.total_limitados} producto(s) con stock limitado en ${resumen.sucursal} - El Sembrador`;
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject,
+        template: './alertas-stock-lotes',
+        context: {
+          nombre_gerente,
+          moneda,
+          sucursal: resumen.sucursal,
+          total_lotes: resumen.total_lotes,
+          total_bajos: resumen.total_bajos,
+          total_limitados: resumen.total_limitados,
+          lotes: resumen.lotes,
+          hay_bajos: hayBajos,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Alerta de stock enviada' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar alerta de stock de lotes`);
+    }
+  }
+
+  //AGROSERVICIO LOTES - INSUMOS
+  async sendAlertaStockInsumos(
+    email: string,
+    nombre_gerente: string,
+    resumen: ResumenStockInsumoSucursalDTO,
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    const hayBajos = resumen.total_bajos > 0;
+    const moneda = resumen.moneda ?? '$';
+
+    const subject = hayBajos
+      ? `🔴 ${resumen.total_bajos} insumo(s) con STOCK BAJO en ${resumen.sucursal} - El Sembrador`
+      : `🟠 ${resumen.total_limitados} insumo(s) con stock limitado en ${resumen.sucursal} - El Sembrador`;
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject,
+        template: './alertas-stock-insumos',
+        context: {
+          nombre_gerente,
+          moneda,
+          sucursal: resumen.sucursal,
+          total_lotes: resumen.total_lotes,
+          total_bajos: resumen.total_bajos,
+          total_limitados: resumen.total_limitados,
+          lotes: resumen.lotes,
+          hay_bajos: hayBajos,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Alerta de stock de insumos enviada' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar alerta de stock de insumos`);
+    }
+  }
+
+  //AGROSERVICIOS - ALERTA FACTURAS
+  async sendAlertaFacturasEmitidas(
+    email: string,
+    nombre_gerente: string,
+    resumen: ResumenFacturasPendientesSucursalDTO,
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    const moneda = resumen.moneda ?? '$';
+    const hayUrgentes = resumen.facturas.some((f) => f.es_urgente);
+
+    const subject = hayUrgentes
+      ? `🚨 ${resumen.total_facturas} factura(s) emitida(s) sin procesar en ${resumen.sucursal} - El Sembrador`
+      : `📄 ${resumen.total_facturas} factura(s) emitida(s) sin procesar en ${resumen.sucursal} - El Sembrador`;
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject,
+        template: './alertas-facturas-emitidas',
+        context: {
+          nombre_gerente,
+          moneda,
+          sucursal: resumen.sucursal,
+          total_facturas: resumen.total_facturas,
+          monto_total: resumen.monto_total,
+          facturas: resumen.facturas,
+          hay_urgentes: hayUrgentes,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Alerta de facturas emitidas enviada' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar alerta de facturas emitidas`);
     }
   }
 }

@@ -15,6 +15,8 @@ import { EmpleadosAgroModule } from 'src/empleados-agro/empleados-agro.module';
 import { AgroProductosController } from './lotes-agro-productos.controller';
 import { LotesAgroProductosService } from './lotes-agro-productos.service';
 import { AuditoriaMovimientosAgro } from 'src/movimientos_inventario/entities/audit-movimientos-agro.entity';
+import { AlertasLotesAgroProductos } from './alertas_lotes_agro_productos.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Module({
   controllers: [AgroComprasProductosController, AgroProductosController],
@@ -36,6 +38,8 @@ import { AuditoriaMovimientosAgro } from 'src/movimientos_inventario/entities/au
     AgroComprasProductosService,
     AgroservicioValidationService,
     LotesAgroProductosService,
+    AlertasLotesAgroProductos,
+    MailService,
   ],
 })
 export class AgroComprasProductosModule {}

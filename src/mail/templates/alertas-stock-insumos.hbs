@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Alerta de stock de insumos</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f6f9fc; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header { background: #0d6efd; color: white; padding: 30px 20px; text-align: center; }
+    .content { padding: 30px 25px; }
+    .alert-box { background: #cfe2ff; border-left: 4px solid #0d6efd; padding: 15px 20px; border-radius: 4px; margin: 20px 0; }
+    .evento-card { background: #f8f9fa; border-radius: 6px; padding: 15px; margin: 15px 0; }
+    .evento-card.bajo { border-left: 3px solid #dc3545; }
+    .evento-card.limitado { border-left: 3px solid #fd7e14; }
+    .evento-card table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .evento-card td { padding: 5px 0; border-bottom: 1px solid #e9ecef; }
+    .evento-card td:last-child { text-align: right; font-weight: 600; }
+    .evento-card .label { color: #6c757d; font-weight: normal; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; color: white; }
+    .badge.bajo { background: #dc3545; }
+    .badge.limitado { background: #fd7e14; }
+    .btn { display: inline-block; background: #0d6efd; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 20px; }
+    .stock { font-size: 20px; font-weight: bold; text-align: center; padding: 10px; border-radius: 6px; margin: 15px 0; }
+    .stock.bajo { background: #f8d7da; color: #721c24; }
+    .stock.limitado { background: #ffe5d0; color: #8a4b00; }
+    .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #6c757d; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>⚠️ Alerta de Stock de Insumos</h1>
+      <p>{{sucursal}}</p>
+    </div>
+
+    <div class="content">
+      <h2>Hola, {{nombre_gerente}} 👋</h2>
+
+      <div class="alert-box">
+        <p style="margin-bottom: 0;">
+          Se detectaron insumos con stock bajo o limitado en tu sucursal:
+          <br>
+          {{#if total_bajos}}
+            <strong style="color:#721c24;">🔴 {{total_bajos}} con STOCK BAJO</strong>
+          {{/if}}
+          {{#if total_limitados}}
+            <br><strong style="color:#8a4b00;">🟠 {{total_limitados}} con stock LIMITADO</strong>
+          {{/if}}
+          <br>
+          <span style="display: inline-block; margin-top: 8px;">
+            {{#if hay_bajos}}
+              <span class="badge bajo">🔴 REQUIERE REPOSICIÓN</span>
+            {{else}}
+              <span class="badge limitado">🟠 REVISAR STOCK</span>
+            {{/if}}
+          </span>
+        </p>
+      </div>
+
+      {{#each lotes}}
+        <div class="evento-card {{#if es_bajo}}bajo{{else}}limitado{{/if}}">
+          <span class="badge {{#if es_bajo}}bajo{{else}}limitado{{/if}}">
+            {{#if es_bajo}}STOCK BAJO{{else}}STOCK LIMITADO{{/if}}
+          </span>
+          <h4>🧪 {{insumo}}</h4>
+          <table>
+            <tr>
+              <td class="label">🏢 Sucursal</td>
+              <td><strong>{{sucursal}}</strong></td>
+            </tr>
+            <tr>
+              <td class="label">📊 Cantidad disponible</td>
+              <td><strong>{{cantidad}}</strong></td>
+            </tr>
+            {{#if costo_por_unidad}}
+            <tr>
+              <td class="label">💵 Costo unitario</td>
+              <td><strong>{{../moneda}} {{costo_por_unidad}}</strong></td>
+            </tr>
+            {{/if}}
+            <tr>
+              <td class="label">💰 Costo Total de Lote</td>
+              <td><strong>{{../moneda}} {{valor_total}}</strong></td>
+            </tr>
+          </table>
+
+          {{#if es_bajo}}
+            <div class="stock bajo">
+              🔴 Solo {{cantidad}} unidad(es) — ¡Reponer urgente!
+            </div>
+          {{else}}
+            <div class="stock limitado">
+              🟠 {{cantidad}} unidad(es) — Considera reponer pronto
+            </div>
+          {{/if}}
+        </div>
+      {{/each}}
+
+      <div style="text-align: center; margin-top: 30px;">
+        <a href="{{app_url}}/agro-empleados/agro-compras-insumos" class="btn">📦 Comprar Insumo</a>
+      </div>
+
+      <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 4px; margin-top: 20px;">
+        <p style="margin-bottom: 0; color: #856404; font-size: 14px;">
+          💡 <strong>Recomendación:</strong> Coordina con el encargado de compras la reposición de los insumos con stock bajo. Considera transferir desde otra sucursal si es urgente.
+        </p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>© {{year}} El Sembrador - Todos los derechos reservados</p>
+      <p>
+        <a href="{{app_url}}/contacto">Contactar soporte</a> |
+        <a href="{{app_url}}/agro-empleados/agro-compras-insumos">Comprar Insumo</a>
+      </p>
+      <p style="font-size: 12px; margin-top: 10px;">
+        Este correo fue enviado automáticamente. Por favor no respondas a este mensaje.
+      </p>
+    </div>
+  </div>
+</body>
+</html>

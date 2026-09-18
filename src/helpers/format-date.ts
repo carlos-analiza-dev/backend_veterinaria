@@ -22,3 +22,33 @@ export const formatDateISO = (date: Date): string => {
   const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 };
+
+export function formatearFechaConTiempo(fecha: string | Date): string {
+  const date = fecha instanceof Date ? fecha : new Date(fecha);
+
+  if (isNaN(date.getTime())) return 'N/D';
+
+  const dia = date.getDate();
+  const mes = date.getMonth();
+  const anio = date.getFullYear();
+
+  const meses = [
+    'enero',
+    'febrero',
+    'marzo',
+    'abril',
+    'mayo',
+    'junio',
+    'julio',
+    'agosto',
+    'septiembre',
+    'octubre',
+    'noviembre',
+    'diciembre',
+  ];
+
+  const hora = date.getHours().toString().padStart(2, '0');
+  const minutos = date.getMinutes().toString().padStart(2, '0');
+
+  return `${dia} de ${meses[mes]} del ${anio}`;
+}

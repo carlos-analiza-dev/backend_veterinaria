@@ -24,6 +24,8 @@ import { DatosAgroservicio } from 'src/datos-agroservicio/entities/datos-agroser
 import { AuditoriaEmpleados } from 'src/empleados-agro/entities/auditoria_empleados.entity';
 import { LotesAgroInsumosService } from './lotes-agro-insumos.service';
 import { LotesAgroInsumosController } from './lotes-agro-insumos.controller';
+import { AlertasInsumosService } from './alertas-insumos.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Module({
   controllers: [
@@ -36,6 +38,8 @@ import { LotesAgroInsumosController } from './lotes-agro-insumos.controller';
     CompraAgroInsumosService,
     LotesAgroInsumosService,
     AgroservicioValidationService,
+    AlertasInsumosService,
+    MailService,
   ],
   imports: [
     TypeOrmModule.forFeature([

@@ -20,7 +20,7 @@ export class AgroInsumos {
   @Column({ length: 100 })
   nombre: string;
 
-  @Column({ length: 20, unique: true })
+  @Column({ length: 20 })
   codigo: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })

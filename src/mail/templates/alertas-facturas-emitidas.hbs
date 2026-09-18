@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facturas emitidas sin procesar</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f6f9fc; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    .header { background: #6f42c1; color: white; padding: 30px 20px; text-align: center; }
+    .content { padding: 30px 25px; }
+    .alert-box { background: #e2d9f3; border-left: 4px solid #6f42c1; padding: 15px 20px; border-radius: 4px; margin: 20px 0; }
+    .evento-card { background: #f8f9fa; border-radius: 6px; padding: 15px; margin: 15px 0; border-left: 3px solid #6f42c1; }
+    .evento-card.urgente { border-left: 3px solid #dc3545; }
+    .evento-card table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .evento-card td { padding: 5px 0; border-bottom: 1px solid #e9ecef; }
+    .evento-card td:last-child { text-align: right; font-weight: 600; }
+    .evento-card .label { color: #6c757d; font-weight: normal; }
+    .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: #6f42c1; color: white; }
+    .badge.urgente { background: #dc3545; }
+    .btn { display: inline-block; background: #6f42c1; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: 600; margin-top: 20px; }
+    .dias { font-size: 18px; font-weight: bold; text-align: center; padding: 10px; border-radius: 6px; margin: 15px 0; }
+    .dias.urgente { background: #f8d7da; color: #721c24; }
+    .dias.normal { background: #e2d9f3; color: #4a2a8a; }
+    .footer { background: #f8f9fa; padding: 20px; text-align: center; color: #6c757d; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📄 Facturas Emitidas Sin Procesar</h1>
+      <p>{{sucursal}}</p>
+    </div>
+
+    <div class="content">
+      <h2>Hola, {{nombre_gerente}} 👋</h2>
+
+      <div class="alert-box">
+        <p style="margin-bottom: 0;">
+          Tienes <strong>{{total_facturas}} factura(s)</strong> en estado <strong>EMITIDA</strong> que aún no han sido procesadas.
+          <br>
+          Monto total: <strong>{{moneda}} {{monto_total}}</strong>
+          {{#if hay_urgentes}}
+            <br><strong style="color:#721c24;">⚠️ Algunas llevan más de 3 días sin procesar.</strong>
+          {{/if}}
+          <br>
+          <span style="display: inline-block; margin-top: 8px;">
+            <span class="badge {{#if hay_urgentes}}urgente{{/if}}">
+              {{#if hay_urgentes}}🚨 REQUIERE ATENCIÓN{{else}}📄 PENDIENTES{{/if}}
+            </span>
+          </span>
+        </p>
+      </div>
+
+      {{#each facturas}}
+        <div class="evento-card {{#if es_urgente}}urgente{{/if}}">
+          <span class="badge {{#if es_urgente}}urgente{{/if}}">
+            {{numero_factura}}
+          </span>
+          <h4>👤 {{cliente}}</h4>
+          <table>
+           <tr>
+  <td class="label">📅 Fecha de generación</td>
+  <td><strong>{{fecha_generacion}}</strong></td>
+</tr>
+            <tr>
+              <td class="label">💰 Total</td>
+              <td><strong>{{../moneda}} {{total}}</strong></td>
+            </tr>
+            <tr>
+              <td class="label">💳 Forma de pago</td>
+              <td><strong>{{forma_pago}}</strong></td>
+            </tr>
+          </table>
+
+          {{#if es_urgente}}
+            <div class="dias urgente">
+              🚨 {{dias_transcurridos}} día(s) sin procesar
+            </div>
+          {{else}}
+            <div class="dias normal">
+              ⏰ {{dias_transcurridos}} día(s) sin procesar
+            </div>
+          {{/if}}
+        </div>
+      {{/each}}
+
+      <div style="text-align: center; margin-top: 30px;">
+        <a href="{{app_url}}/agro-empleados/agro-facturacion" class="btn">📄 Ver facturas</a>
+      </div>
+
+      <div style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 15px; border-radius: 4px; margin-top: 20px;">
+        <p style="margin-bottom: 0; color: #856404; font-size: 14px;">
+          💡 <strong>Recomendación:</strong> Procesa las facturas pendientes para completar el ciclo de facturación. Las que lleven más de 3 días pueden afectar los reportes contables.
+        </p>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>© {{year}} El Sembrador - Todos los derechos reservados</p>
+      <p>
+        <a href="{{app_url}}/contacto">Contactar soporte</a> |
+        <a href="{{app_url}}/agro-empleados/agro-facturacion">Ir a Facturación</a>
+      </p>
+      <p style="font-size: 12px; margin-top: 10px;">
+        Este correo fue enviado automáticamente. Por favor no respondas a este mensaje.
+      </p>
+    </div>
+  </div>
+</body>
+</html>
