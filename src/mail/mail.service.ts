@@ -24,6 +24,7 @@ import {
   PedidoEstancadoDTO,
   ResumenPedidosPendientesDTO,
 } from 'src/interfaces/alertas/pedido-alerta.dto';
+import { ResumenPublicacionesVendedorDTO } from 'src/interfaces/alertas/publicacion-alerta.dto';
 import {
   PartoProximoDTO,
   ServicioSinPartoDTO,
@@ -1177,6 +1178,42 @@ export class MailService {
       return { message: 'Alerta de facturas emitidas enviada' };
     } catch (error) {
       throw new Error(`Fallo al enviar alerta de facturas emitidas`);
+    }
+  }
+
+  //ALERTAS AGROMARKET
+  async sendAlertasPublicaciones(
+    email: string,
+    nombre_vendedor: string,
+    resumen: ResumenPublicacionesVendedorDTO,
+  ) {
+    if (!email) throw new BadRequestException('No se proporcionó un correo');
+
+    const totalAlertas =
+      resumen.sin_interaccion.length +
+      resumen.muchas_views_sin_vender.length +
+      resumen.vendidas_activas.length;
+
+    const subject = `📢 Tienes ${totalAlertas} alerta(s) en tus publicaciones - El Sembrador`;
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject,
+        template: './alertas-publicaciones',
+        context: {
+          nombre_vendedor,
+          ...resumen,
+          total_alertas: totalAlertas,
+          app_url:
+            process.env.FRONTEND_URL_CLIENT || 'https://app.elsembrador.com',
+          year: new Date().getFullYear(),
+        },
+      });
+
+      return { message: 'Alertas de publicaciones enviadas' };
+    } catch (error) {
+      throw new Error(`Fallo al enviar alertas de publicaciones`);
     }
   }
 }

@@ -47,8 +47,5 @@ export function formatearFechaConTiempo(fecha: string | Date): string {
     'diciembre',
   ];
 
-  const hora = date.getHours().toString().padStart(2, '0');
-  const minutos = date.getMinutes().toString().padStart(2, '0');
-
   return `${dia} de ${meses[mes]} del ${anio}`;
 }

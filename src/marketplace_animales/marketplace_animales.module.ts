@@ -14,6 +14,8 @@ import { Marca } from 'src/marcas/entities/marca.entity';
 import { AnimalFinca } from 'src/animal_finca/entities/animal_finca.entity';
 import { DepartamentosPai } from 'src/departamentos_pais/entities/departamentos_pai.entity';
 import { DistanceSucursalesModule } from 'src/distance_sucursales/distance_sucursales.module';
+import { MailService } from 'src/mail/mail.service';
+import { AlertasPublicacionesService } from './alertas-publicaciones.service';
 
 @Module({
   controllers: [MarketplaceAnimalesController],
@@ -33,6 +35,10 @@ import { DistanceSucursalesModule } from 'src/distance_sucursales/distance_sucur
     AuthClientesModule,
     DistanceSucursalesModule,
   ],
-  providers: [MarketplaceAnimalesService],
+  providers: [
+    MarketplaceAnimalesService,
+    MailService,
+    AlertasPublicacionesService,
+  ],
 })
 export class MarketplaceAnimalesModule {}
